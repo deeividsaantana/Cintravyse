@@ -32,7 +32,7 @@ const RAPIDAS: ReadonlyArray<{ status: StatusControleEquipamentoDiario; rotulo: 
 ];
 
 const EM_MANUTENCAO = new Set<string>(['Em manutenção', 'Aguardando manutenção']);
-const CAMPO_LINHA = `${CAMPO} min-h-10 text-sm`;
+const CAMPO_LINHA = `${CAMPO} min-h-11 text-sm lg:min-h-9`;
 const LINHAS_POR_VEZ = 40;
 const horaAgora = () => new Date().toTimeString().slice(0, 5);
 
@@ -170,7 +170,8 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
 
   return (
     <section aria-label="Lançar a frota do dia" data-testid="quadro-lancar" className="space-y-3 pb-24">
-      <div className={`${CARTAO} space-y-2.5 p-3`} data-quadro-reveal>
+      <div className={`${CARTAO} overflow-hidden`} data-quadro-reveal>
+      <div className="space-y-2.5 border-b border-slate-200 p-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500">
             <ListChecks className="size-4" aria-hidden="true" />
@@ -217,13 +218,12 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
         )}
       </div>
 
-      <div className={`${CARTAO} overflow-hidden`} data-quadro-reveal>
-        <div className="hidden items-center gap-3 border-b border-slate-200 bg-[#f7f8f6] px-3 py-2.5 text-xs font-bold text-slate-500 lg:grid lg:grid-cols-[2.75rem_minmax(13rem,1.2fr)_minmax(17rem,1.3fr)_minmax(9rem,0.9fr)_minmax(9rem,0.9fr)_minmax(11rem,1fr)]">
+        <div className="hidden items-center gap-3 border-b border-slate-200 bg-[#f7f8f6] px-3 py-2 text-xs font-bold text-slate-500 lg:sticky lg:top-0 lg:z-10 lg:grid lg:grid-cols-[2.75rem_minmax(13rem,1.2fr)_minmax(17rem,1.3fr)_minmax(9rem,0.9fr)_minmax(9rem,0.9fr)_minmax(11rem,1fr)]">
           <label className="grid size-11 cursor-pointer place-items-center">
             <span className="sr-only">Selecionar todas</span>
             <input type="checkbox" checked={todasMarcadas} onChange={() => setMarcadas(todasMarcadas ? new Set() : new Set(cartoes.map(cartao => cartao.equipamentoId)))} className="size-5 accent-[#176b4d]" data-testid="lancar-sel-todas" />
           </label>
-          <span>Máquina</span>
+          <span>Máquina · {cartoes.length}</span>
           <span>Situação</span>
           <span>Canteiro</span>
           <span>Frente</span>
@@ -241,7 +241,7 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
               <li
                 key={id}
                 data-testid={`lancar-linha-${cartao.prefixo}`}
-                className={`relative grid gap-3 px-3 py-3 transition-colors duration-300 lg:grid-cols-[2.75rem_minmax(13rem,1.2fr)_minmax(17rem,1.3fr)_minmax(9rem,0.9fr)_minmax(9rem,0.9fr)_minmax(11rem,1fr)] lg:items-center ${erro ? 'bg-rose-50/60' : mudou ? 'bg-emerald-50/50' : marcadas.has(id) ? 'bg-slate-50' : 'bg-white'}`}
+                className={`relative grid gap-2.5 px-3 py-2.5 transition-colors lg:gap-3 lg:py-1.5 duration-300 lg:grid-cols-[2.75rem_minmax(13rem,1.2fr)_minmax(17rem,1.3fr)_minmax(9rem,0.9fr)_minmax(9rem,0.9fr)_minmax(11rem,1fr)] lg:items-center ${erro ? 'bg-rose-50/60' : mudou ? 'bg-emerald-50/50' : marcadas.has(id) ? 'bg-slate-50' : 'bg-white'}`}
               >
                 <span className={`absolute inset-y-0 left-0 w-1 ${erro ? 'bg-rose-500' : mudou ? 'bg-[#176b4d]' : 'bg-transparent'}`} aria-hidden="true" />
                 <div className="flex items-center gap-3 lg:contents">
@@ -250,16 +250,18 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
                     <input type="checkbox" checked={marcadas.has(id)} onChange={() => marcar(id)} className="size-5 accent-[#176b4d]" />
                   </label>
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className={`grid h-12 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-b ${tom.fundo} ring-1 ring-slate-200`}>
-                      {cartao.foto ? <img src={cartao.foto} alt="" className="h-full w-full object-cover" loading="lazy" /> : <DesenhoMaquina tipo={cartao.silhueta} className="h-10 w-14" />}
+                    <span className={`grid h-10 w-12 shrink-0 place-items-center overflow-hidden rounded-lg ${tom.fundo} ring-1 ring-inset ring-slate-200`}>
+                      {cartao.foto ? <img src={cartao.foto} alt="" className="h-full w-full object-cover" loading="lazy" /> : <DesenhoMaquina tipo={cartao.silhueta} className="h-8 w-11" />}
                     </span>
                     <span className="min-w-0">
-                      <strong className="block font-mono text-sm font-bold text-slate-900">{cartao.prefixo}</strong>
-                      <span className="block truncate text-xs font-semibold uppercase text-slate-500">{cartao.modelo}</span>
-                      <span className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-1.5 text-xs font-bold uppercase ring-1 ring-inset ${tom.etiqueta}`}>
-                        <span className={`size-1.5 rounded-full ${tom.ponto}`} aria-hidden="true" />
-                        {mudou ? 'Não salvo' : ROTULO_GRUPO[cartao.grupo]}
+                      <span className="flex items-center gap-2">
+                        <strong className="font-mono text-[0.95rem] font-extrabold text-slate-900">{cartao.prefixo}</strong>
+                        <span className={`inline-flex shrink-0 items-center gap-1 text-xs font-bold ${mudou ? 'text-[#176b4d]' : 'text-slate-500'}`}>
+                          <span className={`size-2 rounded-full ${mudou ? 'bg-[#176b4d]' : tom.ponto}`} aria-hidden="true" />
+                          {mudou ? 'Não salvo' : ROTULO_GRUPO[cartao.grupo]}
+                        </span>
                       </span>
+                      <span className="block truncate text-xs font-medium text-slate-500">{cartao.modelo}</span>
                     </span>
                   </div>
                 </div>
@@ -268,7 +270,7 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
                     {RAPIDAS.map(item => {
                       const ligado = atual.status === item.status;
                       return (
-                        <button key={item.status} type="button" aria-pressed={ligado} onClick={() => mudar([id], { status: item.status })} className={`inline-flex min-h-10 items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold transition duration-200 active:scale-[0.97] ${ligado ? item.ligado : 'text-slate-600 hover:bg-white'} ${FOCO}`} data-testid={`lancar-${cartao.prefixo}-${item.rotulo.toLowerCase()}`}>
+                        <button key={item.status} type="button" aria-pressed={ligado} onClick={() => mudar([id], { status: item.status })} className={`inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold transition lg:min-h-8 duration-200 active:scale-[0.97] ${ligado ? item.ligado : 'text-slate-600 hover:bg-white'} ${FOCO}`} data-testid={`lancar-${cartao.prefixo}-${item.rotulo.toLowerCase()}`}>
                           <item.Icone className="hidden size-3.5 shrink-0 2xl:block" aria-hidden="true" />
                           <span className="truncate">{item.rotulo}</span>
                         </button>

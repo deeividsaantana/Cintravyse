@@ -317,22 +317,30 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
 
   const lancadas = indicadores.total - indicadores.semLancamento;
   const porcento = indicadores.total ? Math.round((lancadas / indicadores.total) * 100) : 0;
-  const colunasVisiveis = filtros.grupo ? [filtros.grupo] : COLUNAS;
-  const modeloGrade = { gridTemplateColumns: `9.5rem repeat(${colunasVisiveis.length}, minmax(0, 1fr))` };
   const filtrosExtras = [filtros.tipo, filtros.frente, filtros.operador].filter(Boolean).length + (ordem !== 'prefixo' ? 1 : 0);
+  // Canteiros com máquina viram painéis; os vazios ficam numa faixa só no fim,
+  // para não ocupar a tela com caixas sem nada (continuam aceitando soltar).
+  const comMaquina = grupos.filter(grupo => grupo.cartoes.length > 0);
+  const vazios = grupos.filter(grupo => grupo.cartoes.length === 0);
+  const situacoes = ([['', 'Todas', indicadores.total, 'bg-slate-400'], ...COLUNAS.map(grupo => [grupo, ROTULO_GRUPO[grupo], CONTA[grupo](indicadores), TOM[grupo].ponto] as const)] as const);
 
   return (
     <div ref={escopo} id="quadro-frota-tab" data-testid="quadro-frota-tab" className="space-y-3">
-      <section aria-label="Resumo do dia" data-quadro-reveal className={`${CARTAO} space-y-3 p-3`}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <section aria-label="Resumo do dia" data-quadro-reveal className={`${CARTAO} p-3 sm:p-4`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1">
-            <p className="flex items-baseline gap-2 text-sm font-semibold text-slate-600">
-              Lançadas hoje
-              <span className="font-mono text-xl font-extrabold text-slate-900">{lancadas}</span>
+            <p className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-slate-600">
+              Lançadas no dia
+              <span className="font-mono text-2xl font-extrabold tabular-nums text-slate-900">{lancadas}</span>
               <span className="font-bold text-slate-500">de {indicadores.total}</span>
+              <span className="font-bold text-[#176b4d]">· {porcento}%</span>
             </p>
-            <div className="mt-1.5 h-1.5 max-w-md overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Máquinas lançadas hoje" aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcento}>
-              <div className="h-full rounded-full bg-[#176b4d] transition-[width] duration-500" style={{ width: `${porcento}%` }} />
+            {/* Uma barra só mostra a frota inteira: cada cor é uma situação. */}
+            <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`Frota do dia: ${COLUNAS.map(grupo => `${CONTA[grupo](indicadores)} ${ROTULO_GRUPO[grupo].toLowerCase()}`).join(', ')}`} data-testid="quadro-barra-situacoes">
+              {(['operando', 'manutencao', 'parado', 'sem-lancamento'] as const).map(grupo => {
+                const total = CONTA[grupo](indicadores);
+                return total ? <span key={grupo} className={`h-full ${TOM[grupo].ponto} transition-[width] duration-500 [&+&]:border-l-2 [&+&]:border-white`} style={{ width: `${(total / indicadores.total) * 100}%` }} /> : null;
+              })}
             </div>
           </div>
           {podeEditar && (
@@ -342,16 +350,16 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
             </button>
           )}
         </div>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin] lg:grid lg:grid-cols-5 lg:overflow-visible lg:pb-0" role="group" aria-label="Situação" data-testid="quadro-situacoes">
-          {([['', 'Todas', indicadores.total, 'bg-slate-400'], ...COLUNAS.map(grupo => [grupo, ROTULO_GRUPO[grupo], CONTA[grupo](indicadores), TOM[grupo].ponto] as const)] as const).map(([grupo, rotulo, total, ponto]) => {
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" role="group" aria-label="Situação" data-testid="quadro-situacoes">
+          {situacoes.map(([grupo, rotulo, total, ponto]) => {
             const ligado = filtros.grupo === grupo;
             return (
-              <button key={grupo || 'todas'} type="button" aria-pressed={ligado} onClick={() => mudar({ grupo: ligado ? '' : grupo as GrupoStatus | '' })} data-testid={`quadro-situacao-${grupo || 'todas'}`} className={`inline-flex min-h-11 shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-xl px-3 text-sm font-bold ring-1 transition duration-200 active:scale-[0.97] ${ligado ? 'bg-[#176b4d] text-white ring-[#176b4d]' : 'bg-white text-slate-700 ring-slate-200 hover:ring-emerald-300'} ${FOCO}`}>
-                <span className="inline-flex items-center gap-2">
-                  <span className={`size-2.5 rounded-full ${ligado ? 'bg-white' : ponto}`} aria-hidden="true" />
+              <button key={grupo || 'todas'} type="button" aria-pressed={ligado} onClick={() => mudar({ grupo: ligado ? '' : grupo as GrupoStatus | '' })} data-testid={`quadro-situacao-${grupo || 'todas'}`} className={`flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-xl px-3 py-2 ${grupo ? '' : 'max-sm:col-span-2'} text-left ring-1 transition duration-200 active:scale-[0.97] ${ligado ? 'bg-[#176b4d] text-white ring-[#176b4d]' : 'bg-white text-slate-700 ring-slate-200 hover:ring-emerald-300'} ${FOCO}`}>
+                <span className="inline-flex min-w-0 items-center gap-2 text-sm font-bold leading-tight">
+                  <span className={`size-2.5 shrink-0 rounded-full ${ligado ? 'bg-white' : ponto}`} aria-hidden="true" />
                   {rotulo}
                 </span>
-                <span className={`font-mono text-base ${ligado ? '' : 'text-slate-900'}`}>{total}</span>
+                <span className={`font-mono text-lg font-extrabold tabular-nums ${ligado ? '' : total ? 'text-slate-900' : 'text-slate-500'}`}>{total}</span>
               </button>
             );
           })}
@@ -365,22 +373,22 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
             <input ref={buscaRef} value={buscaTexto} onChange={event => setBuscaTexto(event.target.value)} placeholder="Buscar prefixo, modelo ou operador" className={`${CAMPO} pl-9`} data-testid="quadro-busca" />
           </label>
-          <div className="grid grid-cols-1 gap-2 lg:flex lg:shrink-0">
-            <select value={filtros.canteiro} onChange={event => mudar({ canteiro: event.target.value })} aria-label="Canteiro" className={`${CAMPO} lg:w-44`} data-testid="quadro-filtro-canteiro">
+          <div className="flex gap-2 lg:shrink-0">
+            <select value={filtros.canteiro} onChange={event => mudar({ canteiro: event.target.value })} aria-label="Canteiro" className={`${CAMPO} min-w-0 flex-1 lg:w-44 lg:flex-none`} data-testid="quadro-filtro-canteiro">
               <option value="">Todos os canteiros</option>
               {canteiros.map(nome => <option key={nome} value={nome}>{nome} ({contagemCanteiro.get(nome) || 0})</option>)}
               {(contagemCanteiro.get(SEM_CANTEIRO) || 0) > 0 && <option value={SEM_CANTEIRO}>{SEM_CANTEIRO} ({contagemCanteiro.get(SEM_CANTEIRO)})</option>}
             </select>
-          </div>
-          <div className="flex flex-wrap gap-2 lg:shrink-0 lg:flex-nowrap">
             <button type="button" onClick={() => setMaisFiltros(atual => !atual)} aria-expanded={maisFiltros} className={`${BOTAO_SECUNDARIO} flex-none`} data-testid="quadro-mais-filtros">
               <SlidersHorizontal className="size-4" aria-hidden="true" />
               Filtros{filtrosExtras ? ` (${filtrosExtras})` : ''}
             </button>
+          </div>
+          <div className="flex gap-2 lg:shrink-0">
             {podeEditar && (
-              <div className="flex flex-none rounded-xl bg-slate-100 p-1" role="group" aria-label="Forma de ver">
+              <div className="flex flex-1 rounded-xl bg-slate-100 p-1 lg:flex-none" role="group" aria-label="Forma de ver">
                 {([['quadro', 'Quadro', LayoutGrid], ['lancar', 'Lista', ListChecks]] as const).map(([id, rotulo, Icone]) => (
-                  <button key={id} type="button" aria-pressed={vista === id} onClick={() => trocarVista(id)} data-testid={`quadro-vista-${id}`} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-bold transition ${vista === id ? 'bg-white text-[#176b4d] shadow-sm' : 'text-slate-600 hover:text-slate-900'} ${FOCO}`}>
+                  <button key={id} type="button" aria-pressed={vista === id} onClick={() => trocarVista(id)} data-testid={`quadro-vista-${id}`} className={`inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-bold transition lg:flex-none ${vista === id ? 'bg-white text-[#176b4d] shadow-sm' : 'text-slate-600 hover:text-slate-900'} ${FOCO}`}>
                     <Icone className="size-4" aria-hidden="true" />
                     {rotulo}
                   </button>
@@ -508,56 +516,60 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
           </div>
         )}
         <DndContext sensors={sensores} accessibility={acessibilidadeArrastar} onDragEnd={modoSelecao ? undefined : arrastarSoltou}>
-          <div className={`${CARTAO} overflow-hidden ${modoSelecao ? 'mb-24' : ''}`} data-testid="quadro-colunas">
-            <div className="hidden border-b border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600 lg:grid" style={modeloGrade} aria-hidden="true">
-              <span className="px-3 py-2">Canteiro</span>
-              {colunasVisiveis.map(grupo => (
-                <span key={grupo} className="flex items-center gap-1.5 border-l border-slate-200 px-3 py-2">
-                  <span className={`size-2 rounded-full ${TOM[grupo].ponto}`} />
-                  {ROTULO_GRUPO[grupo]}
-                </span>
-              ))}
-            </div>
-            {grupos.map(grupo => {
-              const semCanteiro = grupo.canteiro === SEM_CANTEIRO;
-              const porSituacao = colunasVisiveis.map(situacao => [situacao, grupo.cartoes.filter(cartao => cartao.grupo === situacao)] as const);
-              return (
-                <ColunaCanteiro key={grupo.canteiro} canteiro={grupo.canteiro} style={modeloGrade} className="border-b border-slate-200 last:border-b-0 max-lg:!block lg:grid">
-                  <section aria-label={`Canteiro ${grupo.canteiro}`} data-testid="quadro-coluna" className="contents">
-                    <header className="flex items-center gap-2 bg-slate-50/70 px-3 py-2 lg:flex-col lg:items-start lg:justify-start lg:gap-0.5 lg:bg-transparent lg:py-3">
-                      <h2 className={`min-w-0 truncate text-sm font-bold ${semCanteiro ? 'text-slate-500' : 'text-slate-900'}`}>{grupo.canteiro}</h2>
-                      <span className="ml-auto text-xs font-semibold text-slate-500 lg:ml-0">{grupo.cartoes.length} {grupo.cartoes.length === 1 ? 'máquina' : 'máquinas'}</span>
-                    </header>
-                    {porSituacao.map(([situacao, lista]) => (
-                      <div key={situacao} className={`px-3 pb-2 lg:border-l lg:border-slate-200 lg:px-2 lg:py-2 ${lista.length === 0 ? 'max-lg:hidden' : ''}`}>
-                        <p className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-600 lg:hidden">
-                          <span className={`size-2 rounded-full ${TOM[situacao].ponto}`} aria-hidden="true" />
-                          {ROTULO_GRUPO[situacao]} · {lista.length}
-                        </p>
-                        {lista.length === 0 ? (
-                          <span className="hidden text-sm text-slate-500 lg:block" aria-hidden="true">—</span>
-                        ) : (
-                          <div className="grid gap-1.5 [grid-template-columns:repeat(auto-fill,minmax(6.5rem,1fr))]">
-                            {lista.map(cartao => (
-                              <CartaoArrastavel
-                                key={cartao.equipamentoId}
-                                cartao={cartao}
-                                podeArrastar={podeEditar}
-                                onAbrir={() => setAbertoId(cartao.equipamentoId)}
-                                modoSelecao={modoSelecao}
-                                selecionado={selecionados.has(cartao.equipamentoId)}
-                                onAlternarSelecao={() => alternarSelecao(cartao.equipamentoId)}
-                              />
-                            ))}
-                          </div>
-                        )}
+          <div className={`space-y-3 ${modoSelecao ? 'mb-24' : ''}`} data-testid="quadro-colunas">
+            {/* Um painel por canteiro, lado a lado; a altura de cada um segue as máquinas dele. */}
+            <div className="gap-3 [column-fill:balance] md:columns-2 2xl:columns-3">
+              {comMaquina.map(grupo => {
+                const semCanteiro = grupo.canteiro === SEM_CANTEIRO;
+                const lista = COLUNAS.flatMap(situacao => grupo.cartoes.filter(cartao => cartao.grupo === situacao));
+                const contagem = COLUNAS.map(situacao => [situacao, grupo.cartoes.filter(cartao => cartao.grupo === situacao).length] as const).filter(([, total]) => total > 0);
+                return (
+                  <ColunaCanteiro key={grupo.canteiro} canteiro={grupo.canteiro} className={`mb-3 break-inside-avoid overflow-hidden rounded-2xl border bg-white ${semCanteiro ? 'border-dashed border-slate-300' : 'border-slate-200'}`}>
+                    <section aria-label={`Canteiro ${grupo.canteiro}`} data-testid="quadro-coluna">
+                      <header className="flex items-center gap-2.5 border-b border-slate-100 px-3.5 py-2.5">
+                        <MapPin className={`size-4 shrink-0 ${semCanteiro ? 'text-slate-500' : 'text-[#176b4d]'}`} aria-hidden="true" />
+                        <h2 className={`min-w-0 truncate text-[0.95rem] font-bold ${semCanteiro ? 'text-slate-500' : 'text-slate-900'}`}>{grupo.canteiro}</h2>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold tabular-nums text-slate-600">{grupo.cartoes.length}</span>
+                        <span className="ml-auto flex shrink-0 items-center gap-2.5" aria-label={contagem.map(([situacao, total]) => `${total} ${ROTULO_GRUPO[situacao].toLowerCase()}`).join(', ')}>
+                          {contagem.map(([situacao, total]) => (
+                            <span key={situacao} className="inline-flex items-center gap-1 text-xs font-bold tabular-nums text-slate-600" title={ROTULO_GRUPO[situacao]} aria-hidden="true">
+                              <span className={`size-2 rounded-full ${TOM[situacao].ponto}`} />
+                              {total}
+                            </span>
+                          ))}
+                        </span>
+                      </header>
+                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(8.75rem,1fr))]">
+                        {lista.map(cartao => (
+                          <CartaoArrastavel
+                            key={cartao.equipamentoId}
+                            cartao={cartao}
+                            podeArrastar={podeEditar}
+                            onAbrir={() => setAbertoId(cartao.equipamentoId)}
+                            modoSelecao={modoSelecao}
+                            selecionado={selecionados.has(cartao.equipamentoId)}
+                            onAlternarSelecao={() => alternarSelecao(cartao.equipamentoId)}
+                          />
+                        ))}
                       </div>
-                    ))}
-                    {grupo.cartoes.length === 0 && <p className="px-3 pb-2 text-xs text-slate-500 lg:hidden">Nenhuma máquina. Arraste uma para cá.</p>}
-                  </section>
-                </ColunaCanteiro>
-              );
-            })}
+                    </section>
+                  </ColunaCanteiro>
+                );
+              })}
+            </div>
+            {vazios.length > 0 && (
+              <section aria-label="Canteiros sem máquina no dia" className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-3 py-2.5" data-testid="quadro-canteiros-vazios">
+                <span className="text-xs font-bold text-slate-500">Sem máquina no dia</span>
+                {vazios.map(grupo => (
+                  <ColunaCanteiro key={grupo.canteiro} canteiro={grupo.canteiro} className="rounded-full">
+                    <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-600" title="Arraste uma máquina para cá">
+                      <MapPin className="size-3.5 text-slate-500" aria-hidden="true" />
+                      {grupo.canteiro}
+                    </span>
+                  </ColunaCanteiro>
+                ))}
+              </section>
+            )}
           </div>
         </DndContext>
         </>

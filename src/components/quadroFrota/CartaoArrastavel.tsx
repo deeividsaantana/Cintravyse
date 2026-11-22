@@ -55,7 +55,7 @@ export function CartaoArrastavel({ cartao, podeArrastar, onAbrir, modoSelecao, s
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative rounded-lg transition-[scale,rotate,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${isDragging ? ARRASTANDO : ''}`}
+      className={`relative rounded-xl transition-[scale,rotate,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${isDragging ? ARRASTANDO : ''}`}
       data-arrastando={isDragging || undefined}
       data-testid={`quadro-arrastar-${cartao.prefixo}`}
     >
@@ -69,7 +69,7 @@ export function CartaoArrastavel({ cartao, podeArrastar, onAbrir, modoSelecao, s
           aria-label={`Arrastar ${cartao.prefixo} para outro canteiro`}
           title="Segure e arraste para outro canteiro"
           data-testid={`quadro-alca-${cartao.prefixo}`}
-          className={`absolute inset-y-0 right-0 grid w-7 cursor-grab touch-none place-items-center rounded-r-lg text-slate-500 transition hover:bg-emerald-50 hover:text-[#176b4d] active:cursor-grabbing ${FOCO}`}
+          className={`absolute inset-y-0 right-0 grid w-7 cursor-grab touch-none place-items-center rounded-r-xl text-slate-500 transition hover:bg-emerald-50 hover:text-[#176b4d] active:cursor-grabbing ${FOCO}`}
         >
           <GripVertical className="size-4" aria-hidden="true" />
         </button>
