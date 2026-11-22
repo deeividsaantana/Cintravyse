@@ -1,4 +1,4 @@
-import { Check, Clock3, PenLine, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { CARGO_DA_ETAPA, ETAPAS, SITUACOES, etapaPendente, nomeDaEtapa } from '../../../api/_shared/contratacao-regras.js';
 import type { Etapa, PedidoContratacao, SituacaoContratacao } from '../../services/contratacaoApi';
 import { dataHoraBr } from './formatos';
@@ -69,40 +69,6 @@ export function LinhaDeEtapas({ pedido, compacta = false }: { pedido: PedidoCont
             <span className={`mt-1 text-xs font-bold ${concluido ? 'text-slate-900' : 'text-[#5b6870]'}`}>{passo.rotulo}</span>
             {passo.ordem && <span className="text-xs text-[#5b6870]">{passo.ordem}<span className="hidden sm:inline"> assinatura</span></span>}
             {!compacta && passo.feito && <span className="hidden text-xs text-[#5b6870] sm:block">{dataHoraBr(passo.feito.signed_at)}</span>}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-/**
- * As assinaturas em lista, de cima para baixo na ordem (22/11/2026): quem já
- * assinou (com o desenho, o nome e a hora), de quem é a vez e quem vem
- * depois. Dá para entender o andamento sem abrir o documento.
- */
-export function ListaDeAssinaturas({ pedido }: { pedido: PedidoContratacao }) {
-  const vez = etapaPendente(pedido);
-  return (
-    <ol className="divide-y divide-slate-100 rounded-xl border border-slate-200">
-      {(ETAPAS as Etapa[]).map((etapa, indice) => {
-        const feita = pedido.signatures.find(item => item.stage === etapa);
-        const daVez = vez === etapa;
-        const recusou = pedido.status === 'recusada' && pedido.rejected_stage === etapa;
-        const [Icone, cor, situacao] = recusou ? [X, 'bg-rose-700 text-white', 'Recusou']
-          : feita ? [Check, 'bg-[#176b4d] text-white', 'Assinou']
-            : daVez ? [PenLine, 'bg-amber-100 text-amber-800 ring-2 ring-amber-400', 'Falta assinar']
-              : [Clock3, 'bg-slate-100 text-[#5b6870]', 'Ainda não chegou a vez'];
-        return (
-          <li key={etapa} className={`flex items-center gap-3 p-3 ${daVez ? 'bg-amber-50/60' : ''}`} data-testid={`linha-assinatura-${etapa}`}>
-            <span className={`grid size-9 shrink-0 place-items-center rounded-full ${cor}`} aria-hidden="true"><Icone className="size-4" /></span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-slate-900">{indice + 1}ª · {CARGO_DA_ETAPA[etapa]}</p>
-              <p className={`text-sm ${recusou ? 'text-rose-800' : feita ? 'text-slate-800' : daVez ? 'font-semibold text-amber-900' : 'text-[#5b6870]'}`}>
-                {feita ? `${feita.signer_name} · ${dataHoraBr(feita.signed_at)}` : situacao}
-              </p>
-            </div>
-            {feita?.image_data && <img src={feita.image_data} alt={`Assinatura de ${feita.signer_name}`} className="hidden h-10 max-w-32 object-contain sm:block" />}
           </li>
         );
       })}

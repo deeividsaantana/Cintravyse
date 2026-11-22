@@ -337,13 +337,6 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0; text-wrap: bal
 #app-root .ct-imprimir :is(input, textarea).ct-campo-papel:not([type="checkbox"]):not([type="radio"]),
 .ct-imprimir :is(input, textarea).ct-campo-papel { border-color: #6b7280; background-color: transparent; }
 #app-root .ct-imprimir :is(input, textarea).ct-campo-papel:not([type="checkbox"]):not([type="radio"]):focus { border-color: var(--renea-green); }
-/* Caixa da folha de contratação: o campo é uma faixa cinza clara dentro da
-   caixa do formulário, para ver logo onde se escreve. Com erro, fica rosa. */
-#app-root .ct-imprimir :is(input, select, textarea).ct-campo-celula:not([type="checkbox"]):not([type="radio"]),
-.ct-imprimir :is(input, select, textarea).ct-campo-celula { border: 1px solid #cfd8d3; background-color: #f6f8f7; border-radius: 6px; }
-#app-root .ct-imprimir :is(input, select, textarea).ct-campo-celula:not([type="checkbox"]):not([type="radio"]):focus { border-color: var(--renea-green); background-color: #fff; }
-.ct-imprimir :is(input, select, textarea).ct-campo-celula[aria-invalid="true"],
-#app-root .ct-imprimir :is(input, select, textarea).ct-campo-celula[aria-invalid="true"]:not([type="checkbox"]):not([type="radio"]) { border-color: #e11d48; background-color: #fff1f2; }
 body.folha-imprimindo .ct-imprimir .ct-sem-papel { display: none !important; }
 /* Mesmo desenho, só mais compacto: cabe numa folha como o modelo. */
 body.folha-imprimindo .ct-imprimir .h-20 { height: 56px !important; }
