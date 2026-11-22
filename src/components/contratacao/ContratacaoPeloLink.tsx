@@ -6,6 +6,7 @@ import { BOTAO_SECUNDARIO, CARTAO, FOCO } from '../cadastros/estilos';
 import { carregarContratacoes, carregarPeloLink, type DadosDoLink, type Leitor, type PedidoContratacao, type TipoSolicitacao } from '../../services/contratacaoApi';
 import { FolhaContratacao } from './FolhaContratacao';
 import { SeloSituacaoContratacao } from './SeloSituacaoContratacao';
+import { dataBr } from './formatos';
 
 /** Cartão no centro da tela, no mesmo jeito da entrada do link de presença. */
 function Aviso({ titulo, texto, tom = 'neutro', children }: { titulo: string; texto: string; tom?: 'neutro' | 'erro'; children?: ReactNode }) {
@@ -27,16 +28,18 @@ type Filtro = 'todos' | TipoSolicitacao;
 
 /** Filtro por tipo, em botões grandes: Todos, Contratação, Promoção, Desligamento. */
 function FiltroDeTipo({ filtro, onFiltro, contar }: { filtro: Filtro; onFiltro: (f: Filtro) => void; contar: (f: Filtro) => number }) {
-  const opcoes: Array<[Filtro, string]> = [['todos', 'Todos'], ...Object.entries(SOLICITACOES) as Array<[TipoSolicitacao, string]>];
+  // Só os tipos que existem na lista: botão com (0) é ruído.
+  const opcoes: Array<[Filtro, string]> = [['todos', 'Todos'], ...(Object.entries(SOLICITACOES) as Array<[TipoSolicitacao, string]>).filter(([valor]) => valor === filtro || contar(valor) > 0)];
+  if (opcoes.length <= 2) return null;
   return (
-    <div role="group" aria-label="Filtrar por tipo" className="mb-3 flex flex-wrap gap-2">
+    <div role="group" aria-label="Filtrar por tipo" className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
       {opcoes.map(([valor, nome]) => (
         <button
           key={valor}
           type="button"
           aria-pressed={filtro === valor}
           onClick={() => onFiltro(valor)}
-          className={`min-h-11 rounded-full border px-4 text-sm font-bold transition ${filtro === valor ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'} ${FOCO}`}
+          className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-bold transition ${filtro === valor ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'} ${FOCO}`}
         >
           {nome} <span className="tabular-nums opacity-80">({contar(valor)})</span>
         </button>
@@ -45,7 +48,11 @@ function FiltroDeTipo({ filtro, onFiltro, contar }: { filtro: Filtro; onFiltro: 
   );
 }
 
-/** Uma linha da lista: número, tipo, pessoa e situação; tocar abre na subaba Assinar. */
+/**
+ * Uma linha da lista, no jeito de lista de documentos de ERP: ícone de folha,
+ * número e tipo em cima, pessoa e data embaixo; à direita, a situação ou o
+ * botão "Assinar". Tocar abre a folha.
+ */
 function LinhaDoPedido({ pedido, vez, onAbrir }: { pedido: PedidoContratacao; vez: boolean; onAbrir: () => void }) {
   const resumo = resumoDoPedido(pedido.form);
   return (
@@ -53,11 +60,21 @@ function LinhaDoPedido({ pedido, vez, onAbrir }: { pedido: PedidoContratacao; ve
       <button
         type="button"
         onClick={onAbrir}
-        className={`flex min-h-11 w-full flex-wrap items-center justify-between gap-2 rounded-xl border p-3 text-left text-sm transition hover:border-emerald-400 ${vez ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200 bg-white'} ${FOCO}`}
+        className={`flex min-h-16 w-full items-center gap-3 rounded-xl border p-3 text-left transition hover:border-emerald-400 hover:bg-emerald-50/30 ${vez ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200 bg-white'} ${FOCO}`}
       >
-        <span className="min-w-0"><strong className="tabular-nums text-slate-900">{pedido.request_number}</strong> · {resumo.nomeDoTipo} · {resumo.pessoa}</span>
-        <span className="flex items-center gap-2">
-          {vez ? <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-900">Assinar agora</span> : <SeloSituacaoContratacao situacao={pedido.status} />}
+        <span className="hidden size-10 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white sm:grid" aria-hidden="true">
+          <FileText className={`size-5 ${vez ? 'text-amber-700' : 'text-[#176b4d]'}`} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-bold text-slate-900 sm:text-sm">{resumo.nomeDoTipo} <span className="text-xs font-semibold tabular-nums text-[#5b6870]">{pedido.request_number}</span></span>
+          <span className="block text-sm text-slate-800 [overflow-wrap:anywhere]">{resumo.pessoa}<span className="hidden sm:inline">{resumo.cargo ? ` · ${resumo.cargo}` : ''}</span></span>
+          <span className="block text-xs text-[#5b6870]">Pedido em {dataBr(pedido.form.data)} por {pedido.requester_name}</span>
+          {!vez && <span className="mt-1 block sm:hidden"><SeloSituacaoContratacao situacao={pedido.status} /></span>}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {vez
+            ? <span className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#176b4d] px-3 text-sm font-bold text-white"><PenLine className="size-4" aria-hidden="true" /> Assinar</span>
+            : <span className="hidden sm:inline-flex"><SeloSituacaoContratacao situacao={pedido.status} /></span>}
           <ChevronRight className="size-4 text-[#5b6870]" aria-hidden="true" />
         </span>
       </button>
@@ -108,7 +125,8 @@ export function ContratacaoPeloLink({ token }: { token: string }) {
   const falta = pedidos.filter(minhaVez);
 
   // Abre em "Assinar" quando o pedido do link é da vez da pessoa; senão em "Falta assinar".
-  const ativa: Subaba = subaba ?? (doLink && minhaVez(doLink) ? 'assinar' : 'falta');
+  // Sem nada para assinar, abre em "Todas" para a tela não começar vazia.
+  const ativa: Subaba = subaba ?? (doLink && minhaVez(doLink) ? 'assinar' : falta.length > 0 ? 'falta' : 'todas');
   const aberto = pedidos.find(p => p.id === (abertoId ?? doLink?.id)) ?? null;
 
   if (erro) {

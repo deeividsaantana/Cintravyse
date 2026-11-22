@@ -17,6 +17,7 @@ import {
 import { handler } from '../api/contratacao.js';
 import { substituirClienteSupabase } from '../api/_shared/supabase-admin.js';
 import { getContratacaoTokenFromUrl, isContratacaoLinkUrl } from '../src/app/routing/publicRoutes';
+import { dadosDoPedido } from '../src/components/contratacao/ResumoDoPedido';
 
 const SOL = '00000000-0000-0000-0000-000000000002';
 const RH = '00000000-0000-0000-0000-000000000003';
@@ -279,4 +280,19 @@ test('API: assinatura salva vem do banco (nunca da tela) e "guardar" grava depoi
   } finally {
     substituirClienteSupabase(null);
   }
+});
+
+test('link fácil de entender (22/11/2026): "Dados do pedido" mostra só as respostas', () => {
+  const dados = dadosDoPedido({ ...formOk, motivo: 'substituicao', tipo: 'efetivo', itens: ['alojamento', 'celular'] } as never);
+  const valor = (rotulo: string) => dados.find(dado => dado.rotulo === rotulo)?.valor;
+  assert.equal(valor('Motivo'), 'Substituição', 'a resposta, não as 4 opções');
+  assert.equal(valor('Tipo de contratação'), 'Efetivo');
+  assert.equal(valor('Precisa de'), 'Alojamento, Celular');
+  const promo = dadosDoPedido({ solicitacao: 'promocao', candidato: 'Carlos', cargoAtual: 'Operador', cargoProposto: 'Encarregado', salarioAtual: 'R$ 3.200,00', salarioProposto: 'R$ 4.100,00' } as never);
+  assert.deepEqual(promo.find(dado => dado.rotulo === 'Cargo')?.mudanca, ['Operador', 'Encarregado'], 'de → para');
+  assert.match(String(promo.find(dado => dado.rotulo === 'Salário')?.valor), /28,1%/);
+  const folha = fs.readFileSync('src/components/contratacao/FolhaContratacao.tsx', 'utf8');
+  assert.match(folha, /<ResumoDoPedido /, 'resumo em cima');
+  assert.match(folha, /<ListaDeAssinaturas /, 'assinaturas em lista, com a vez de cada um');
+  assert.match(folha, /documentoRef\.current\.open = true/, 'o PDF abre o documento completo antes de imprimir');
 });
