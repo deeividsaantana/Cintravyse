@@ -11,6 +11,26 @@ import { isSupabaseCloudEnabled } from './platform/cloudProvider';
 import { mirrorReneaLocalStorage, restoreMissingReneaLocalStorage, startReneaStorageMirror } from './utils/resilientStorage';
 import { instalarReservaEmMemoria, registrarPendentesDaReserva } from './utils/reservaArmazenamento';
 
+// Depois de um deploy, quem estava com o site aberto pede pedaços de código
+// que não existem mais (o nome muda a cada versão) e a tela travava em branco.
+// O Vite avisa com "vite:preloadError": recarrega uma vez para pegar a versão
+// nova. A marca na sessão evita recarregar sem parar se o erro for outro.
+const CHAVE_RECARGA = 'renea_recarregou_versao_nova';
+window.addEventListener('vite:preloadError', evento => {
+  try {
+    if (sessionStorage.getItem(CHAVE_RECARGA)) return;
+    sessionStorage.setItem(CHAVE_RECARGA, '1');
+  } catch {
+    return;
+  }
+  evento.preventDefault();
+  window.location.reload();
+});
+window.addEventListener('load', () => {
+  // Abriu certo: libera uma nova recarga automática no próximo deploy.
+  window.setTimeout(() => { try { sessionStorage.removeItem(CHAVE_RECARGA); } catch { /* sem sessão */ } }, 10_000);
+});
+
 const startApplication = async () => {
   // Um service worker de um build anterior pode continuar controlando o
   // localhost e devolver index.html no lugar de módulos .tsx do Vite.

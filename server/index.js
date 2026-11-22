@@ -70,13 +70,25 @@ app.post('/tasks/cleanup-cloud-data', async (req, res) => {
     res.status(403).json({ success: false, message: 'Segredo da tarefa ausente ou inválido.' });
     return;
   }
-  const result = await cleanupCloudData();
-  res.status(Number(result?.statusCode) || 200).send(result?.body ?? '');
+  try {
+    const result = await cleanupCloudData();
+    res.status(Number(result?.statusCode) || 200).send(result?.body ?? '');
+  } catch (error) {
+    // Sem isto a falha ficava sem resposta e o pinger esperava até estourar o tempo.
+    console.error('Limpeza da nuvem falhou:', error);
+    res.status(500).json({ success: false, message: 'A limpeza falhou; veja o log do servidor.' });
+  }
 });
 
 // Pinger de manutenção (UptimeRobot, cron-job.org): evita o serviço dormir
 // no plano gratuito e serve como checagem simples de saúde.
 app.get('/health', (req, res) => res.status(200).json({ ok: true }));
+
+// Rota de API que não existe responde 404 em JSON, não a página do site
+// (antes o app recebia HTML com 200 e quebrava ao ler a resposta).
+app.all(['/api/*', '/.netlify/functions/*'], (req, res) => {
+  res.status(404).json({ success: false, message: 'Rota da API não encontrada.' });
+});
 
 app.use(express.static(distDir, {
   maxAge: '1y',
@@ -91,6 +103,14 @@ app.use(express.static(distDir, {
     }
   },
 }));
+
+// Arquivo que não existe (ex.: /assets/App-abc123.js de um deploy anterior)
+// responde 404. Antes voltava a página do site no lugar do código, e quem
+// estava com o site aberto durante um deploy via a tela travar em branco; o
+// app agora percebe o 404 e recarrega sozinho (main.tsx, vite:preloadError).
+app.get('/assets/*', (req, res) => {
+  res.status(404).type('text/plain').send('Arquivo não encontrado.');
+});
 
 app.get('*', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

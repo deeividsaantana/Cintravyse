@@ -69,3 +69,32 @@ test('repetir um envio pelo endereço novo reaproveita a idempotência do antigo
     buildRequestHash({ httpMethod: 'POST', path: '/.netlify/functions/master-data', body }),
   );
 });
+
+test('servidor: arquivo de versão antiga e rota de API inexistente dão 404, não a página do site', async () => {
+  const { spawn } = await import('node:child_process');
+  const porta = String(41000 + Math.floor(Math.random() * 1000));
+  const servidor = spawn(process.execPath, ['server/index.js'], { env: { ...process.env, PORT: porta, PROCUREMENT_SPREADSHEET_URL: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    await new Promise<void>((pronto, falhou) => {
+      servidor.stdout.on('data', dado => { if (String(dado).includes('no ar')) pronto(); });
+      servidor.on('exit', codigo => falhou(new Error(`servidor saiu (${codigo})`)));
+      setTimeout(() => falhou(new Error('servidor não subiu')), 10_000);
+    });
+    const base = `http://127.0.0.1:${porta}`;
+    const asset = await fetch(`${base}/assets/App-versao-antiga.js`);
+    assert.equal(asset.status, 404, 'pedaço de código de deploy anterior');
+    const api = await fetch(`${base}/api/nao-existe`);
+    assert.equal(api.status, 404);
+    assert.match(api.headers.get('content-type') || '', /json/);
+    const tela = await fetch(`${base}/contratacao-link/abc`);
+    assert.equal(tela.status, 200, 'rota de tela continua abrindo o site');
+  } finally {
+    servidor.kill();
+  }
+});
+
+test('o app recarrega sozinho uma vez quando falta código de um deploy novo', () => {
+  const main = read('src/main.tsx');
+  assert.match(main, /addEventListener\('vite:preloadError'/);
+  assert.match(main, /sessionStorage\.setItem\(CHAVE_RECARGA/);
+});
