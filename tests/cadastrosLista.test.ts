@@ -31,7 +31,7 @@ const obras: ObraLocal[] = [{ id: 'obr-1', nome: 'Complexo do Alto Tietê', ende
 
 const dados: DadosCadastros = {
   empresas, funcionarios, equipamentos, obras, comboios: [], combustiveis: [], lubrificantes: [], canteiros: [], etapas: [],
-  frentesServico: [], servicosObra: [],
+  frentesServico: [], servicosObra: [], cargos: [], gruposEquipe: [],
 };
 
 test('lista de colaboradores resolve empresa e líder e marca férias como alerta', () => {
@@ -91,7 +91,7 @@ const usoVazio = (): CadastroUsage => ({
   abastecimentos: [], equipamentos: [], lubrificacoes: [], apontamentos: [],
   empresas: [], funcionarios: [], ordensServico: [], listasPresenca: [], presencasLink: [],
   gruposEquipe: [], controleEquipamentosDiario: [], colecoesDaObra: {},
-  frentesServico: [], producao: [], planejamento: [], canteiros: [],
+  frentesServico: [], producao: [], planejamento: [], canteiros: [], cargos: [],
 });
 
 test('cadastro sem uso pode ser excluído de verdade', () => {

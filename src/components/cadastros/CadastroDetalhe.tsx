@@ -1,5 +1,7 @@
-import { Pencil, RotateCcw, Trash2, UserMinus } from 'lucide-react';
-import type { HistoryLog } from '../../types';
+import { ChevronRight, Network, Pencil, RotateCcw, Trash2, UserMinus } from 'lucide-react';
+import { useMemo } from 'react';
+import type { Cargo, Funcionario, GrupoEquipe, HistoryLog } from '../../types';
+import { equipePorPessoa, linhaDeComando, montarEstrutura, nomeDoNivel } from '../../utils/hierarquia';
 import type { CadastroCategoriaId } from '../../utils/cadastrosCategorias';
 import type { DadosCadastros, LinhaCadastro } from '../../utils/cadastrosLista';
 import { temSituacao } from '../../utils/cadastrosLista';
@@ -25,6 +27,8 @@ interface Props {
   onReativar: () => void;
   onExcluir: () => void;
   onFechar: () => void;
+  /** Colaborador: abre o organograma já nele. */
+  onVerNoOrganograma?: () => void;
 }
 
 const vazio = (valor: unknown) => valor === undefined || valor === null || valor === '' || (Array.isArray(valor) && valor.length === 0);
@@ -34,7 +38,19 @@ const vazio = (valor: unknown) => valor === undefined || valor === null || valor
  * usado e quem mexeu por último. As ações ficam no rodapé, com Excluir por
  * último e em vermelho claro, para não ser tocado por engano.
  */
-export default function CadastroDetalhe({ categoria, linha, dados, usos, historico, podeEditar, podeExcluir, onEditar, onInativar, onReativar, onExcluir, onFechar }: Props) {
+export default function CadastroDetalhe({ categoria, linha, dados, usos, historico, podeEditar, podeExcluir, onEditar, onInativar, onReativar, onExcluir, onFechar, onVerNoOrganograma }: Props) {
+  const pessoa = categoria === 'funcionarios' ? linha.registro as Funcionario : null;
+  // Lugar da pessoa na empresa: a quem responde, quem lidera e a equipe.
+  const lugar = useMemo(() => {
+    if (!pessoa) return null;
+    const estrutura = montarEstrutura(dados.funcionarios, dados.cargos);
+    return {
+      linha: linhaDeComando(pessoa, estrutura),
+      diretos: (estrutura.liderados.get(pessoa.id) || []).length,
+      abaixo: estrutura.abaixo.get(pessoa.id) || 0,
+      equipe: equipePorPessoa(dados.gruposEquipe).get(pessoa.id),
+    };
+  }, [pessoa, dados.funcionarios, dados.cargos, dados.gruposEquipe]);
   const registro = linha.registro as unknown as Record<string, unknown>;
   const nomes = new Map<string, string>([
     ...dados.empresas.map(item => [item.id, item.nome] as const),
@@ -50,6 +66,8 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
       return (valor as string[]).map(tipo => CLASSES_DA_TELA.find(classe => classe.tipo === tipo)?.label || tipo).join(', ');
     }
     if (tipo === 'marcar') return valor ? 'Sim' : 'Não';
+    if (tipo === 'pessoas') return `${(valor as string[]).length} pessoas: ${(valor as string[]).map(id => nomes.get(id)).filter(Boolean).join(', ')}`;
+    if (campo.id === 'nivel' && categoria === 'cargos') return nomeDoNivel((linha.registro as Cargo).nivel);
     if (tipo === 'data' && typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valor)) {
       const [ano, mes, dia] = valor.slice(0, 10).split('-');
       return `${dia}/${mes}/${ano}`;
@@ -63,7 +81,9 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
   const linhas = CAMPOS[categoria]
     .filter(campo => campo.tipo !== 'foto')
     .map(campo => {
-      const valor = campo.id === 'liderId' ? registro.liderNome : registro[campo.id];
+      const valor = campo.id === 'liderId' ? registro.liderNome
+        : campo.id === 'encarregadoId' ? (linha.registro as GrupoEquipe).responsavel
+          : registro[campo.id];
       return { campo, valor };
     })
     .filter(({ valor }) => !vazio(valor));
@@ -106,6 +126,38 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
     >
       <div className="space-y-6">
         {foto && <img src={foto} alt={`Foto de ${linha.titulo}`} className="aspect-video w-full rounded-2xl border border-slate-200 object-cover" />}
+
+        {lugar && pessoa && (
+          <section aria-labelledby="cadastro-lugar-titulo" className="space-y-2" data-testid="cadastro-lugar">
+            <h3 id="cadastro-lugar-titulo" className="text-xs font-bold text-[#5b6870]">Lugar na empresa</h3>
+            <div className="rounded-xl bg-slate-50 p-3 text-sm">
+              <ol aria-label="Linha de comando" className="flex flex-wrap items-center gap-1.5">
+                {lugar.linha.map((item, indice) => (
+                  <li key={item.id} className="flex items-center gap-1.5">
+                    {indice > 0 && <ChevronRight className="size-4 text-slate-500" aria-hidden="true" />}
+                    <span className={`rounded-lg border px-2 py-1 ${item.id === pessoa.id ? 'border-[#176b4d] bg-white font-bold text-[#0f5a3d]' : 'border-slate-200 bg-white text-slate-700'}`}>
+                      {item.nome.split(' ').slice(0, 2).join(' ')}
+                      {item.cargo && <span className="block text-xs font-normal text-slate-500">{item.cargo}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-slate-600">
+                {lugar.linha.length === 1 ? 'Não responde a ninguém do cadastro. ' : ''}
+                {lugar.diretos > 0
+                  ? `Lidera ${lugar.diretos} ${lugar.diretos === 1 ? 'pessoa direta' : 'pessoas diretas'}${lugar.abaixo > lugar.diretos ? ` (${lugar.abaixo} no total)` : ''}.`
+                  : 'Não lidera ninguém.'}
+                {` Equipe: ${lugar.equipe ? lugar.equipe.nome : 'nenhuma'}.`}
+              </p>
+            </div>
+            {onVerNoOrganograma && (
+              <button type="button" onClick={onVerNoOrganograma} className={`${BOTAO_SECUNDARIO} w-full`} data-testid="cadastro-ver-organograma">
+                <Network className="size-5" aria-hidden="true" />
+                Ver no organograma
+              </button>
+            )}
+          </section>
+        )}
 
         <dl className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-sm">
           {linhas.map(({ campo, valor }) => (

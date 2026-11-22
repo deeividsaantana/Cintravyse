@@ -5,7 +5,7 @@
  * Todo tipo vira a mesma `LinhaCadastro`, então a tabela do computador, os
  * cartões do celular e o painel de detalhe desenham qualquer tipo igual.
  */
-import type { Canteiro, Comboio, Empresa, Equipamento, EtapaServico, FrenteServico, Funcionario, ObraLocal, ProdutoLubrificacao, ServicoObra, TipoCombustivel } from '../types';
+import type { Canteiro, Cargo, Comboio, GrupoEquipe, Empresa, Equipamento, EtapaServico, FrenteServico, Funcionario, ObraLocal, ProdutoLubrificacao, ServicoObra, TipoCombustivel } from '../types';
 import {
   empresaTipoLabel,
   isActiveCollaborator,
@@ -16,6 +16,7 @@ import {
   isVehicle,
 } from '../masterData/centralRegistry';
 import type { CadastroCategoriaId } from './cadastrosCategorias';
+import { chaveDoCargo, equipePorPessoa, nomeDoNivel, pessoasPorCargo } from './hierarquia';
 
 export interface DadosCadastros {
   empresas: readonly Empresa[];
@@ -30,9 +31,11 @@ export interface DadosCadastros {
   /** Mesmo nome da coleção na nuvem, para a Lixeira valer em todo aparelho. */
   frentesServico: readonly FrenteServico[];
   servicosObra: readonly ServicoObra[];
+  cargos: readonly Cargo[];
+  gruposEquipe: readonly GrupoEquipe[];
 }
 
-export type RegistroCadastro = Empresa | ObraLocal | Equipamento | Funcionario | Comboio | TipoCombustivel | ProdutoLubrificacao | Canteiro | EtapaServico | FrenteServico | ServicoObra;
+export type RegistroCadastro = Cargo | GrupoEquipe | Empresa | ObraLocal | Equipamento | Funcionario | Comboio | TipoCombustivel | ProdutoLubrificacao | Canteiro | EtapaServico | FrenteServico | ServicoObra;
 
 export type TomSituacao = 'ok' | 'alerta' | 'inativo';
 
@@ -71,6 +74,8 @@ export interface FiltroCadastro {
 /** Nome da tabela no retrato da nuvem, usado pela exclusão. */
 export const TABELA_DA_CATEGORIA: Record<CadastroCategoriaId, keyof DadosCadastros> = {
   funcionarios: 'funcionarios',
+  cargos: 'cargos',
+  equipes: 'gruposEquipe',
   empresas: 'empresas',
   terceiras: 'empresas',
   fornecedores: 'empresas',
@@ -90,7 +95,7 @@ export const TABELA_DA_CATEGORIA: Record<CadastroCategoriaId, keyof DadosCadastr
 
 /** Tipos em que o cadastro pode ficar inativo sem ser excluído. */
 export const temSituacao = (categoria: CadastroCategoriaId): boolean => (
-  ['funcionarios', 'empresas', 'equipamentos', 'obras', 'frentesServico', 'servicosObra'].includes(TABELA_DA_CATEGORIA[categoria])
+  ['funcionarios', 'cargos', 'gruposEquipe', 'empresas', 'equipamentos', 'obras', 'frentesServico', 'servicosObra'].includes(TABELA_DA_CATEGORIA[categoria])
 );
 
 const COLUNAS_EMPRESA: ColunaCadastro[] = [
@@ -104,9 +109,22 @@ export const COLUNAS: Record<CadastroCategoriaId, ColunaCadastro[]> = {
   funcionarios: [
     { id: 'matricula', label: 'Matrícula', codigo: true },
     { id: 'nome', label: 'Nome', larga: true },
-    { id: 'cargo', label: 'Função' },
-    { id: 'empresa', label: 'Empresa' },
+    { id: 'cargo', label: 'Cargo' },
+    { id: 'equipe', label: 'Equipe' },
     { id: 'lider', label: 'Líder', secundaria: true },
+    { id: 'empresa', label: 'Empresa', secundaria: true },
+  ],
+  cargos: [
+    { id: 'nome', label: 'Cargo', larga: true },
+    { id: 'nivel', label: 'Nível na pirâmide' },
+    { id: 'area', label: 'Área' },
+    { id: 'pessoas', label: 'Pessoas', codigo: true },
+  ],
+  equipes: [
+    { id: 'nome', label: 'Equipe', larga: true },
+    { id: 'responsavel', label: 'Encarregado' },
+    { id: 'frente', label: 'Frente de serviço' },
+    { id: 'pessoas', label: 'Pessoas', codigo: true },
   ],
   empresas: COLUNAS_EMPRESA,
   terceiras: COLUNAS_EMPRESA,
@@ -163,11 +181,14 @@ export const COLUNAS: Record<CadastroCategoriaId, ColunaCadastro[]> = {
 
 export const FILTROS: Record<CadastroCategoriaId, FiltroCadastro[]> = {
   funcionarios: [
-    { id: 'empresa', label: 'Empresa' },
-    { id: 'cargo', label: 'Função' },
+    { id: 'cargo', label: 'Cargo' },
+    { id: 'equipe', label: 'Equipe' },
     { id: 'lider', label: 'Líder' },
+    { id: 'empresa', label: 'Empresa' },
     { id: 'situacao', label: 'Situação' },
   ],
+  cargos: [{ id: 'nivel', label: 'Nível' }],
+  equipes: [{ id: 'frente', label: 'Frente' }],
   empresas: [{ id: 'classe', label: 'Classe' }],
   terceiras: [],
   fornecedores: [{ id: 'classe', label: 'Classe' }],
@@ -266,19 +287,62 @@ export const montarLinhas = (categoria: CadastroCategoriaId, dados: DadosCadastr
   }
 
   if (tabela === 'funcionarios') {
+    const equipes = equipePorPessoa(dados.gruposEquipe);
     return dados.funcionarios.map(item => {
       const situacao = SITUACAO_FUNCIONARIO[item.status || (item.ativo ? 'ATIVO' : 'INATIVO')];
       const empresa = nomeEmpresa.get(item.empresaId) || '';
+      const equipe = equipes.get(item.id)?.nome || '';
       return {
         id: item.id,
         titulo: item.nome,
-        detalhe: [item.matricula, item.cargo].filter(Boolean).join(' · '),
+        detalhe: [item.matricula, item.cargo, equipe].filter(Boolean).join(' · '),
         ativo: isActiveCollaborator(item),
         situacao,
         tom: tomFuncionario(item),
-        colunas: { matricula: item.matricula || '', nome: item.nome, cargo: item.cargo || '', empresa, lider: item.liderNome || '' },
-        filtros: { empresa: empresa || 'Sem empresa', cargo: item.cargo || 'Sem função', lider: item.liderNome || 'Sem líder', situacao },
-        busca: juntar(item.nome, item.matricula, item.cargo, item.liderNome, item.area, item.responsavelArea, item.telefone, empresa),
+        colunas: { matricula: item.matricula || '', nome: item.nome, cargo: item.cargo || '', equipe, empresa, lider: item.liderNome || '' },
+        filtros: { empresa: empresa || 'Sem empresa', cargo: item.cargo || 'Sem cargo', equipe: equipe || 'Sem equipe', lider: item.liderNome || 'Sem líder', situacao },
+        busca: juntar(item.nome, item.matricula, item.cargo, equipe, item.liderNome, item.area, item.responsavelArea, item.telefone, empresa),
+        registro: item,
+      };
+    });
+  }
+
+  if (tabela === 'cargos') {
+    const pessoas = pessoasPorCargo(dados.funcionarios);
+    return dados.cargos.map(item => {
+      const ativo = item.ativo !== false;
+      const total = pessoas.get(chaveDoCargo(item.nome)) || 0;
+      const nivel = nomeDoNivel(item.nivel);
+      return {
+        id: item.id,
+        titulo: item.nome,
+        detalhe: [nivel, `${total} ${total === 1 ? 'pessoa' : 'pessoas'}`].join(' · '),
+        ativo,
+        situacao: ativo ? 'Ativo' : 'Inativo',
+        tom: ativo ? 'ok' : 'inativo',
+        colunas: { nome: item.nome, nivel, area: item.area || '', pessoas: String(total) },
+        filtros: { nivel },
+        busca: juntar(item.nome, item.area, item.descricao, nivel),
+        registro: item,
+      };
+    });
+  }
+
+  if (tabela === 'gruposEquipe') {
+    const porId = new Map(dados.funcionarios.map(item => [item.id, item]));
+    return dados.gruposEquipe.map(item => {
+      const ativo = item.status !== 'inativo';
+      const membros = item.funcionarioIds.filter(id => porId.has(id));
+      return {
+        id: item.id,
+        titulo: item.nome,
+        detalhe: [item.responsavel, item.frenteServico, `${membros.length} ${membros.length === 1 ? 'pessoa' : 'pessoas'}`].filter(Boolean).join(' · '),
+        ativo,
+        situacao: ativo ? 'Ativa' : 'Inativa',
+        tom: ativo ? 'ok' : 'inativo',
+        colunas: { nome: item.nome, responsavel: item.responsavel || '', frente: item.frenteServico || '', pessoas: String(membros.length) },
+        filtros: { frente: item.frenteServico || 'Sem frente' },
+        busca: juntar(item.nome, item.responsavel, item.frenteServico, ...membros.map(id => porId.get(id)?.nome)),
         registro: item,
       };
     });

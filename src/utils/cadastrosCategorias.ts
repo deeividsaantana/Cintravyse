@@ -1,14 +1,17 @@
 /**
  * Tipos de cadastro mestre e o agrupamento que a aba Cadastros mostra.
  *
- * A ordem aqui é a ordem da tela: quem abre a aba procura primeiro gente e
- * empresas, depois máquina e insumos, depois obra. Três grupos só, para a aba
- * ter poucas opções no topo (10/11/2026). O texto do botão principal mora junto de
+ * A ordem aqui é a ordem da tela: quem abre a aba procura primeiro gente,
+ * depois empresas, máquina e insumos, e obra. Quatro grupos só, para a aba
+ * ter poucas opções no topo (10/11/2026). Pessoas reúne tudo que monta o
+ * organograma e a pirâmide: colaboradores, cargos e equipes (22/11/2026). O texto do botão principal mora junto de
  * cada tipo para não virar "Novo registro" genérico, que obriga a pessoa a
  * conferir em qual sub-aba está antes de clicar.
  */
 export type CadastroCategoriaId =
   | 'funcionarios'
+  | 'cargos'
+  | 'equipes'
   | 'empresas'
   | 'fornecedores'
   | 'fornecedores-locacao'
@@ -25,7 +28,7 @@ export type CadastroCategoriaId =
   | 'lubrificantes'
   | 'canteiros';
 
-export type CadastroGrupoId = 'pessoas' | 'frota' | 'obra';
+export type CadastroGrupoId = 'pessoas' | 'empresas' | 'frota' | 'obra';
 
 export interface CadastroCategoria {
   id: CadastroCategoriaId;
@@ -35,18 +38,21 @@ export interface CadastroCategoria {
 }
 
 export const CADASTRO_GRUPOS: readonly { id: CadastroGrupoId; label: string }[] = [
-  { id: 'pessoas', label: 'Pessoas e empresas' },
+  { id: 'pessoas', label: 'Pessoas' },
+  { id: 'empresas', label: 'Empresas' },
   { id: 'frota', label: 'Frota e insumos' },
   { id: 'obra', label: 'Obra' },
 ];
 
 export const CADASTRO_CATEGORIAS: readonly CadastroCategoria[] = [
   { id: 'funcionarios', grupo: 'pessoas', label: 'Colaboradores', acaoNovo: 'Novo colaborador' },
-  { id: 'empresas', grupo: 'pessoas', label: 'Empresas', acaoNovo: 'Nova empresa' },
-  { id: 'terceiras', grupo: 'pessoas', label: 'Terceiras', acaoNovo: 'Nova terceira' },
-  { id: 'fornecedores', grupo: 'pessoas', label: 'Todos os fornecedores', acaoNovo: 'Novo fornecedor' },
-  { id: 'fornecedores-locacao', grupo: 'pessoas', label: 'Locação de equipamentos', acaoNovo: 'Nova locadora' },
-  { id: 'subfornecedores', grupo: 'pessoas', label: 'Subfornecedores', acaoNovo: 'Novo subfornecedor' },
+  { id: 'cargos', grupo: 'pessoas', label: 'Cargos', acaoNovo: 'Novo cargo' },
+  { id: 'equipes', grupo: 'pessoas', label: 'Equipes', acaoNovo: 'Nova equipe' },
+  { id: 'empresas', grupo: 'empresas', label: 'Empresas', acaoNovo: 'Nova empresa' },
+  { id: 'terceiras', grupo: 'empresas', label: 'Terceiras', acaoNovo: 'Nova terceira' },
+  { id: 'fornecedores', grupo: 'empresas', label: 'Todos os fornecedores', acaoNovo: 'Novo fornecedor' },
+  { id: 'fornecedores-locacao', grupo: 'empresas', label: 'Locação de equipamentos', acaoNovo: 'Nova locadora' },
+  { id: 'subfornecedores', grupo: 'empresas', label: 'Subfornecedores', acaoNovo: 'Novo subfornecedor' },
   { id: 'equipamentos', grupo: 'frota', label: 'Equipamentos', acaoNovo: 'Novo equipamento' },
   { id: 'veiculos', grupo: 'frota', label: 'Veículos', acaoNovo: 'Novo veículo' },
   { id: 'comboios', grupo: 'frota', label: 'Comboios', acaoNovo: 'Novo comboio' },

@@ -223,3 +223,4 @@ import './painelDev.test';
 import './primeiroAcesso.test';
 import './apagarSolicitacoes.test';
 import './pdfUmaFolha.test';
+import './hierarquia.test';

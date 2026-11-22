@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
-import { AlertTriangle, Camera, ChevronDown, X } from 'lucide-react';
+import { normalizarBusca } from '../../utils/cadastrosLista';
+import { AlertTriangle, Camera, ChevronDown, Search, X } from 'lucide-react';
 import type { CadastroCategoriaId } from '../../utils/cadastrosCategorias';
 import type { DadosCadastros } from '../../utils/cadastrosLista';
 import { CAMPOS, CLASSES_DA_TELA, camposFaltando, type CampoCadastro, type ValoresCadastro } from './camposCadastro';
@@ -35,6 +36,16 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
     return Array.isArray(valor) ? valor.length > 0 : Boolean(valor);
   });
   const [mostrarExtras, setMostrarExtras] = useState(extrasPreenchidos);
+  const [buscaPessoas, setBuscaPessoas] = useState('');
+  // Campos com seção (ficha do colaborador) vêm em blocos com título, na
+  // ordem em que aparecem; os sem seção ficam num bloco só, sem título.
+  const secoes = principais.reduce<Array<{ titulo: string; campos: CampoCadastro[] }>>((lista, item) => {
+    const titulo = item.secao || '';
+    const ultima = lista[lista.length - 1];
+    if (ultima && ultima.titulo === titulo) ultima.campos.push(item);
+    else lista.push({ titulo, campos: [item] });
+    return lista;
+  }, []);
   const faltando = tentou ? camposFaltando(categoria, valores) : [];
 
   const mudar = (id: string, valor: ValoresCadastro[string]) => setValores(atual => ({ ...atual, [id]: valor }));
@@ -87,6 +98,46 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
           </div>
           {invalido && <p className="text-sm font-semibold text-rose-700">Marque pelo menos uma classe.</p>}
           {!invalido && item.ajuda && <p className="text-xs text-slate-500">{item.ajuda}</p>}
+        </fieldset>
+      );
+    }
+
+    if (item.tipo === 'pessoas') {
+      const marcadas = Array.isArray(valores[item.id]) ? valores[item.id] as string[] : [];
+      const termo = normalizarBusca(buscaPessoas);
+      const opcoes = (item.opcoes?.(dados, editandoId) ?? [])
+        .filter(opcao => !termo || normalizarBusca(opcao.label).includes(termo))
+        // Quem já está na equipe aparece primeiro, para conferir de cara.
+        .sort((a, b) => Number(marcadas.includes(b.valor)) - Number(marcadas.includes(a.valor)));
+      return (
+        <fieldset key={item.id} className="space-y-2 sm:col-span-2" data-testid="cadastro-campo-pessoas">
+          <legend className={ROTULO}>
+            {item.label}
+            {item.obrigatorio && <span className="ml-1 text-xs font-bold text-[#c2410c]">obrigatório</span>}
+            <span className="ml-2 text-xs font-semibold text-slate-500">{marcadas.length} {marcadas.length === 1 ? 'escolhida' : 'escolhidas'}</span>
+          </legend>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+            <input type="search" aria-label="Buscar pessoa" placeholder="Buscar pessoa" value={buscaPessoas} onChange={event => setBuscaPessoas(event.target.value)} className={`${CAMPO} pl-11`} />
+          </div>
+          <div className={`max-h-72 overflow-y-auto rounded-xl border ${invalido ? 'border-rose-400' : 'border-slate-200'}`}>
+            {opcoes.length === 0 && <p className="p-3 text-sm text-slate-500">Ninguém com esse nome.</p>}
+            {opcoes.map(opcao => {
+              const marcado = marcadas.includes(opcao.valor);
+              return (
+                <label key={opcao.valor} className={`flex min-h-11 cursor-pointer items-center gap-3 border-b border-slate-100 px-3 text-sm last:border-0 ${marcado ? 'bg-emerald-50 font-semibold text-[#0f5a3d]' : 'text-slate-700 hover:bg-slate-50'}`}>
+                  <input
+                    type="checkbox"
+                    className="size-5 accent-[#176b4d]"
+                    checked={marcado}
+                    onChange={event => mudar(item.id, event.target.checked ? [...marcadas, opcao.valor] : marcadas.filter(valor => valor !== opcao.valor))}
+                  />
+                  {opcao.label}
+                </label>
+              );
+            })}
+          </div>
+          {invalido && <p className="text-sm font-semibold text-rose-700">Escolha pelo menos uma pessoa.</p>}
         </fieldset>
       );
     }
@@ -196,7 +247,14 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
             <span>{erro || 'Faltam campos obrigatórios, marcados em vermelho.'}</span>
           </div>
         )}
-        <div className="grid gap-4 sm:grid-cols-2">{principais.map(campo)}</div>
+        {secoes.map(secao => (secao.titulo ? (
+          <section key={secao.titulo} aria-label={secao.titulo} className="space-y-3 border-t border-slate-100 pt-4 first:border-0 first:pt-0">
+            <h3 className="text-sm font-bold text-slate-800">{secao.titulo}</h3>
+            <div className="grid gap-4 sm:grid-cols-2">{secao.campos.map(campo)}</div>
+          </section>
+        ) : (
+          <div key="geral" className="grid gap-4 sm:grid-cols-2">{secao.campos.map(campo)}</div>
+        )))}
         {extras.length > 0 && (
           <div className="rounded-2xl border border-slate-200">
             <button

@@ -5,13 +5,13 @@ import test from 'node:test';
 /**
  * Cadastros e Controle de Estacas no molde de página (auditoria de front de
  * 21/10/2026, fase 2): TelaCheia, subtelas como abas no topo (AbasDaTela),
- * sem menu lateral interno, tabelas na TabelaPadrao e o organograma numa
- * janela de verdade (Modal), sem janela feita à mão.
+ * sem menu lateral interno, tabelas na TabelaPadrao e o organograma como
+ * subtela de Pessoas (22/11/2026), sem janela feita à mão.
  */
 const ler = (caminho: string) => readFileSync(caminho, 'utf8');
 const cadastros = ler('src/components/CadastrosTab.tsx');
 const estacas = ler('src/components/EstacasTab.tsx');
-const organograma = ler('src/components/OrganizationChart.tsx');
+const organograma = ler('src/components/cadastros/Organograma.tsx');
 
 test('Cadastros nasce em tela cheia com os tipos agrupados em abas no topo', () => {
   assert.match(cadastros, /<TelaCheia[\s\S]*id="cadastros-tab"/);
@@ -21,8 +21,9 @@ test('Cadastros nasce em tela cheia com os tipos agrupados em abas no topo', () 
   assert.equal(existsSync('src/components/cadastros/CadastroTipos.tsx'), false, 'o menu lateral interno saiu');
 });
 
-test('o organograma abre num Modal e não tem janela feita à mão', () => {
-  assert.match(cadastros, /<Modal[\s\S]*title="Organograma de colaboradores"[\s\S]*<OrganizationChart/);
+test('o organograma é subtela de Pessoas e não tem janela feita à mão', () => {
+  assert.match(cadastros, /vista === 'organograma' \? \([\s\S]*<Organograma/);
+  assert.equal(existsSync('src/components/OrganizationChart.tsx'), false, 'o organograma antigo (por área) saiu');
   assert.doesNotMatch(organograma, /fixed inset-0|createPortal/);
   assert.doesNotMatch(organograma, /outline-none/, 'campo do organograma mostra o foco');
   assert.doesNotMatch(organograma, /text-\[(8|9|10|11)px\]/);

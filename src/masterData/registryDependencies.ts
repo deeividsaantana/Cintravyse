@@ -1,5 +1,6 @@
 import type {
   Abastecimento,
+  Cargo,
   ApontamentoOperacional,
   Canteiro,
   ControleEquipamentoDiario,
@@ -16,6 +17,7 @@ import type {
   RegistroProducao,
 } from '../types';
 import { contemTermo } from '../utils/frenteServico';
+import { chaveDoCargo } from '../utils/hierarquia';
 
 type RegistryKind = 'comboio' | 'combustivel' | 'lubrificante' | 'etapa';
 
@@ -68,10 +70,11 @@ export const obraDependencies = (
 /** Tudo que a aba Cadastros consulta para dizer onde um cadastro é usado. */
 export interface CadastroUsage extends RegistryUsage {
   empresas: readonly Pick<Empresa, 'id' | 'fornecedorPrincipalId'>[];
-  funcionarios: readonly Pick<Funcionario, 'id' | 'empresaId' | 'matricula' | 'liderMatricula'>[];
+  funcionarios: readonly Pick<Funcionario, 'id' | 'empresaId' | 'matricula' | 'liderMatricula' | 'cargo'>[];
+  cargos: readonly Pick<Cargo, 'id' | 'nome'>[];
   ordensServico: readonly Pick<OrdemServico, 'equipamentoId' | 'motoristaId'>[];
   listasPresenca: readonly Pick<ListaPresenca, 'funcionarios'>[];
-  presencasLink: readonly Pick<PresencaApontamento, 'funcionarioId'>[];
+  presencasLink: readonly (Pick<PresencaApontamento, 'funcionarioId'> & Partial<Pick<PresencaApontamento, 'grupoId'>>)[];
   gruposEquipe: readonly Pick<GrupoEquipe, 'funcionarioIds'>[];
   controleEquipamentosDiario: readonly (Pick<ControleEquipamentoDiario, 'equipamentoId' | 'funcionarioId'> & { local?: string })[];
   canteiros: readonly Pick<Canteiro, 'id' | 'nome'>[];
@@ -133,6 +136,12 @@ export const usosDoCadastro = (tabela: string, id: string, uso: CadastroUsage): 
       incluir('Produção', uso.producao.filter(item => item.frente === nome).length);
       incluir('Planejamento', uso.planejamento.filter(item => item.frente === nome).length);
     }
+  } else if (tabela === 'cargos') {
+    // O colaborador guarda o cargo pelo nome.
+    const nome = uso.cargos.find(item => item.id === id)?.nome;
+    if (nome) incluir('Colaboradores', uso.funcionarios.filter(item => chaveDoCargo(item.cargo) === chaveDoCargo(nome)).length);
+  } else if (tabela === 'gruposEquipe') {
+    incluir('Presenças pelo link', uso.presencasLink.filter(item => item.grupoId === id).length);
   } else if (tabela === 'servicosObra') {
     incluir('Produção', uso.producao.filter(item => item.servicoId === id).length);
     incluir('Planejamento', uso.planejamento.filter(item => item.servicoId === id).length);
