@@ -219,7 +219,6 @@ import {
   getPresenceTokenFromUrl,
 } from './app/routing/publicRoutes';
 import { ScreenLoadingFallback } from './shared/components/feedback/ScreenLoadingFallback';
-import { ToastViewport } from './shared/components/feedback/ToastViewport';
 import { AuthLoadingScreen, LoginScreen } from './auth/LoginScreen';
 import {
   getLoginErrorMessage,
@@ -243,7 +242,6 @@ import {
   Search,
 } from 'lucide-react';
 
-import type { Aviso } from './shared/components/feedback/ToastViewport';
 
 type CadastroImportTarget = CadastroCategoriaId;
 type CadastroImportRow = Record<string, string>;
@@ -439,9 +437,6 @@ export default function App() {
   const [perfilAberto, setPerfilAberto] = useState(false);
   const meuNome = meuAvatar?.nome || nomeDaPessoa(currentUser);
 
-  // Aviso rápido no canto, só para erro ou algo que não foi salvo (22/11/2026:
-  // o sino e a central de notificações saíram do sistema).
-  const [avisosNaTela, setAvisosNaTela] = useState<Aviso[]>([]);
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<string>(() => getInitialTabFromUrl());
@@ -1560,7 +1555,7 @@ export default function App() {
           if (!uploadResult.success) {
             pendingRemoteVersionRef.current = requestedVersion;
             retryPendingImmediately = false;
-            avisar(
+            registrarFalha(
               'Sincronizacao inicial pendente',
               `Os dados locais foram preservados, mas ainda nao foi possivel conciliar com a nuvem. Motivo: ${uploadResult.message}`, 'error');
             break;
@@ -1571,7 +1566,7 @@ export default function App() {
         if (!downloadResult.success) {
           pendingRemoteVersionRef.current = requestedVersion;
           retryPendingImmediately = false;
-          avisar(
+          registrarFalha(
             'Nao foi possivel atualizar os dados',
             `Este aparelho nao conseguiu buscar a versao mais recente da nuvem. Motivo: ${downloadResult.message}`, 'error');
           break;
@@ -1630,7 +1625,7 @@ export default function App() {
         return;
       }
       void handleUploadToSupabase().then(resultado => {
-        if (!resultado.success) avisar('Envio pendente para a nuvem', `O que foi salvo antes de recarregar a página está neste aparelho, mas ainda não chegou à nuvem. Motivo: ${resultado.message}`, 'error');
+        if (!resultado.success) registrarFalha('Envio pendente para a nuvem', `O que foi salvo antes de recarregar a página está neste aparelho, mas ainda não chegou à nuvem. Motivo: ${resultado.message}`, 'error');
         return pullRemoteChanges();
       });
     },
@@ -1714,7 +1709,7 @@ export default function App() {
         && now - lastSyncFailureRef.current.at < 60_000;
       lastSyncFailureRef.current = { message: res.message, at: now };
       if (isRepeat) return;
-      avisar(
+      registrarFalha(
         'Sincronização com a nuvem falhou',
         `${tableName} foi salvo neste aparelho, mas não chegou à nuvem. Motivo: ${res.message}`, 'error');
       // Invoke error callback to notify parent component
@@ -1771,7 +1766,7 @@ export default function App() {
     const normalizedItem = normalizeEmpresa(item, previous, now);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: normalizedItem });
     if (errors.length > 0) {
-      avisar('Cadastro não salvo', errors.join(' '));
+      registrarFalha('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(empresas, normalizedItem, isNew);
@@ -1812,7 +1807,7 @@ export default function App() {
     const previous = obras.find(x => x.id === item.id);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: item });
     if (errors.length > 0) {
-      avisar('Cadastro não salvo', errors.join(' '));
+      registrarFalha('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(obras, item, isNew);
@@ -2090,7 +2085,7 @@ export default function App() {
     const previous = equipamentos.find(x => x.id === item.id);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: item });
     if (errors.length > 0) {
-      avisar('Cadastro não salvo', errors.join(' '));
+      registrarFalha('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(equipamentos, item, isNew);
@@ -2179,7 +2174,7 @@ export default function App() {
     const normalizedItem = normalizeFuncionario(item, previous, now);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: normalizedItem });
     if (errors.length > 0) {
-      avisar('Cadastro não salvo', errors.join(' '));
+      registrarFalha('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(funcionarios, normalizedItem, isNew);
@@ -2201,7 +2196,7 @@ export default function App() {
     const matricula = String(item.matricula || '').trim();
     const duplicate = motoristasOperacionais.some(driver => driver.id !== item.id && String(driver.matricula || '').trim() === matricula);
     if (!matricula || !item.nome.trim() || duplicate) {
-      avisar(
+      registrarFalha(
         'Motorista não salvo',
         duplicate ? 'Já existe motorista operacional com esta matrícula.' : 'Informe matrícula e nome.');
       return;
@@ -2679,7 +2674,7 @@ export default function App() {
   const podeExcluirCadastro = pode(currentUserRole, 'cadastros', 'excluir');
   const exclusaoRecusada = (permitido: boolean) => {
     if (permitido) return false;
-    avisar('Exclusão não permitida', 'Só o administrador pode excluir. Peça a ele.');
+    registrarFalha('Exclusão não permitida', 'Só o administrador pode excluir. Peça a ele.');
     return true;
   };
 
@@ -2804,12 +2799,13 @@ export default function App() {
     });
   };
 
-  /** Aviso rápido no canto: só erro ou algo que não foi salvo. Some sozinho. */
-  const avisar = (title: string, message: string, type: Aviso['type'] = 'warning') => {
-    const aviso: Aviso = { id: `aviso-${Date.now()}-${Math.floor(Math.random() * 1000)}`, title, message, type };
-    // Um por vez, para não cobrir a tela.
-    setAvisosNaTela([aviso]);
-    setTimeout(() => setAvisosNaTela(atual => atual.filter(item => item.id !== aviso.id)), 4000);
+  /**
+   * 22/11/2026: o Deivid pediu para tirar TODAS as notificações, inclusive os
+   * avisos no canto. A falha só vai para o console; a bolinha do topo continua
+   * mostrando quando a nuvem está fora.
+   */
+  const registrarFalha = (title: string, message: string, _tipo?: string) => {
+    console.warn(`[Cintravyse] ${title}: ${message}`);
   };
 
   const uploadLocalSnapshotToSupabase = (overrides: {
@@ -2843,7 +2839,7 @@ export default function App() {
   // Botão "Tentar novamente": passa por cima da espera crescente do reenvio.
   const tentarNovamenteEnvio = () => {
     void uploadLocalSnapshotToSupabase({}, { forcar: true }).then(resultado => {
-      if (!resultado.success) avisar('Ainda não chegou à nuvem', `O que foi lançado continua salvo neste aparelho. Motivo: ${resultado.message}`);
+      if (!resultado.success) registrarFalha('Ainda não chegou à nuvem', `O que foi lançado continua salvo neste aparelho. Motivo: ${resultado.message}`);
     });
   };
   const [isRetryingPending, setIsRetryingPending] = useState(false);
@@ -2859,7 +2855,7 @@ export default function App() {
         },
       });
       if (result.processed === 0 && result.failed > 0) {
-        avisar('Fila offline', `${result.failed} pendência(s) falharam; tente de novo.`);
+        registrarFalha('Fila offline', `${result.failed} pendência(s) falharam; tente de novo.`);
       }
     } finally {
       setIsRetryingPending(false);
@@ -3074,7 +3070,7 @@ export default function App() {
             && now - presenceIngestFailureRef.current.at < 60_000;
           presenceIngestFailureRef.current = { message, at: now };
           if (!isRepeat) {
-            avisar(
+            registrarFalha(
               'Presenças recebidas não foram incorporadas',
               `Envios do link público chegaram, mas não foi possível gravá-los neste painel. Motivo: ${message}`, 'error');
           }
@@ -3102,7 +3098,7 @@ export default function App() {
       error => {
         if (cancelled) return;
         console.warn('Falha ao acompanhar os envios públicos em tempo real:', error);
-        avisar(
+        registrarFalha(
           'Presenças do link público podem não estar chegando',
           `O acompanhamento em tempo real dos envios públicos falhou. Motivo: ${formatCloudSyncError(error)}`, 'error');
       },
@@ -4538,7 +4534,6 @@ export default function App() {
         podeAbrir={podeAbrir}
         onNavigate={navigateTo}
       />
-      <ToastViewport toasts={avisosNaTela} />
 
       <MeuPerfilModal
         open={perfilAberto}

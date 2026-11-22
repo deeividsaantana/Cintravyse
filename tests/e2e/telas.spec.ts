@@ -76,8 +76,8 @@ test('cadastros exclui de verdade, guarda na Lixeira e deixa desfazer', async ({
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toContainText('Supabase');
   await dialog.getByTestId('cadastro-confirmar').click();
-  const aviso = page.getByTestId('cadastro-aviso');
-  await expect(aviso).toContainText('excluído');
+  // 22/11/2026: sem aviso flutuante; desfazer é pela Lixeira.
+  await expect(page.getByTestId('cadastro-aviso')).toHaveCount(0);
   // Os tipos são abas no topo, também no celular. Para o administrador a
   // Lixeira mora no grupo "Lixeira e acessos", que abre a segunda linha.
   const grupoSistema = page.getByTestId('cadastro-aba-grupo-sistema');
@@ -85,7 +85,7 @@ test('cadastros exclui de verdade, guarda na Lixeira e deixa desfazer', async ({
   await page.getByTestId('cadastro-categoria-lixeira').click();
   await expect(page.getByTestId('cadastro-categoria-lixeira')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('cadastro-lixeira')).toContainText('excluído por');
-  await aviso.getByRole('button', { name: 'Desfazer' }).click();
+  await page.getByTestId('cadastro-lixeira').getByRole('button', { name: /Restaurar/ }).first().click();
   await expect(page.getByTestId('cadastro-lixeira')).toContainText('A Lixeira está vazia');
 });
 
@@ -100,7 +100,7 @@ test('cadastros trava exclusão de cadastro usado e oferece inativar', async ({ 
   await expect(dialog.getByTestId('cadastro-confirmar')).toHaveCount(0);
 });
 
-test('cadastros marca vários, exclui de uma vez e desfaz o lote', async ({ page }) => {
+test('cadastros marca vários e exclui de uma vez', async ({ page }) => {
   await page.goto('/?screen=cadastros');
   const caixas = page.locator('[data-linha-lista]:visible input[type="checkbox"]');
   for (const indice of [0, 1, 2]) await caixas.nth(indice).check();
@@ -110,11 +110,8 @@ test('cadastros marca vários, exclui de uma vez e desfaz o lote', async ({ page
   const dialog = page.getByTestId('cadastro-confirmacao-lote');
   await expect(dialog).toContainText('Excluir 3 cadastros');
   await dialog.getByTestId('cadastro-confirmar-lote').click();
-  const aviso = page.getByTestId('cadastro-aviso');
-  await expect(aviso).toContainText('3 cadastros excluídos');
   await expect(barra).toHaveCount(0);
-  await aviso.getByRole('button', { name: 'Desfazer' }).click();
-  await expect(aviso).toContainText('3 cadastros voltaram');
+  await expect(page.getByTestId('cadastro-aviso')).toHaveCount(0);
 });
 
 test('cadastros em lote deixa de fora o que está em uso e diz qual', async ({ page }) => {
@@ -128,7 +125,7 @@ test('cadastros em lote deixa de fora o que está em uso e diz qual', async ({ p
   await expect(dialog).toContainText('de fora por estar em uso');
   await expect(dialog.getByRole('list', { name: 'Ficam de fora' })).toContainText('Abastecimentos');
   await dialog.getByTestId('cadastro-confirmar-lote').click();
-  await expect(page.getByTestId('cadastro-aviso')).toContainText('por estar em uso');
+  await expect(page.getByTestId('cadastro-barra-selecao')).toHaveCount(0);
 });
 
 test('painel mostra cada indicador executivo uma única vez', async ({ page }) => {

@@ -4,10 +4,9 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { AlertTriangle, CheckCircle, Download, MoreVertical, Network, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import { Download, MoreVertical, Network, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
 import type {
   Canteiro,
   Comboio,
@@ -59,7 +58,7 @@ import CadastroLixeira from './cadastros/CadastroLixeira';
 import CadastroConfirmacaoLote, { type ItemTravado } from './cadastros/CadastroConfirmacaoLote';
 import { montarRegistro, novoId, valoresIniciais, type ValoresCadastro } from './cadastros/camposCadastro';
 import { parseWorkbookFile } from './cadastros/lerPlanilhaCadastros';
-import { BOTAO_PERIGO, BOTAO_PERIGO_LEVE, BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, FOCO, reduzMovimento } from './cadastros/estilos';
+import { BOTAO_PERIGO, BOTAO_PERIGO_LEVE, BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, FOCO } from './cadastros/estilos';
 import './cadastros/Cadastros.css';
 
 type ResultadoExclusao = { ok: true; exclusaoId: string } | { ok: false; usos: UsoCadastro[]; mensagem?: string };
@@ -120,7 +119,14 @@ interface Aviso {
   tom?: 'erro' | 'aviso';
 }
 
-const TEMPO_DO_AVISO_MS = 10_000;
+/**
+ * 22/11/2026: sem aviso flutuante na tela (o Deivid pediu para tirar todas as
+ * notificações). O que deu errado vai só para o console; a lista já mostra o
+ * resultado de cada ação.
+ */
+const setAviso = (aviso: Aviso | null) => {
+  if (aviso?.tipo === 'erro') console.warn(`[Cadastros] ${aviso.texto}`);
+};
 
 export default function CadastrosTab(props: CadastrosTabProps) {
   const {
@@ -156,7 +162,6 @@ export default function CadastrosTab(props: CadastrosTabProps) {
   const [restaurandoId, setRestaurandoId] = useState<string | null>(null);
   // Itens da Lixeira esperando a confirmação de excluir de vez (um ou todos).
   const [apagando, setApagando] = useState<ExclusaoRegistro[] | null>(null);
-  const [aviso, setAviso] = useState<Aviso | null>(null);
   // Marcados para excluir em lote. Valem só para o tipo aberto.
   const [marcados, setMarcados] = useState<ReadonlySet<string>>(() => new Set());
   const [lote, setLote] = useState<{ livres: LinhaCadastro[]; travados: ItemTravado[] } | null>(null);
@@ -204,12 +209,6 @@ export default function CadastrosTab(props: CadastrosTabProps) {
   // Busca, filtro ou troca de tipo mudam o total de páginas: volta para a primeira.
   useEffect(() => setPagina(1), [categoria, busca, situacao, filtros, ordem]);
 
-  useEffect(() => {
-    if (!aviso) return undefined;
-    const relogio = window.setTimeout(() => setAviso(null), TEMPO_DO_AVISO_MS);
-    return () => window.clearTimeout(relogio);
-  }, [aviso]);
-
   const escopo = useEntradaDeLista<HTMLElement>([vista, pagina, busca, situacao, filtros]);
 
   // Entrada do cabeçalho, das abas e da barra de filtros, no passo do Painel.
@@ -218,12 +217,6 @@ export default function CadastrosTab(props: CadastrosTabProps) {
     if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     gsap.fromTo(raiz.querySelectorAll('[data-cadastros-reveal]'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity' });
   }, { scope: escopo });
-
-  const avisoRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!aviso || !avisoRef.current || reduzMovimento()) return;
-    gsap.fromTo(avisoRef.current, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.25, ease: 'power2.out', clearProps: 'transform,opacity' });
-  }, [aviso]);
 
   const escolherVista = (proxima: VistaCadastros) => {
     setVista(proxima);
@@ -912,28 +905,6 @@ export default function CadastrosTab(props: CadastrosTabProps) {
         onConfirm={confirmarImportacao}
       />
 
-      {aviso && createPortal(
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[115] flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div
-            ref={avisoRef}
-            role="status"
-            data-testid="cadastro-aviso"
-            className={`pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${aviso.tipo === 'ok' ? 'bg-[#176b4d] text-white' : aviso.tom === 'aviso' ? 'border border-amber-300 bg-amber-50 text-amber-950' : 'bg-rose-700 text-white'}`}
-          >
-            {aviso.tipo === 'ok' ? <CheckCircle className="size-5 shrink-0 text-white" aria-hidden="true" /> : <AlertTriangle className={`size-5 shrink-0 ${aviso.tom === 'aviso' ? 'text-amber-700' : 'text-white'}`} aria-hidden="true" />}
-            <span className="min-w-0 flex-1">{aviso.texto}</span>
-            {aviso.desfazer && (
-              <button type="button" onClick={aviso.desfazer} className={`min-h-11 shrink-0 rounded-lg px-3 font-bold text-orange-300 hover:bg-white/10 ${FOCO}`}>
-                Desfazer
-              </button>
-            )}
-            <button type="button" aria-label="Fechar aviso" onClick={() => setAviso(null)} className={`inline-flex size-9 shrink-0 items-center justify-center rounded-lg ${aviso.tom === 'aviso' ? 'text-amber-700/70 hover:bg-amber-100' : 'text-white/70 hover:bg-white/10'} ${FOCO}`}>
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )}
     </TelaCheia>
   );
 }

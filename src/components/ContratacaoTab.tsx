@@ -448,7 +448,7 @@ export default function ContratacaoTab() {
       }
       faixa={aviso || erro || faixa ? (
         <>
-          {aviso && <p role="status" className="mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900">{aviso}</p>}
+          {aviso && <p role="status" className="sr-only">{aviso}</p>}
           {erro && dados && <p role="alert" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900">{erro}</p>}
           {faixa}
         </>
