@@ -50,7 +50,6 @@ const JSON_ARRAY_STORAGE_KEYS = new Set([
   'renea_vinculos_operador_equipamento',
   'renea_periodos_arquivados',
   'renea_history_logs',
-  'renea_notifications',
   'renea_offline_queue_fallback',
   'renea_master_data_review_queue',
 ]);

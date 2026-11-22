@@ -33,6 +33,8 @@ export const encolhimentoSemExplicacao = (sumidos: number, antes: number, depois
   sumidos > 0 && (depois === 0 || (sumidos >= MINIMO_PARA_PROTEGER && sumidos >= antes * FRACAO_PARA_PROTEGER));
 
 /** Tabelas que já só ganham linhas na mesclagem ou que podem ser limpas de propósito. */
+// 'notifications' é a lista antiga do sino (saiu em 22/11/2026): a nuvem ainda
+// pode tê-la, e ela não volta para o aparelho, então não conta como perda.
 const TABELAS_FORA_DA_TRAVA = new Set(['historyLogs', 'notifications', 'presencasLink', 'masterDataReviewQueue', TABELA_EXCLUSOES]);
 
 type Retrato = Record<string, unknown>;

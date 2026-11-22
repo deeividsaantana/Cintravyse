@@ -5,7 +5,7 @@
 
 import React, { lazy, Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';import { migrarEfetivoObra3 } from './utils/migracaoEfetivoObra3';
 
-import { PularParaConteudo, RouteMotion, isoDay, PageHeader } from './shared/ui';
+import { PularParaConteudo, RouteMotion, PageHeader } from './shared/ui';
 import { 
   Empresa, 
   ObraLocal, 
@@ -173,7 +173,7 @@ import { enrichFuelDataset } from './utils/fuelOperations';
 import { estabilizarLinksPublicos } from './utils/publicLinkSecurity';
 import { estaAtivo, inativar, reativar, somenteAtivos } from './utils/inativacao';
 import { aplicarPresencaManual, montarPresencaManual, type SituacaoLancada } from './utils/presencaManual';
-import { aplicarSituacao, descreverMudanca, type MudancaDeSituacao } from './utils/situacaoColaborador';
+import { aplicarSituacao, type MudancaDeSituacao } from './utils/situacaoColaborador';
 import {
   normalizePresenceLists,
   normalizeRuntimeCollection,
@@ -209,17 +209,10 @@ import { PessoasProvider } from './app/perfil/PessoasContext';
 import { MeuPerfilModal } from './components/perfil/MeuPerfilModal';
 import { Avatar } from './shared/ui/Avatar';
 import { nomeDaPessoa } from './auth/nomeDaPessoa';
-import { NotificationCenter } from './app/shell/NotificationCenter';
 import { PesquisaGlobal } from './app/shell/PesquisaGlobal';
-import { alertasDoSistema } from './utils/alertas';
 import { abasLiberadas, podeComRegras } from './utils/regrasDeAcesso';
 import type { Capacidade } from './utils/permissoes';
 import { carregarMeuAcesso, type MeuAcesso } from './supabase/regrasDeAcesso';
-import {
-  alertasVisiveis,
-  carregarPreferencias,
-  type PreferenciasNotificacao,
-} from './utils/notificacoes';
 import { DesktopSidebar } from './app/shell/DesktopSidebar';
 import { APP_VERSION_LABEL } from './app/version';
 import {
@@ -240,16 +233,6 @@ import {
   SESSION_ACTIVITY_EVENTS,
   SESSION_INACTIVITY_MS,
 } from './auth/sessionActivity';
-import {
-  createNotification,
-  getInitialNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-  persistNotifications,
-  prependNotifications,
-  type NotificationSource,
-  type NotificationType,
-} from './notifications/notificationService';
 
 // Icons Import
 import {
@@ -260,7 +243,7 @@ import {
   Search,
 } from 'lucide-react';
 
-import { AppNotification } from './types';
+import type { Aviso } from './shared/components/feedback/ToastViewport';
 
 type CadastroImportTarget = CadastroCategoriaId;
 type CadastroImportRow = Record<string, string>;
@@ -346,7 +329,6 @@ const CLOUD_STORAGE_KEYS: Array<[string, string]> = [
   ['modelosChecklist', STORAGE_KEYS.modelosChecklist],
   ['periodosArquivados', 'renea_periodos_arquivados'],
   ['masterDataReviewQueue', 'renea_master_data_review_queue'],
-  ['notifications', 'renea_notifications'],
   ['historyLogs', 'renea_history_logs'],
   ['exclusoes', STORAGE_KEYS.exclusoes],
 ];
@@ -457,10 +439,9 @@ export default function App() {
   const [perfilAberto, setPerfilAberto] = useState(false);
   const meuNome = meuAvatar?.nome || nomeDaPessoa(currentUser);
 
-  // Notification and Toast States
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [activeToasts, setActiveToasts] = useState<AppNotification[]>([]);
-  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
+  // Aviso rápido no canto, só para erro ou algo que não foi salvo (22/11/2026:
+  // o sino e a central de notificações saíram do sistema).
+  const [avisosNaTela, setAvisosNaTela] = useState<Aviso[]>([]);
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<string>(() => getInitialTabFromUrl());
@@ -522,11 +503,6 @@ export default function App() {
       document.body.style.overflow = overflowAnterior;
     };
   }, [isMobileMenuOpen]);
-  // Preferência de notificação é do dispositivo: fica no navegador e não sobe
-  // para a nuvem, senão silenciar no celular apagaria o alerta do gestor.
-  const [preferenciasNotificacao] = useState<PreferenciasNotificacao>(
-    () => typeof localStorage === 'undefined' ? { categoriasSilenciadas: [], mostrarSistema: true } : carregarPreferencias(localStorage),
-  );
 
   // Estado do provedor de nuvem ativo. O gateway usa somente Supabase e
   // o período de dual-write fora dos componentes operacionais.
@@ -711,7 +687,6 @@ export default function App() {
         { key: STORAGE_KEYS.frentesServico, value: JSON.stringify(INITIAL_FRENTES_SERVICO) },
         { key: 'renea_master_data_review_queue', value: '[]' },
         { key: 'renea_history_logs', value: JSON.stringify([]) },
-        { key: 'renea_notifications', value: '[]' },
       ].filter(entry => localStorage.getItem(entry.key) === null);
       commitStorageBatch(localStorage, [
         ...initialStorageEntries,
@@ -743,7 +718,6 @@ export default function App() {
       setControleEstacas(INITIAL_CONTROLE_ESTACAS);
       setPeriodosArquivados([]);
       setHistoryLogs([]);
-      setNotifications(getInitialNotifications());
     }
     {
       const savedEmpresas = localStorage.getItem('renea_empresas');
@@ -769,7 +743,6 @@ export default function App() {
       const savedPeriodosArquivados = localStorage.getItem('renea_periodos_arquivados');
       const savedVinculosOperadorEquipamento = localStorage.getItem('renea_vinculos_operador_equipamento');
       const savedHistory = localStorage.getItem('renea_history_logs');
-      const savedNotifications = localStorage.getItem('renea_notifications');
       const shouldMigratePresencePeople = !readStoredFlag(localStorage, STORAGE_KEYS.colaboradoresPlanilhaV1);
       const parsedEquipamentos = parseStoredJson(savedEquipamentos, 'renea_equipamentos', INITIAL_EQUIPAMENTOS);
       const parsedEmpresas = parseStoredJson(savedEmpresas, 'renea_empresas', INITIAL_EMPRESAS);
@@ -847,7 +820,6 @@ export default function App() {
       const exclusoesValidas = semTabelasRemovidas(exclusoesGuardadas);
       if (exclusoesValidas.length !== exclusoesGuardadas.length) writeStorageValue(localStorage, STORAGE_KEYS.exclusoes, JSON.stringify(exclusoesValidas));
       setExclusoes(exclusoesValidas);
-      setNotifications(prependNotifications([], parseStoredJson(savedNotifications, 'renea_notifications', getInitialNotifications())));
 
       // Efetivo do EFETIVO_OBRA_3 em quem já usa o sistema. A semente acima só
       // vale no primeiro acesso do navegador; sem esta passagem, quem já tinha
@@ -1083,7 +1055,6 @@ export default function App() {
     periodosArquivados: readTable('renea_periodos_arquivados', [] as PeriodoArquivado[]),
     vinculosOperadorEquipamento: readTable('renea_vinculos_operador_equipamento', [] as VinculoOperadorEquipamento[]),
     masterDataReviewQueue: readTable('renea_master_data_review_queue', [] as MasterWorkbookReviewRow[]),
-    notifications: readTable('renea_notifications', getInitialNotifications()),
     historyLogs: readTable('renea_history_logs', [] as HistoryLog[]),
     exclusoes: semTabelasRemovidas(readTable(STORAGE_KEYS.exclusoes, [] as ExclusaoRegistro[])),
   });
@@ -1492,9 +1463,6 @@ export default function App() {
             cravacoes: Array.isArray(data.estacaCravacoes) ? data.estacaCravacoes : [],
           });
         }
-        if (Object.hasOwn(data, 'notifications')) {
-          setNotifications(prependNotifications([], normalizeRuntimeCollection<AppNotification>(data.notifications)));
-        }
       if (Object.hasOwn(data, 'historyLogs')) {
         const restoredHistory = normalizeRuntimeCollection<HistoryLog>(data.historyLogs);
         setHistoryLogs(restoredHistory);
@@ -1592,12 +1560,9 @@ export default function App() {
           if (!uploadResult.success) {
             pendingRemoteVersionRef.current = requestedVersion;
             retryPendingImmediately = false;
-            addNotification(
+            avisar(
               'Sincronizacao inicial pendente',
-              `Os dados locais foram preservados, mas ainda nao foi possivel conciliar com a nuvem. Motivo: ${uploadResult.message}`,
-              'error',
-              'Sistema Local',
-            );
+              `Os dados locais foram preservados, mas ainda nao foi possivel conciliar com a nuvem. Motivo: ${uploadResult.message}`, 'error');
             break;
           }
         }
@@ -1606,12 +1571,9 @@ export default function App() {
         if (!downloadResult.success) {
           pendingRemoteVersionRef.current = requestedVersion;
           retryPendingImmediately = false;
-          addNotification(
+          avisar(
             'Nao foi possivel atualizar os dados',
-            `Este aparelho nao conseguiu buscar a versao mais recente da nuvem. Motivo: ${downloadResult.message}`,
-            'error',
-            'Sistema Local',
-          );
+            `Este aparelho nao conseguiu buscar a versao mais recente da nuvem. Motivo: ${downloadResult.message}`, 'error');
           break;
         }
       }
@@ -1668,7 +1630,7 @@ export default function App() {
         return;
       }
       void handleUploadToSupabase().then(resultado => {
-        if (!resultado.success) addNotification('Envio pendente para a nuvem', `O que foi salvo antes de recarregar a página está neste aparelho, mas ainda não chegou à nuvem. Motivo: ${resultado.message}`, 'error', 'Sistema Local');
+        if (!resultado.success) avisar('Envio pendente para a nuvem', `O que foi salvo antes de recarregar a página está neste aparelho, mas ainda não chegou à nuvem. Motivo: ${resultado.message}`, 'error');
         return pullRemoteChanges();
       });
     },
@@ -1734,13 +1696,6 @@ export default function App() {
     setHistoryLogs(updatedHistory);
     writeStorageValue(localStorage, 'renea_history_logs', JSON.stringify(updatedHistory));
 
-    // Só avisa o que a pessoa não acabou de ver acontecer. Criar e editar já
-    // têm retorno imediato na própria tela e ficam registrados no Histórico:
-    // repetir isso no sino só enchia a caixa de avisos redundantes. Exclusão
-    // continua avisando por ser destrutiva e difícil de perceber depois.
-    if (action === 'Excluiu') {
-      addNotification(`${tableName} — ${action}`, description, 'warning', 'Sistema Local');
-    }
 
     // A sincronização é obrigatória e silenciosa para manter todos os usuários alinhados.
     // Dispara na hora (sem atraso): handleUploadToSupabase marca
@@ -1759,12 +1714,9 @@ export default function App() {
         && now - lastSyncFailureRef.current.at < 60_000;
       lastSyncFailureRef.current = { message: res.message, at: now };
       if (isRepeat) return;
-      addNotification(
+      avisar(
         'Sincronização com a nuvem falhou',
-        `${tableName} foi salvo neste aparelho, mas não chegou à nuvem. Motivo: ${res.message}`,
-        'error',
-        'Sistema Local',
-      );
+        `${tableName} foi salvo neste aparelho, mas não chegou à nuvem. Motivo: ${res.message}`, 'error');
       // Invoke error callback to notify parent component
       if (onError) {
         onError(new Error(res.message));
@@ -1819,7 +1771,7 @@ export default function App() {
     const normalizedItem = normalizeEmpresa(item, previous, now);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: normalizedItem });
     if (errors.length > 0) {
-      addNotification('Cadastro não salvo', errors.join(' '), 'warning', 'Sistema Local');
+      avisar('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(empresas, normalizedItem, isNew);
@@ -1860,7 +1812,7 @@ export default function App() {
     const previous = obras.find(x => x.id === item.id);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: item });
     if (errors.length > 0) {
-      addNotification('Cadastro não salvo', errors.join(' '), 'warning', 'Sistema Local');
+      avisar('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(obras, item, isNew);
@@ -2138,7 +2090,7 @@ export default function App() {
     const previous = equipamentos.find(x => x.id === item.id);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: item });
     if (errors.length > 0) {
-      addNotification('Cadastro não salvo', errors.join(' '), 'warning', 'Sistema Local');
+      avisar('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(equipamentos, item, isNew);
@@ -2227,7 +2179,7 @@ export default function App() {
     const normalizedItem = normalizeFuncionario(item, previous, now);
     const errors = validateCentralRecord({ empresas, equipamentos, funcionarios, obras, record: normalizedItem });
     if (errors.length > 0) {
-      addNotification('Cadastro não salvo', errors.join(' '), 'warning', 'Sistema Local');
+      avisar('Cadastro não salvo', errors.join(' '));
       return;
     }
     const updated = saveRegistryItem(funcionarios, normalizedItem, isNew);
@@ -2249,12 +2201,9 @@ export default function App() {
     const matricula = String(item.matricula || '').trim();
     const duplicate = motoristasOperacionais.some(driver => driver.id !== item.id && String(driver.matricula || '').trim() === matricula);
     if (!matricula || !item.nome.trim() || duplicate) {
-      addNotification(
+      avisar(
         'Motorista não salvo',
-        duplicate ? 'Já existe motorista operacional com esta matrícula.' : 'Informe matrícula e nome.',
-        'warning',
-        'Sistema Local',
-      );
+        duplicate ? 'Já existe motorista operacional com esta matrícula.' : 'Informe matrícula e nome.');
       return;
     }
     const next = isNew ? [...motoristasOperacionais, item] : motoristasOperacionais.map(driver => driver.id === item.id ? item : driver);
@@ -2730,7 +2679,7 @@ export default function App() {
   const podeExcluirCadastro = pode(currentUserRole, 'cadastros', 'excluir');
   const exclusaoRecusada = (permitido: boolean) => {
     if (permitido) return false;
-    addNotification('Exclusão não permitida', 'Só o administrador pode excluir. Peça a ele.', 'warning', 'Sistema Local');
+    avisar('Exclusão não permitida', 'Só o administrador pode excluir. Peça a ele.');
     return true;
   };
 
@@ -2855,48 +2804,13 @@ export default function App() {
     });
   };
 
-  // Notifications helpers
-  const addNotification = (
-    title: string, 
-    message: string, 
-    type: NotificationType = 'info',
-    source: NotificationSource = 'RENEA API'
-  ) => {
-    const newNotif = createNotification(title, message, type, source);
-
-    setNotifications(prev => {
-      const updated = prependNotifications(prev, [newNotif]);
-      persistNotifications(localStorage, updated);
-      return updated;
-    });
-
-    // Exibe no máximo um aviso discreto por vez para não bloquear a navegação.
-    setActiveToasts([newNotif]);
-    setTimeout(() => {
-      setActiveToasts(prev => prev.filter(t => t.id !== newNotif.id));
-    }, 2500);
+  /** Aviso rápido no canto: só erro ou algo que não foi salvo. Some sozinho. */
+  const avisar = (title: string, message: string, type: Aviso['type'] = 'warning') => {
+    const aviso: Aviso = { id: `aviso-${Date.now()}-${Math.floor(Math.random() * 1000)}`, title, message, type };
+    // Um por vez, para não cobrir a tela.
+    setAvisosNaTela([aviso]);
+    setTimeout(() => setAvisosNaTela(atual => atual.filter(item => item.id !== aviso.id)), 4000);
   };
-
-  const persistPresenceNotifications = (newItems: AppNotification[]) => {
-    const updated = prependNotifications(notifications, newItems);
-    setNotifications(updated);
-    persistNotifications(localStorage, updated);
-    // Mostra somente o alerta mais recente, evitando uma pilha cobrindo a tela.
-    const latestItem = newItems[0];
-    if (latestItem) {
-      setActiveToasts([latestItem]);
-      setTimeout(() => {
-        setActiveToasts(prev => prev.filter(t => t.id !== latestItem.id));
-      }, 2500);
-    }
-    return updated;
-  };
-
-  const createPresenceNotification = (
-    title: string,
-    message: string,
-    type: NotificationType = 'info'
-  ): AppNotification => createNotification(title, message, type, 'RENEA API', 'notif-pres');
 
   const uploadLocalSnapshotToSupabase = (overrides: {
     funcionarios?: Funcionario[];
@@ -2929,7 +2843,7 @@ export default function App() {
   // Botão "Tentar novamente": passa por cima da espera crescente do reenvio.
   const tentarNovamenteEnvio = () => {
     void uploadLocalSnapshotToSupabase({}, { forcar: true }).then(resultado => {
-      if (!resultado.success) addNotification('Ainda não chegou à nuvem', `O que foi lançado continua salvo neste aparelho. Motivo: ${resultado.message}`, 'warning', 'Sistema Local');
+      if (!resultado.success) avisar('Ainda não chegou à nuvem', `O que foi lançado continua salvo neste aparelho. Motivo: ${resultado.message}`);
     });
   };
   const [isRetryingPending, setIsRetryingPending] = useState(false);
@@ -2944,15 +2858,13 @@ export default function App() {
           if (!uploadResult.success) throw new Error(uploadResult.message);
         },
       });
-      if (result.processed > 0) {
-        addNotification('Fila offline', `${result.processed} pendência(s) enviada(s).`, 'success', 'Sistema Local');
-      } else if (result.failed > 0) {
-        addNotification('Fila offline', `${result.failed} pendência(s) falharam; tente de novo.`, 'warning', 'Sistema Local');
+      if (result.processed === 0 && result.failed > 0) {
+        avisar('Fila offline', `${result.failed} pendência(s) falharam; tente de novo.`);
       }
     } finally {
       setIsRetryingPending(false);
     }
-  }, [isRetryingPending, uploadLocalSnapshotToSupabase, addNotification]);
+  }, [isRetryingPending, uploadLocalSnapshotToSupabase]);
 
   // Reconstrói o histórico de presença a partir da fila pública original
   // (sistemarenea_public_submissions), que nunca é apagada nem sobrescrita
@@ -3020,12 +2932,6 @@ export default function App() {
       if (cancelled || !result.success) return;
       localStorage.removeItem(STORAGE_KEYS.publicLinksRotationPendingV31);
       setPublicLinksRotationPending(false);
-      addNotification(
-        'Links públicos protegidos',
-        'Links antigos previsíveis foram substituídos. Compartilhe os novos endereços de presença e apontamento.',
-        'warning',
-        'Sistema Local',
-      );
     };
     const timer = window.setTimeout(() => void publishRotation(), 1_000);
     window.addEventListener('online', publishRotation);
@@ -3109,28 +3015,10 @@ export default function App() {
             : `Recebeu presença pública do grupo ${item.payload.grupoNome || item.payload.grupoId} em ${item.payload.data}.`,
         })));
 
-        const storedNotifications = parseStoredJson<AppNotification[]>(localStorage.getItem('renea_notifications'), 'renea_notifications', []);
-        const nextNotifications = mergeRecordsById(storedNotifications, submissions.map(item => ({
-          id: `notification-public-${item.id}`,
-          type: 'success' as const,
-          title: item.kind === 'presence-reset' ? 'Presença liberada para refazer'
-            : item.kind === 'equipe' ? `Colaborador ${item.payload.operacao === 'remover' ? 'removido da' : 'incluído na'} equipe` : 'Presença recebida',
-          message: item.kind === 'presence-reset'
-            ? `${item.payload.grupoNome || 'Equipe'} resetou a presença de ${item.payload.data} para refazer.`
-            : item.kind === 'equipe'
-              ? `${item.payload.funcionarioNome || 'Colaborador'} ${item.payload.operacao === 'remover' ? 'saiu da' : 'entrou na'} equipe ${item.payload.grupoNome || 'sem nome'} pelo link de presença.`
-              : `${item.payload.grupoNome || 'Equipe'} enviou ${item.payload.records?.length || 0} registro(s) de presença.`,
-          timestamp: new Date(item.createdAtIso || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          read: false,
-          source: 'Sistema Local' as const,
-        })));
-
         writeStorageValue(localStorage, 'renea_presencas_link', JSON.stringify(nextPresence));
         writeStorageValue(localStorage, 'renea_history_logs', JSON.stringify(nextHistory));
-        persistNotifications(localStorage, nextNotifications);
         setPresencasLink(nextPresence);
         setHistoryLogs(nextHistory);
-        setNotifications(nextNotifications);
         if (incomingMembers.length > 0) {
           writeStorageValue(localStorage, 'renea_grupos_equipes', JSON.stringify(nextGroups));
           setGruposEquipe(nextGroups);
@@ -3147,20 +3035,14 @@ export default function App() {
             parseStoredJson<PresencaApontamento[]>(localStorage.getItem('renea_presencas_link'), 'renea_presencas_link', []),
             incomingPresence,
           );
-          const refreshedNotifications = mergeRecordsById(
-            parseStoredJson<AppNotification[]>(localStorage.getItem('renea_notifications'), 'renea_notifications', []),
-            nextNotifications,
-          );
           const refreshedHistory = mergeRecordsById(
             parseStoredJson<HistoryLog[]>(localStorage.getItem('renea_history_logs'), 'renea_history_logs', []),
             nextHistory,
           );
           writeStorageValue(localStorage, 'renea_presencas_link', JSON.stringify(refreshedPresence));
           writeStorageValue(localStorage, 'renea_history_logs', JSON.stringify(refreshedHistory));
-          persistNotifications(localStorage, refreshedNotifications);
           setPresencasLink(refreshedPresence);
           setHistoryLogs(refreshedHistory);
-          setNotifications(refreshedNotifications);
           if (incomingMembers.length > 0) {
             // O retrato vencedor pode já ter a equipe mudada por outro
             // computador. A inclusão é reaplicada sobre ele, nunca por cima.
@@ -3192,12 +3074,9 @@ export default function App() {
             && now - presenceIngestFailureRef.current.at < 60_000;
           presenceIngestFailureRef.current = { message, at: now };
           if (!isRepeat) {
-            addNotification(
+            avisar(
               'Presenças recebidas não foram incorporadas',
-              `Envios do link público chegaram, mas não foi possível gravá-los neste painel. Motivo: ${message}`,
-              'error',
-              'Sistema Local',
-            );
+              `Envios do link público chegaram, mas não foi possível gravá-los neste painel. Motivo: ${message}`, 'error');
           }
         }
       } finally {
@@ -3223,12 +3102,9 @@ export default function App() {
       error => {
         if (cancelled) return;
         console.warn('Falha ao acompanhar os envios públicos em tempo real:', error);
-        addNotification(
+        avisar(
           'Presenças do link público podem não estar chegando',
-          `O acompanhamento em tempo real dos envios públicos falhou. Motivo: ${formatCloudSyncError(error)}`,
-          'error',
-          'Sistema Local',
-        );
+          `O acompanhamento em tempo real dos envios públicos falhou. Motivo: ${formatCloudSyncError(error)}`, 'error');
       },
     );
     return () => {
@@ -3381,9 +3257,6 @@ export default function App() {
         writeStorageValue(localStorage, 'renea_funcionarios', JSON.stringify(funcionariosAtualizados));
       },
     );
-    mudancasPorId.forEach(({ funcionario, mudanca }) => {
-      addNotification('Colaborador desligado', descreverMudanca(funcionario, mudanca), 'warning', 'Sistema Local');
-    });
 
     const idsDesligados = new Set(mudancasPorId.keys());
     setGruposEquipe(current => current.map(group => group.id === grupoId
@@ -3487,13 +3360,6 @@ export default function App() {
       valorNovo: `${status}${observacao ? ` - ${observacao}` : ''}`
     };
     const updatedHistorico = [historico, ...historicoPresencas];
-    const updatedNotifications = persistPresenceNotifications([
-      createPresenceNotification(
-        'Presença atualizada',
-        `Admin atualizou ${item.funcionarioNome} no grupo ${item.grupoNome}.`,
-        'info'
-      )
-    ]);
 
     setPresencasLink(updatedPresencas);
     setHistoricoPresencas(updatedHistorico);
@@ -3501,8 +3367,8 @@ export default function App() {
     writeStorageValue(localStorage, 'renea_historico_presencas', JSON.stringify(updatedHistorico));
     processarDesligamentosDaPresenca([{ funcionarioId: item.funcionarioId, status }], item.grupoId, item.data);
 
-    // presencasLink e historicoPresencas ja foram gravados acima; as
-    // notificacoes tambem. O envio le tudo do armazenamento local.
+    // presencasLink e historicoPresencas ja foram gravados acima. O envio le
+    // tudo do armazenamento local.
     void pedirEnvioSerializado();
   };
 
@@ -3529,12 +3395,6 @@ export default function App() {
     const atualizados = aplicarPresencaManual(presencasLink, novos);
     setPresencasLink(atualizados);
     writeStorageValue(localStorage, 'renea_presencas_link', JSON.stringify(atualizados));
-    addNotification(
-      'Presença lançada pelo painel',
-      `${novos.length} situação(ões) de ${grupo.nome} em ${data.split('-').reverse().join('/')}.`,
-      'success',
-      'Sistema Local',
-    );
     processarDesligamentosDaPresenca(situacoes, grupo.id, data);
     void pedirEnvioSerializado();
   };
@@ -3580,35 +3440,6 @@ export default function App() {
     );
   };
 
-  // Alertas do sino: derivados dos mesmos registros das pendências, filtrando só
-  // gravidade alta. Não são salvos, então nunca sobra alerta de algo resolvido.
-  const alertasSistema = useMemo(() => alertasDoSistema({
-    hoje: isoDay(new Date()),
-    inicio: isoDay(new Date(Date.now() - 30 * 86_400_000)),
-    fim: isoDay(new Date()),
-    equipamentos,
-    controlesEquipamentos: controleEquipamentosDiario,
-    gruposEquipe,
-    presencasLink,
-    listasPresenca,
-    obras,
-    ordensServico,
-    fichasFvs,
-    inspecoes,
-    naoConformidades,
-    documentos,
-    treinamentos,
-    medicoes,
-    ocorrencias,
-  }), [equipamentos, controleEquipamentosDiario, gruposEquipe, presencasLink, listasPresenca, obras, ordensServico, fichasFvs, inspecoes, naoConformidades, documentos, treinamentos, medicoes, ocorrencias]);
-
-  // Alerta sem tela para resolver (FVS, documentos e outras que saíram do
-  // app) ou de tela que o perfil não abre fica fora do sino (M6, M7).
-  const alertasDoSino = useMemo(
-    () => alertasVisiveis(alertasSistema, preferenciasNotificacao)
-      .filter(alerta => destinoDaAba(alerta.tab, allowedTabs) !== null),
-    [alertasSistema, preferenciasNotificacao, allowedTabs],
-  );
 
   const handleSaveFrente = (frente: FrenteServico, isNew: boolean, onError?: (error: Error) => void) => {
     const updated = isNew ? [frente, ...frentesServico] : frentesServico.map(item => item.id === frente.id ? frente : item);
@@ -4193,26 +4024,6 @@ export default function App() {
       />
     );
   }
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const handleMarkAllAsRead = () => {
-    const updated = markAllNotificationsAsRead(notifications);
-    setNotifications(updated);
-    persistNotifications(localStorage, updated);
-  };
-
-  const handleClearNotifications = () => {
-    setNotifications([]);
-    persistNotifications(localStorage, []);
-  };
-
-  const handleMarkNotificationAsRead = (id: string) => {
-    setNotifications(prev => {
-      const updated = markNotificationAsRead(prev, id);
-      persistNotifications(localStorage, updated);
-      return updated;
-    });
-  };
 
   const normalizedMenuSearch = menuSearch.trim().toLocaleLowerCase('pt-BR');
   const filteredNavigationGroups = SIDEBAR_NAVIGATION_GROUPS
@@ -4319,23 +4130,6 @@ export default function App() {
             </button>
           )}
 
-          {/* Notification Bell Mobile: antes só alternava um estado que só o
-              painel do cabeçalho desktop (oculto em telas menores que 1024px)
-              usava para se mostrar — o toque no sino não abria nada visível
-              neste tamanho de tela. Agora usa o mesmo painel do desktop. */}
-          <NotificationCenter
-            isOpen={isNotifDropdownOpen}
-            notifications={notifications}
-            unreadCount={unreadCount}
-            onToggle={() => setIsNotifDropdownOpen(value => !value)}
-            onClose={() => setIsNotifDropdownOpen(false)}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            onClear={handleClearNotifications}
-            onMarkOneAsRead={handleMarkNotificationAsRead}
-            alertas={alertasDoSino}
-            onAlertaClick={tab => { setIsNotifDropdownOpen(false); navigateTo(tab); }}
-          />
-
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
@@ -4399,10 +4193,6 @@ export default function App() {
           currentUser={currentUser}
           meuAvatar={meuAvatar}
           onAbrirPerfil={() => setPerfilAberto(true)}
-          isNotificationOpen={isNotifDropdownOpen}
-          notifications={notifications}
-          unreadCount={unreadCount}
-          alertas={alertasDoSino}
           isCloudConnected={isCloudConnected}
           salvamento={salvamento}
           onRetryUpload={tentarNovamenteEnvio}
@@ -4410,12 +4200,6 @@ export default function App() {
           pendingCount={pendingCount}
           isRetryingPending={isRetryingPending}
           onRetryPending={() => void handleRetryPending()}
-          onNavigate={tab => navigateTo(tab)}
-          onToggleNotifications={() => setIsNotifDropdownOpen(value => !value)}
-          onCloseNotifications={() => setIsNotifDropdownOpen(false)}
-          onMarkAllNotificationsAsRead={handleMarkAllAsRead}
-          onClearNotifications={handleClearNotifications}
-          onMarkNotificationAsRead={handleMarkNotificationAsRead}
           onLogout={() => void handleLogout()}
         />}
         {/* Task 8: Rota presenca-publica fora do padrão de abas */}
@@ -4604,10 +4388,7 @@ export default function App() {
                 onCadastrar={() => { navigateTo('cadastros'); setPedidoNovoColaborador(1); }}
                 podeAbrir={podeAbrir}
                 responsavel={activeUserName}
-                onAlterarSituacao={(proximo, descricao) => {
-                  handleSaveFuncionario(proximo, false);
-                  addNotification('Situação atualizada', descricao, 'info', 'Sistema Local');
-                }}
+                onAlterarSituacao={proximo => handleSaveFuncionario(proximo, false)}
               />
             )}
 
@@ -4757,7 +4538,7 @@ export default function App() {
         podeAbrir={podeAbrir}
         onNavigate={navigateTo}
       />
-      <ToastViewport toasts={activeToasts} />
+      <ToastViewport toasts={avisosNaTela} />
 
       <MeuPerfilModal
         open={perfilAberto}

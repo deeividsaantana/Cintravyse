@@ -26,5 +26,5 @@ export const INTERMEDIATE_TABLE_IDS = [
   'frentesServico', 'diariosObra', 'solicitacoes', 'pessoasSuprimentos', 'servicosObra', 'producaoRegistros', 'planejamentoItens',
   'modelosFvs', 'fichasFvs', 'inspecoes', 'naoConformidades', 'medicoes', 'documentos', 'ocorrencias',
   'lancamentosCusto', 'orcamentoItens', 'controleEquipamentosDiario',
-  'periodosArquivados', 'notifications', 'historyLogs', 'vinculosOperadorEquipamento', 'exclusoes',
+  'periodosArquivados', 'historyLogs', 'vinculosOperadorEquipamento', 'exclusoes',
 ] as const;
