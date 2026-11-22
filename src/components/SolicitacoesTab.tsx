@@ -32,6 +32,7 @@ import { AbasDaTela, idDaAba, type ItemDasAbas } from "../shared/ui/AbasDaTela";
 import { TabelaPadrao, type ColunaTabela } from "../shared/ui/TabelaPadrao";
 import {
   BOTAO_PRIMARIO,
+  FOCO,
   BOTAO_SECUNDARIO,
   CAMPO,
   CARTAO,
@@ -144,6 +145,9 @@ const FILTROS = [
 ] as const;
 type Filtro = (typeof FILTROS)[number]["id"];
 
+/** Visões da lista de pedidos, na ordem em que a pessoa trabalha. */
+const VISOES_PEDIDOS: readonly Filtro[] = ["abertos", "aprovacao", "atraso", "entregues", "todos"];
+
 const FILTROS_CONFERENCIA = [
   "A conferir",
   "Faltando",
@@ -201,7 +205,8 @@ export default function SolicitacoesTab({
   const [filtroSolicitante, setFiltroSolicitante] = useState("");
   const [filtroDataInicio, setFiltroDataInicio] = useState("");
   const [filtroDataFim, setFiltroDataFim] = useState("");
-  const [modo, setModo] = useState<"cards" | "lista">("cards");
+  // Padrão ERP (22/11/2026): abre em lista, como tabela; os cartões ficam como opção.
+  const [modo, setModo] = useState<"cards" | "lista">("lista");
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [filtroConferencia, setFiltroConferencia] =
     useState<FiltroConferencia>("A conferir");
@@ -830,6 +835,7 @@ export default function SolicitacoesTab({
     subtela === "conferencia" ||
     subtela === "historico";
   const comBusca =
+    subtela === "pedidos" ||
     subtela === "aprovacao" ||
     subtela === "conferencia" ||
     subtela === "historico";
@@ -843,50 +849,6 @@ export default function SolicitacoesTab({
     setSubtela("aprovacao");
     setBusca("");
   };
-  const irParaConferencia = () => {
-    setAbertaId(null);
-    setSubtela("conferencia");
-    setFiltroConferencia("A conferir");
-  };
-  const resumo = [
-    {
-      id: "abertos",
-      rotulo: "Em aberto",
-      valor: contagem.abertos,
-      detalhe: "pedidos no fluxo",
-      tom: "text-[#176b4d]",
-    },
-    {
-      id: "aprovacao",
-      rotulo: "Aprovações",
-      valor: aguardandoAprovacao.length,
-      detalhe: exerce(ator, "aprovador")
-        ? "aguardando sua decisão"
-        : "aguardando gerência",
-      tom: "text-[#c2410c]",
-    },
-    {
-      id: "atraso",
-      rotulo: "Em atraso",
-      valor: emAtraso.length,
-      detalhe: "pedidos para cobrar",
-      tom: "text-rose-700",
-    },
-    {
-      id: "conferencia",
-      rotulo: "A conferir",
-      valor: itensComFalta,
-      detalhe: "itens aguardando chegada",
-      tom: "text-slate-900",
-    },
-    {
-      id: "entregues",
-      rotulo: "Entregues",
-      valor: contagem.entregues,
-      detalhe: "pedidos concluídos",
-      tom: "text-[#176b4d]",
-    },
-  ] as const;
 
   return (
     <TelaCheia
@@ -954,7 +916,7 @@ export default function SolicitacoesTab({
       faixa={
         <div
           data-sol-reveal
-          className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]"
+          className={`flex min-w-0 items-center gap-2 px-1 pb-1 ${subtela === "pedidos" ? "flex-wrap sm:flex-nowrap" : "flex-nowrap overflow-x-auto [scrollbar-width:thin]"}`}
         >
           {/* No celular as abas ocupam a linha toda; o Filtros vem para cá. */}
           {subtela === "pedidos" && (
@@ -972,29 +934,36 @@ export default function SolicitacoesTab({
             </span>
           )}
           {subtela === "pedidos" && (
-            <section
-              aria-label="Resumo operacional de solicitações"
-              className="flex min-w-0 flex-1 items-center gap-1.5"
+            <nav
+              aria-label="Situação dos pedidos"
+              data-testid="solicitacoes-situacoes"
+              className="order-last -mx-1 flex w-full min-w-0 items-stretch gap-1 overflow-x-auto px-1 [scrollbar-width:none] sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0"
             >
-              <span className="sr-only">Resumo operacional</span>
-              {resumo.map((item) => (
-                <div
-                  key={item.id}
-                  data-testid={`resumo-solicitacoes-${item.id}`}
-                  className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
-                  title={`${item.rotulo}: ${item.valor} ${item.detalhe}`}
-                >
-                  <span className="hidden truncate text-xs font-bold text-slate-600 sm:inline">
-                    {item.rotulo}
-                  </span>
-                  <strong
-                    className={`text-base font-black tabular-nums ${item.tom}`}
+              {/* Padrão ERP: as situações são as "visões" da lista, com a
+                  contagem ao lado. Um toque filtra a tabela. */}
+              {VISOES_PEDIDOS.map((id) => {
+                const item = FILTROS.find((f) => f.id === id)!;
+                const ativa = filtro === id;
+                const alerta = id === "atraso" && contagem.atraso > 0;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={ativa}
+                    onClick={() => irPara(id)}
+                    data-testid={`resumo-solicitacoes-${id}`}
+                    className={`flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors ${FOCO} ${ativa ? "bg-[#176b4d] text-white" : "text-slate-700 hover:bg-slate-100"}`}
                   >
-                    {item.valor}
-                  </strong>
-                </div>
-              ))}
-            </section>
+                    {item.rotulo}
+                    <span
+                      className={`min-w-6 rounded-full px-1.5 text-center text-xs font-bold tabular-nums ${ativa ? "bg-white/20 text-white" : alerta ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600"}`}
+                    >
+                      {contagem[id]}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
           )}
           {/* Uma linha só: avisos, busca e o jeito de mostrar. */}
           <div className="contents text-sm text-slate-600">
@@ -1041,7 +1010,7 @@ export default function SolicitacoesTab({
               )}
             {comBusca && !aberta && (
               <div className="contents">
-                <label className="relative min-w-[16rem] flex-1">
+                <label className={`relative ${subtela === "pedidos" ? "min-w-0 flex-1 sm:ml-auto sm:w-full sm:min-w-[14rem] sm:max-w-sm sm:flex-none" : "min-w-[16rem] flex-1"}`}>
                   <span className="sr-only">Buscar</span>
                   <Search
                     className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
@@ -1163,25 +1132,7 @@ export default function SolicitacoesTab({
               aria-label="Filtros dos pedidos"
               className={`${CARTAO} grid shrink-0 gap-3 p-3 sm:p-4`}
             >
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_10rem]">
-                <label className="grid gap-1.5 text-sm font-bold text-slate-700 col-span-2 sm:col-span-3 lg:col-span-1">
-                  Buscar
-                  <span className="relative">
-                    <Search
-                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="search"
-                      value={busca}
-                      onChange={(event) => {
-                        setBusca(event.target.value);
-                      }}
-                      placeholder="Ex.: José Augusto, SOL-2026, tubos..."
-                      className={`${CAMPO} pl-9`}
-                    />
-                  </span>
-                </label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <label className="col-span-2 grid gap-1.5 text-sm font-bold text-slate-700 sm:col-span-1">
                   Solicitante
                   <select
