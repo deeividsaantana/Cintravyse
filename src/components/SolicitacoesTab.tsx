@@ -581,7 +581,8 @@ export default function SolicitacoesTab({
     ligado: podeEditar && podeImportar,
     apagadas,
     onSalvar,
-    avisar: (tom, texto) => setAviso({ tom, texto }),
+    // Sincronia automática da planilha: nada aparece na tela; erro só no console.
+    avisar: (tom, texto) => { if (tom === "erro") console.warn(`[Planilha] ${texto}`); },
   });
 
   const subtelas: ItemDasAbas<Subtela>[] = [
@@ -1081,11 +1082,10 @@ export default function SolicitacoesTab({
               </div>
             )}
           </div>
-          {aviso && (
-            <p
-              role={aviso.tom === "erro" ? "alert" : "status"}
-              className={`rounded-xl border px-3 py-2 text-sm font-bold ${aviso.tom === "erro" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}
-            >
+          {/* 22/11/2026: confirmação ("Planilha: 1 novo") não aparece mais na tela;
+              só o erro de uma ação que a pessoa acabou de fazer. */}
+          {aviso?.tom === "erro" && (
+            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">
               {aviso.texto}
             </p>
           )}

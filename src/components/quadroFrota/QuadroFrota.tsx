@@ -438,10 +438,8 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
         )}
       </section>
 
-      <p role="status" aria-live="polite" className={`${aviso ? '' : 'sr-only'} flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-inset ring-emerald-200`} data-testid="quadro-aviso">
-        {aviso && <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />}
-        {aviso}
-      </p>
+      {/* Só para leitor de tela: nenhum aviso aparece na tela (pedido de 22/11/2026). */}
+      <p role="status" aria-live="polite" className="sr-only" data-testid="quadro-aviso">{aviso}</p>
 
       {cartoes.length === 0 ? (
         <div data-quadro-reveal className={`${CARTAO} grid place-items-center gap-2 px-6 py-14 text-center`}>
