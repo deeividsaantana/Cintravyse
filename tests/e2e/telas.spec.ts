@@ -148,15 +148,16 @@ test('manutenção apresenta central operacional e fluxo das OS', async ({ page 
   await page.goto('/?screen=manutencao');
 
   await expect(page.getByRole('heading', { name: 'Manutenção', level: 1 })).toBeVisible();
-  // A aba Hoje abre primeiro, com os números do dia e a fila de oficina.
+  // A aba Hoje abre primeiro, com os números do dia e as máquinas paradas.
   await expect(page.getByRole('region', { name: 'Números de hoje' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Fila de oficina', level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Equipamentos que pararam hoje', level: 2 })).toBeVisible();
 });
 
 test('manutenção identifica a categoria do equipamento', async ({ page }) => {
   await page.goto('/?screen=manutencao');
 
-  await expect(page.locator('[aria-label="Caminhão basculante"]').first()).toBeVisible();
+  // Cada cartão do dia diz o tipo da máquina logo abaixo do prefixo.
+  await expect(page.getByTestId('cartao-parada').first().locator('header p')).not.toBeEmpty();
 });
 
 test('módulo tem uma só h1 e cabeçalho sem altura mínima', async ({ page }) => {
@@ -252,9 +253,9 @@ test('manutenção abre OS por N, foca equipamento e valida salvar por CTRL+ENTE
 
 test('manutenção apresenta uma fila operacional acionável sem cards duplicados', async ({ page }) => {
   await page.goto('/?screen=manutencao');
-  await expect(page.getByRole('heading', { name: 'Fila de oficina', level: 2 })).toBeVisible();
-  await expect(page.getByText('CB770').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /Editar OS-0100/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Equipamentos que pararam hoje', level: 2 })).toBeVisible();
+  await expect(page.getByTestId('cartao-parada').first()).toBeVisible();
+  await expect(page.getByTestId('cartao-parada').first().getByRole('button', { name: /^Ver .+ no quadro$/ })).toBeVisible();
   await expect(page.getByText('Manutenções em Destaque')).toHaveCount(0);
 });
 
@@ -420,7 +421,7 @@ test('painel de presença: quem falta sempre leva aos registros da pessoa', asyn
 });
 
 test('Quadro e Manutenção se abrem um no outro já buscando o prefixo da máquina', async ({ page }) => {
-  // A Fila de oficina fica na subtela Hoje, que abre primeiro.
+  // Os cartões de máquina parada ficam na subtela Hoje, que abre primeiro.
   await page.goto('/?screen=manutencao&shell=1');
   await page.getByRole('button', { name: /^Ver .+ no quadro$/ }).first().click();
   await expect(page).toHaveURL(/screen=frotas.*busca=/);

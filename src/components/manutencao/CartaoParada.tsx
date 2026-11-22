@@ -91,9 +91,11 @@ interface Props {
   onContinuarAlem?: () => void;
   /** Desfaz a decisão: o teto de 10 h volta. */
   onVoltarRegra?: () => void;
+  /** Abre o Quadro de Frotas já buscando esta máquina (só quem abre o Quadro). */
+  onVerNoQuadro?: () => void;
 }
 
-export function CartaoParada({ registro, parada, ordemNumero, tipo, podeEditar, horaAgora, onLiberar, onEntrar, onContinuarAlem, onVoltarRegra }: Props) {
+export function CartaoParada({ registro, parada, ordemNumero, tipo, podeEditar, horaAgora, onLiberar, onEntrar, onContinuarAlem, onVoltarRegra, onVerNoQuadro }: Props) {
   const emManutencao = EM_MANUTENCAO.has(registro.status);
   const [aberto, setAberto] = useState(false);
   const [confirmandoAlem, setConfirmandoAlem] = useState(false);
@@ -124,6 +126,11 @@ export function CartaoParada({ registro, parada, ordemNumero, tipo, podeEditar, 
         <div className="min-w-0">
           <h3 id={`${idBase}-prefixo`} className="truncate text-3xl font-black leading-tight tracking-tight text-slate-950">{registro.prefixo}</h3>
           <p className="mt-1 break-words text-xs font-semibold text-slate-500">{[tipo, ordemNumero].filter(Boolean).join(' · ')}</p>
+          {onVerNoQuadro && (
+            <button type="button" onClick={onVerNoQuadro} aria-label={`Ver ${registro.prefixo} no quadro`} className={`-ml-1 mt-1 inline-flex min-h-11 items-center px-1 text-sm font-bold text-[#176b4d] underline-offset-4 hover:underline ${FOCO}`}>
+              Ver no quadro
+            </button>
+          )}
         </div>
         <SeloSituacao parada={parada} />
       </header>
