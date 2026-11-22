@@ -1070,16 +1070,6 @@ export interface ControleEstacas {
   cravacoes: CravacaoEstaca[];
 }
 
-export interface AppNotification {
-  id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  title: string;
-  message: string;
-  timestamp: string; // HH:MM
-  read: boolean;
-  source: 'RENEA API' | 'Sistema Local' | 'Supabase Cloud';
-}
-
 export interface PeriodoArquivado {
   id: string;
   nome: string;

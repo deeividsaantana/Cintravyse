@@ -42,9 +42,6 @@ test('o mapa de chuvas é uma grade completa, com linhas por semana (M7)', () =>
 });
 
 test('a casca usa as janelas comuns (A11)', () => {
-  const sino = ler('src/app/shell/NotificationCenter.tsx');
-  assert.match(sino, /<Modal\b/);
-  assert.doesNotMatch(sino, /fixed inset-0 z-40/, 'o sino não monta janela à mão');
   const importacao = ler('src/components/SpreadsheetImportReview.tsx');
   assert.match(importacao, /<Modal\b/);
   // A prévia é a TabelaPadrao, que já traz legenda (caption) e cabeçalho com scope="col".

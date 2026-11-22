@@ -35,7 +35,7 @@ export type MudancasNuvem = Record<string, MudancaTabela>;
 /** Tabelas que só ganham linhas: nunca mandam saída. */
 const SOMENTE_ACRESCIMO = new Set(['historyLogs', 'presencasLink', TABELA_EXCLUSOES]);
 /** Fora da trava de saída em massa, como no envio inteiro. */
-const FORA_DA_TRAVA = new Set(['notifications', 'masterDataReviewQueue']);
+const FORA_DA_TRAVA = new Set(['masterDataReviewQueue']);
 
 // cyrb53: assinatura de 53 bits, rápida e sem dependência.
 const assinar = (texto: string): string => {

@@ -134,10 +134,6 @@ const blockRegistryDeletion = new URLSearchParams(location.search).get('blockedR
 const previewGroups = SIDEBAR_NAVIGATION_GROUPS
   .map(g => ({ label: g.label, items: g.items.filter(item => (PRIMARY_MODULE_IDS as readonly string[]).includes(item.id)) }))
   .filter(g => g.items.length > 0);
-const previewNotifications = [
-  { id: '1', type: 'success' as const, title: 'Sincronizacao concluida', message: 'Dados do periodo enviados para a nuvem.', timestamp: '08:12', read: false, source: 'Supabase Cloud' as const },
-  { id: '2', type: 'warning' as const, title: 'Estoque baixo', message: 'Produto de lubrificacao abaixo do minimo.', timestamp: '07:40', read: true, source: 'Sistema Local' as const },
-];
 
 // Cadastros com estado de verdade: excluir tira da lista e põe na Lixeira,
 // restaurar devolve. Com ?blockedRegistry=1 todo cadastro aparece como usado
@@ -492,17 +488,8 @@ const screens: Record<string, React.ReactNode> = {
       <main className="erp-workspace">
         <TopoPreview
           currentUser={{ displayName: 'Deivid Santana', email: 'deivid@renea.com.br' } as never}
-          isNotificationOpen={false}
-          notifications={previewNotifications}
-          unreadCount={1}
           isCloudConnected
           lastCloudSync="04/09/2026 21:40"
-          onNavigate={noop}
-          onToggleNotifications={noop}
-          onCloseNotifications={noop}
-          onMarkAllNotificationsAsRead={noop}
-          onClearNotifications={noop}
-          onMarkNotificationAsRead={noop}
           onLogout={noop}
         />
       </main>
@@ -722,9 +709,6 @@ createRoot(document.getElementById('app-root')!).render(
         <main className="erp-workspace" id="main-workspace">
           <TopoPreview
             currentUser={{ displayName: 'Deivid Santana', email: 'deivid@renea.com.br' } as never}
-            isNotificationOpen={false}
-            notifications={previewNotifications}
-            unreadCount={1}
             isCloudConnected
             // ?salvamento=falhou|aguardando|enviando|offline mostra cada estado do topo.
             salvamento={descreverSalvamento({
@@ -736,12 +720,6 @@ createRoot(document.getElementById('app-root')!).render(
             })}
             onRetryUpload={noop}
             lastCloudSync="04/09/2026 21:40"
-            onNavigate={noop}
-            onToggleNotifications={noop}
-            onCloseNotifications={noop}
-            onMarkAllNotificationsAsRead={noop}
-            onClearNotifications={noop}
-            onMarkNotificationAsRead={noop}
             onLogout={noop}
           />
           <div id="main-tab-viewport" tabIndex={-1} className="flex-1 overflow-x-clip w-full max-w-none p-[var(--renea-respiro)]">

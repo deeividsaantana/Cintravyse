@@ -7,9 +7,6 @@ import gsap from 'gsap';
 import { reduzMovimento } from '../../shared/motion/reduzMovimento';
 import { LogOut } from 'lucide-react';
 import type { SupabaseAuthUser as User } from '../../auth/supabaseAuth';
-import type { AppNotification } from '../../types';
-import { NotificationCenter } from './NotificationCenter';
-import type { Alerta } from '../../utils/alertas';
 import { OBRA } from '../../config/obra';
 import { descreverSalvamento, type DescricaoSalvamento } from '../../cloud/estadoSalvamento';
 
@@ -19,10 +16,6 @@ interface DesktopTopBarProps {
   currentUser: User | null;
   meuAvatar: MeuAvatar | null;
   onAbrirPerfil: () => void;
-  isNotificationOpen: boolean;
-  notifications: AppNotification[];
-  unreadCount: number;
-  alertas?: Alerta[];
   isCloudConnected: boolean;
   /** Estado do salvamento (aparelho e nuvem). Sem ele, usa só isCloudConnected. */
   salvamento?: DescricaoSalvamento;
@@ -31,12 +24,6 @@ interface DesktopTopBarProps {
   pendingCount?: number;
   isRetryingPending?: boolean;
   onRetryPending?: () => void;
-  onNavigate: (tab: string) => void;
-  onToggleNotifications: () => void;
-  onCloseNotifications: () => void;
-  onMarkAllNotificationsAsRead: () => void;
-  onClearNotifications: () => void;
-  onMarkNotificationAsRead: (id: string) => void;
   onLogout: () => void;
 }
 
@@ -44,10 +31,6 @@ export function DesktopTopBar({
   currentUser,
   meuAvatar,
   onAbrirPerfil,
-  isNotificationOpen,
-  notifications,
-  unreadCount,
-  alertas,
   isCloudConnected,
   salvamento: salvamentoRecebido,
   onRetryUpload,
@@ -55,12 +38,6 @@ export function DesktopTopBar({
   pendingCount,
   isRetryingPending,
   onRetryPending,
-  onNavigate,
-  onToggleNotifications,
-  onCloseNotifications,
-  onMarkAllNotificationsAsRead,
-  onClearNotifications,
-  onMarkNotificationAsRead,
   onLogout,
 }: DesktopTopBarProps) {
   const salvamento = salvamentoRecebido ?? descreverSalvamento({ online: true, conectado: isCloudConnected, enviando: false, pendente: false, falhasSeguidas: 0 });
@@ -69,7 +46,7 @@ export function DesktopTopBar({
   const logoutBtnRef = useRef<HTMLButtonElement>(null);
 
   // O cabeçalho da aba sobe para esta faixa (index.css, "Cabeçalho na barra
-  // do topo") e precisa saber quanto o lado direito (salvamento, sino,
+  // do topo") e precisa saber quanto o lado direito (salvamento e
   // pessoa) ocupa para não passar por baixo dele.
   useEffect(() => {
     const acoes = acoesRef.current;
@@ -155,18 +132,6 @@ export function DesktopTopBar({
             )}
           </div>
         )}
-        <NotificationCenter
-          isOpen={isNotificationOpen}
-          notifications={notifications}
-          unreadCount={unreadCount}
-          onToggle={onToggleNotifications}
-          onClose={onCloseNotifications}
-          onMarkAllAsRead={onMarkAllNotificationsAsRead}
-          onClear={onClearNotifications}
-          onMarkOneAsRead={onMarkNotificationAsRead}
-          alertas={alertas}
-          onAlertaClick={onNavigate}
-        />
         <button
           type="button"
           onClick={onAbrirPerfil}

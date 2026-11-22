@@ -44,7 +44,6 @@ export const SYSTEM_BACKUP_ARRAY_KEYS = [
   'orcamentoItens',
   'controleEquipamentosDiario',
   'periodosArquivados',
-  'notifications',
   'historyLogs',
   'masterDataReviewQueue',
   'exclusoes',

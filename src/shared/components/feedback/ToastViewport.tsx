@@ -1,18 +1,24 @@
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
-import type { AppNotification } from '../../../types';
-
-interface ToastViewportProps {
-  toasts: AppNotification[];
+/** Aviso rápido no canto: erro ou algo que não foi salvo. Some sozinho. */
+export interface Aviso {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
 }
 
-const getToastColorClass = (type: AppNotification['type']) => {
+interface ToastViewportProps {
+  toasts: Aviso[];
+}
+
+const getToastColorClass = (type: Aviso['type']) => {
   if (type === 'success') return 'border-emerald-500/30 bg-white';
   if (type === 'warning') return 'border-amber-500/30 bg-white';
   if (type === 'error') return 'border-rose-500/30 bg-white';
   return 'border-blue-500/30 bg-white';
 };
 
-const ToastIcon = ({ type }: { type: AppNotification['type'] }) => {
+const ToastIcon = ({ type }: { type: Aviso['type'] }) => {
   if (type === 'success') return <CheckCircle2 className="w-5 h-5 text-emerald-700" aria-hidden="true" />;
   if (type === 'warning') return <AlertTriangle className="w-5 h-5 text-amber-700" aria-hidden="true" />;
   if (type === 'error') return <XCircle className="w-5 h-5 text-rose-700" aria-hidden="true" />;
@@ -36,12 +42,8 @@ export function ToastViewport({ toasts }: ToastViewportProps) {
               <ToastIcon type={toast.type} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold block text-slate-900">{toast.title}</span>
-                <span className="text-xs tabular-nums shrink-0 text-[#5b6870]">{toast.timestamp}</span>
-              </div>
+              <span className="text-sm font-bold block text-slate-900">{toast.title}</span>
               <p className="text-sm text-slate-700 leading-relaxed mt-1">{toast.message}</p>
-              {toast.source && <p className="mt-1.5 text-xs font-semibold text-emerald-800">{toast.source}</p>}
             </div>
           </div>
         ))}
