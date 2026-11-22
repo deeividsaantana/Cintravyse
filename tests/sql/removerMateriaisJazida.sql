@@ -1,4 +1,5 @@
--- Cenários da saída de Materiais e Jazida do bloco (migração 202611100001).
+-- Cenários da saída de Materiais e Jazida do bloco (migração 202611100001;
+-- desde 202611220001 o gatilho só tira, sem guardar cópia).
 -- Roda num banco de teste com todas as migrações aplicadas. Cria a própria
 -- organização e o próprio usuário, com nomes aleatórios, então pode rodar
 -- várias vezes. Qualquer falha levanta exceção.
@@ -16,10 +17,9 @@ declare
   v_org text := current_setting('t.org');
   v_payload jsonb;
   v_count integer;
-  v_registro jsonb;
   v_versao timestamptz;
 begin
-  -- 1. Bloco que chega com as coleções removidas: grava sem elas e guarda tudo.
+  -- 1. Bloco que chega com as coleções removidas: grava sem elas.
   insert into public.erp_snapshots (organization_id, version, updated_at, updated_by, record_count, payload)
   values (v_org, gen_random_uuid(), clock_timestamp(), auth.uid(), 0, jsonb_build_object(
     'abastecimentos', jsonb_build_array(jsonb_build_object('id', 'ab-1', 'litros', 10)),
@@ -45,12 +45,9 @@ begin
     raise exception 'cenário 1: outra coleção mudou';
   end if;
   if v_count <> 2 then raise exception 'cenário 1: contagem % (esperado 2)', v_count; end if;
-  if (select count(*) from public.erp_colecoes_removidas where organization_id = v_org) <> 5 then
-    raise exception 'cenário 1: arquivo com % registros (esperado 5)', (select count(*) from public.erp_colecoes_removidas where organization_id = v_org);
-  end if;
 
-  -- 2. Aparelho antigo manda movimento pelo envio por mudança: arquivo recebe,
-  --    bloco não; a outra coleção da mesma chamada entra normalmente.
+  -- 2. Aparelho antigo manda movimento pelo envio por mudança: bloco não
+  --    recebe; a outra coleção da mesma chamada entra normalmente.
   perform public.apply_erp_snapshot_changes(v_org, jsonb_build_object(
     'materiaisMovimentos', jsonb_build_object('upsert', jsonb_build_array(
       jsonb_build_object('id', 'mov-1', 'quantidade', 5, 'atualizadoEm', '2026-11-10T11:00:00.000Z'))),
@@ -58,15 +55,6 @@ begin
   select public.erp_montar_bloco(organization_id, payload) into v_payload from public.erp_snapshots where organization_id = v_org;
   if v_payload ? 'materiaisMovimentos' then raise exception 'cenário 2: movimento voltou ao bloco'; end if;
   if jsonb_array_length(v_payload -> 'abastecimentos') <> 2 then raise exception 'cenário 2: abastecimento não entrou'; end if;
-  select registro into v_registro from public.erp_colecoes_removidas where organization_id = v_org and colecao = 'materiaisMovimentos' and id = 'mov-1';
-  if v_registro ->> 'quantidade' <> '5' then raise exception 'cenário 2: versão nova não arquivada'; end if;
-
-  -- 3. Versão mais velha não apaga a mais nova no arquivo.
-  perform public.apply_erp_snapshot_changes(v_org, jsonb_build_object(
-    'materiaisMovimentos', jsonb_build_object('upsert', jsonb_build_array(
-      jsonb_build_object('id', 'mov-1', 'quantidade', 1, 'atualizadoEm', '2026-11-10T10:00:00.000Z')))));
-  select registro into v_registro from public.erp_colecoes_removidas where organization_id = v_org and colecao = 'materiaisMovimentos' and id = 'mov-1';
-  if v_registro ->> 'quantidade' <> '5' then raise exception 'cenário 3: versão velha sobrescreveu o arquivo'; end if;
 
   -- 4. Envio inteiro de aparelho antigo, com tickets e marcas de jazida: passa
   --    pelas travas e grava sem eles.
@@ -79,10 +67,6 @@ begin
   if v_payload ? 'ticketsJazida' then raise exception 'cenário 4: tickets voltaram ao bloco'; end if;
   if jsonb_array_length(v_payload -> 'exclusoes') <> 1 then raise exception 'cenário 4: marca de jazida ficou no bloco'; end if;
   if v_count <> 3 then raise exception 'cenário 4: contagem % (esperado 3)', v_count; end if;
-  if not exists (select 1 from public.erp_colecoes_removidas where organization_id = v_org and colecao = 'ticketsJazida' and id = 'tk-2')
-     or not exists (select 1 from public.erp_colecoes_removidas where organization_id = v_org and colecao = 'exclusoes' and id = 'exc-tk-9') then
-    raise exception 'cenário 4: envio inteiro não arquivado';
-  end if;
 
   -- 5. Salvamento comum não cria cópia no histórico por causa da contagem.
   v_count := (select count(*) from public.erp_snapshot_history where organization_id = v_org);
@@ -92,10 +76,9 @@ begin
     raise exception 'cenário 5: salvamento comum copiou o bloco no histórico';
   end if;
 
-  -- 6. Arquivo fechado para o app.
-  if has_table_privilege('authenticated', 'public.erp_colecoes_removidas', 'SELECT')
-     or has_table_privilege('authenticated', 'public.erp_colecoes_removidas', 'INSERT') then
-    raise exception 'cenário 6: app enxerga ou grava o arquivo';
+  -- 6. O arquivo antigo foi apagado (202611220001).
+  if to_regclass('public.erp_colecoes_removidas') is not null then
+    raise exception 'cenário 6: tabela erp_colecoes_removidas ainda existe';
   end if;
 end $$;
 
@@ -127,9 +110,6 @@ begin
   if exists (select 1 from public.erp_snapshots where organization_id = v_org
              and (payload ? 'materiaisMovimentos' or jsonb_array_length(payload -> 'exclusoes') <> 0)) then
     raise exception 'cenário 7: limpeza inicial não tirou do bloco';
-  end if;
-  if not exists (select 1 from public.erp_colecoes_removidas where organization_id = v_org and id in ('mov-9', 'exc-tk-8') having count(*) = 2) then
-    raise exception 'cenário 7: limpeza inicial não arquivou';
   end if;
 end $$;
 

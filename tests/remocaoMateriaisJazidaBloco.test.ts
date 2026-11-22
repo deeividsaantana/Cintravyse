@@ -22,6 +22,18 @@ test('materiais e jazida: o gatilho guarda antes de tirar e nunca apaga do arqui
   assert.ok(migration.indexOf('insert into public.erp_colecoes_removidas') < migration.indexOf('new.payload := new.payload - v_colecao'));
 });
 
+test('materiais e jazida: arquivo antigo apagado, gatilho só tira do bloco', () => {
+  const apagar = read('supabase/migrations/202611220001_apagar_arquivo_materiais_jazida.sql');
+  // O gatilho é trocado antes de apagar a tabela, senão salvamentos dariam erro.
+  assert.ok(apagar.indexOf('create or replace function public.erp_tirar_colecoes_removidas()') < apagar.indexOf('drop table if exists public.erp_colecoes_removidas'));
+  assert.doesNotMatch(apagar, /insert into public\.erp_colecoes_removidas/);
+  assert.match(apagar, /new\.payload := new\.payload - v_colecao/);
+  assert.match(apagar, /erp_contar_separados/);
+  // Só essa tabela é apagada.
+  assert.equal((apagar.match(/drop table/g) ?? []).length, 1);
+  assert.doesNotMatch(apagar, /\bdelete from\b|\btruncate\b/i);
+});
+
 // Com um Postgres de teste (todas as migrações aplicadas), roda os cenários reais.
 test('materiais e jazida: cenários no banco de teste', { skip: !process.env.PG_TEST_URL && 'sem PG_TEST_URL' }, () => {
   const run = spawnSync('psql', [String(process.env.PG_TEST_URL), '-f', 'tests/sql/removerMateriaisJazida.sql'], { encoding: 'utf8' });
