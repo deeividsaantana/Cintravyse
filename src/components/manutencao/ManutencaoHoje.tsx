@@ -31,11 +31,13 @@ interface Props {
   onSaveControle: (registro: ControleEquipamentoDiario) => void;
   /** Grava decisão sobre o dia (mesmo caminho da Conferência, que refaz a OS). */
   onSalvarConferencia?: (registro: ControleEquipamentoDiario, descricao: string) => void;
+  /** Abre o Quadro de Frotas buscando o prefixo; sem ele o botão não aparece. */
+  onVerNoQuadro?: (prefixo: string) => void;
 }
 
 interface Contador { id: string; rotulo: string; valor: string; detalhe: string; Icone: LucideIcon; destaque?: 'rose' | 'amber'; aoClicar?: () => void }
 
-export function ManutencaoHoje({ relatorio, registros, equipamentos, motoristas, responsavel, podeEditar, agora, paraConferir, onAbrirConferencia, onSaveControle, onSalvarConferencia }: Props) {
+export function ManutencaoHoje({ relatorio, registros, equipamentos, motoristas, responsavel, podeEditar, agora, paraConferir, onAbrirConferencia, onSaveControle, onSalvarConferencia, onVerNoQuadro }: Props) {
   const registroPorId = useMemo(() => new Map(registros.map(registro => [registro.id, registro])), [registros]);
   const linhas = useMemo(() => [...relatorio.linhas].sort((a, b) => {
     const peso = (linha: typeof a) => (linha.parada.periodos.some(periodo => periodo.fim === null) ? 0 : linha.grupo === 'OK' ? 2 : 1);
@@ -126,6 +128,7 @@ export function ManutencaoHoje({ relatorio, registros, equipamentos, motoristas,
                     tipo={linha.tipo}
                     podeEditar={podeEditar}
                     horaAgora={horaAgora}
+                    onVerNoQuadro={onVerNoQuadro ? () => onVerNoQuadro(registro.prefixo) : undefined}
                     onLiberar={hora => lancar(registro, 'Disponível', hora, registro.motivoManutencao || '')}
                     onEntrar={(hora, motivo) => lancar(registro, 'Em manutenção', hora, motivo)}
                     onContinuarAlem={onSalvarConferencia ? () => onSalvarConferencia(continuarAlemDoLimite(registro, responsavel, new Date().toISOString()), `Manutenção: ${registro.prefixo} segue além de 10 h até a liberação.`) : undefined}
