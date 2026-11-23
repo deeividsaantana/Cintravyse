@@ -21,6 +21,13 @@ import { SolicitacoesPreview } from './solicitacoesPreview';
 import ContratacaoTab from '../src/components/ContratacaoTab';
 import { ContratacaoPeloLink } from '../src/components/contratacao/ContratacaoPeloLink';
 import DevTab from '../src/components/DevTab';
+import { PESSOAS_INICIAIS } from '../src/utils/solicitacoes';
+
+/** Dev no preview com os papéis de Compras em memória (como no app). */
+function DevComCompras() {
+  const [pessoas, setPessoas] = React.useState(PESSOAS_INICIAIS);
+  return <DevTab pessoasCompras={pessoas} onSalvarPessoasCompras={setPessoas} />;
+}
 import ProgramacaoTab from '../src/components/ProgramacaoTab';
 import { INITIAL_PROGRAMACAO } from '../src/utils/initialProgramacaoData';
 import { DesktopSidebar } from '../src/app/shell/DesktopSidebar';
@@ -575,7 +582,7 @@ const screens: Record<string, React.ReactNode> = {
   contratacao: <ContratacaoTab />,
   // Link individual: ?screen=contratacao-link&link=5&papel=gerente_2
   'contratacao-link': <div className="min-h-dvh bg-[#f7f8f6] p-[var(--renea-respiro)]"><ContratacaoPeloLink token={new URLSearchParams(location.search).get('link') || '6'} /></div>,
-  dev: <DevTab />,
+  dev: <DevComCompras />,
   pluviometro: <PluviometroTab diarios={fx.diariosChuva} obras={fx.obras} responsavel="Deivid Santana" podeEditar onSave={noop} />,
   'diario-obra': (
     <DiarioObraTab

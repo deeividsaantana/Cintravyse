@@ -4,6 +4,7 @@ import {
   MENSAGEM_PRAZO_NEGADO,
   PESSOAS_INICIAIS,
   abrirSolicitacao,
+  definirPapelDoLogin,
   acoesDisponiveis,
   aplicarAcao,
   estaEmAtraso,
@@ -413,4 +414,26 @@ test('login com sobrenome acha a pessoa cadastrada só com o primeiro nome', () 
   assert.equal(pessoaDoUsuario(pessoas, { nome: 'Brunoso' }), null, 'só nome inteiro, não pedaço de palavra');
   const doLogin = pessoaDoUsuario(pessoas, { nome: 'Bruno Luscher' })!;
   assert.equal(exerce({ nome: doLogin.nome, papel: doLogin.papel }, 'aprovador'), true, 'Bruno consegue aprovar com o login de nome completo');
+});
+
+test('papel de Compras marcado na aba Dev liga o login à pessoa certa', () => {
+  const pessoas = [
+    { id: 'b', nome: 'Bruno', papel: 'aprovador' as const, ativo: true },
+    { id: 'c', nome: 'Cássia', papel: 'suprimentos' as const, ativo: true },
+  ];
+  // Acha pelo nome e grava o e-mail do login, sem trocar o nome (Bruno segue aprovando).
+  const bruno = definirPapelDoLogin(pessoas, { nome: 'Bruno Luscher', email: 'bruno@renea.com.br' }, 'aprovador', 'novo');
+  assert.deepEqual(bruno.find(p => p.id === 'b'), { id: 'b', nome: 'Bruno', papel: 'aprovador', ativo: true, email: 'bruno@renea.com.br' });
+  assert.equal(bruno.length, 2);
+  // Login novo vira cadastro novo.
+  const pedro = definirPapelDoLogin(pessoas, { nome: 'Pedro Almox', email: 'pedro@renea.com.br' }, 'recebedor', 'p1');
+  assert.deepEqual(pedro.at(-1), { id: 'p1', nome: 'Pedro Almox', email: 'pedro@renea.com.br', papel: 'recebedor', ativo: true });
+  // Tirar o papel inativa, não apaga; marcar de novo reaproveita o mesmo cadastro.
+  const semPapel = definirPapelDoLogin(pedro, { nome: 'Pedro Almox', email: 'pedro@renea.com.br' }, null, 'x');
+  assert.equal(semPapel.find(p => p.id === 'p1')?.ativo, false);
+  const deVolta = definirPapelDoLogin(semPapel, { nome: 'Pedro Almox', email: 'pedro@renea.com.br' }, 'suprimentos', 'p2');
+  assert.equal(deVolta.length, 3);
+  assert.deepEqual(deVolta.find(p => p.id === 'p1'), { id: 'p1', nome: 'Pedro Almox', email: 'pedro@renea.com.br', papel: 'suprimentos', ativo: true });
+  // Tirar o papel de quem não tem cadastro não muda nada.
+  assert.deepEqual(definirPapelDoLogin(pessoas, { nome: 'Ninguém', email: 'n@x.com' }, null, 'z'), pessoas);
 });

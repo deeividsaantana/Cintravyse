@@ -25,7 +25,6 @@ import {
   PackageSearch,
   Search,
   ShieldCheck,
-  UsersRound,
 } from "lucide-react";
 import { Modal, PageHeader, isoDay } from "../shared/ui";
 import { TelaCheia } from "../shared/ui/TelaCheia";
@@ -67,7 +66,6 @@ import { SeloItem } from "./solicitacoes/SeloItem";
 import { CartaoCompraCompacto } from "./solicitacoes/CartaoCompraCompacto";
 import { AvatarPessoa, dataHora } from "./solicitacoes/AvatarPessoa";
 import { PlanilhaCompras } from "./solicitacoes/PlanilhaCompras";
-import { PessoasSuprimentosLista } from "./solicitacoes/PessoasSuprimentosLista";
 import { useSincroniaPlanilha } from "./solicitacoes/useSincroniaPlanilha";
 import { RelatorioDoPeriodo } from "./solicitacoes/RelatorioDoPeriodo";
 
@@ -78,8 +76,7 @@ type Subtela =
   | "conferencia"
   | "historico"
   | "planilha"
-  | "relatorio"
-  | "pessoas";
+  | "relatorio";
 
 interface SolicitacoesTabProps {
   solicitacoes: Solicitacao[];
@@ -97,8 +94,6 @@ interface SolicitacoesTabProps {
   /** Ids e números dos pedidos apagados de vez: a planilha não os traz de volta. */
   apagadas?: ReadonlySet<string>;
   onExcluir?: (id: string) => void;
-  /** Grava quem faz o quê no módulo (só o administrador vê a subtela). */
-  onSalvarPessoas?: (pessoas: PessoaSuprimentos[]) => void;
 }
 
 type ComSituacao = { sol: Solicitacao; situacao: SituacaoSolicitacao };
@@ -196,7 +191,6 @@ export default function SolicitacoesTab({
   podeApagar = false,
   apagadas,
   onExcluir,
-  onSalvarPessoas,
 }: SolicitacoesTabProps) {
   const escopo = useRef<HTMLElement>(null);
   const arquivo = useRef<HTMLInputElement>(null);
@@ -631,11 +625,6 @@ export default function SolicitacoesTab({
         },
         { id: "historico", rotulo: "Histórico", icone: History },
         { id: "planilha", rotulo: "Planilha", icone: FileSpreadsheet },
-        // Quem é Suprimentos e quem confere a chegada: sem isto ninguém além
-        // do administrador consegue receber material (22/11/2026).
-        ...(ehAdmin && onSalvarPessoas
-          ? [{ id: "pessoas" as const, rotulo: "Papéis", icone: UsersRound }]
-          : []),
       ],
     },
   ];
@@ -1418,12 +1407,6 @@ export default function SolicitacoesTab({
             </div>
           )}
           {subtela === "planilha" && <PlanilhaCompras />}
-          {subtela === "pessoas" && ehAdmin && onSalvarPessoas && (
-            <PessoasSuprimentosLista
-              pessoas={pessoas}
-              onSalvar={onSalvarPessoas}
-            />
-          )}
           {subtela === "relatorio" && (
             <RelatorioDoPeriodo
               solicitacoes={solicitacoes}
