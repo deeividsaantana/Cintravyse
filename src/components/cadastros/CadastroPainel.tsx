@@ -52,7 +52,7 @@ export default function CadastroPainel({ titulo, subtitulo, topo, rodape, onFech
 
   if (telaCheia) {
     return createPortal(
-      <div ref={fundo} data-lancamento="" className="fixed inset-0 z-[120] flex flex-col bg-[#f4f7f5]">
+      <div ref={fundo} data-lancamento="" className="fixed inset-0 z-[120] flex flex-col bg-white">
         <section ref={painel} role="dialog" aria-modal="true" aria-label={titulo} data-testid={testId} className="flex min-h-0 flex-1 flex-col">
           <header className="border-b border-slate-200 bg-white pt-[env(safe-area-inset-top)]">
             <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">

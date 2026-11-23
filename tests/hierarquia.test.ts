@@ -186,3 +186,13 @@ test('arquivo da equipe sai sem acento nem espaço', () => {
   assert.equal(nomeDeArquivo('Equipe da Fábrica'), 'EQUIPE_DA_FABRICA');
   assert.equal(nomeDeArquivo('  '), 'PESSOAS');
 });
+
+test('equipes têm uma tela só: Cadastros > Equipes (a Presença só leva para lá)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const presenca = readFileSync('src/components/ControlePresencaTab.tsx', 'utf8');
+  assert.doesNotMatch(presenca, /rotulo: 'Equipes'/);
+  assert.match(presenca, /onGerenciarEquipes/);
+  const cadastros = readFileSync('src/components/CadastrosTab.tsx', 'utf8');
+  assert.match(cadastros, /data-testid="equipes-sincronizar"/);
+  assert.match(cadastros, /pedidoEquipes/);
+});

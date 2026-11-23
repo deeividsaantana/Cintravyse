@@ -481,6 +481,8 @@ export default function App() {
   const [pedidoFrota, setPedidoFrota] = useState<{ prefixo: string; vez: number }>({ prefixo: '', vez: 0 });
   const [pedidoManutencao, setPedidoManutencao] = useState<{ prefixo: string; vez: number }>({ prefixo: '', vez: 0 });
   const [pedidoNovoColaborador, setPedidoNovoColaborador] = useState(0);
+  /** Maior que zero: Cadastros abre direto em Equipes ("Gerenciar equipes" da Presença). */
+  const [pedidoEquipes, setPedidoEquipes] = useState(0);
   /** Aba aberta pela aba Relatórios: ela já entra na parte de relatório. */
   // Recorte de datas do painel. Fica aqui, e não dentro do Dashboard, porque
   // o controle é renderizado na barra superior, ao lado do estado da nuvem.
@@ -3140,22 +3142,6 @@ export default function App() {
     );
   };
 
-  // Sem a marca em `exclusoes`, a próxima sincronização juntava a lista do
-  // aparelho com a da nuvem e a equipe excluída voltava (16/10/2026).
-  const handleDeleteGrupoEquipe = (id: string) => {
-    if (exclusaoRecusada(podeExcluirCadastro)) return;
-    const grupo = gruposEquipe.find(item => item.id === id);
-    if (!grupo) return;
-    excluirCadastros({
-      tabela: 'gruposEquipe',
-      storageKey: 'renea_grupos_equipes',
-      tela: 'Grupos / Equipes',
-      itens: [{ item: grupo, rotulo: grupo.nome }],
-      lista: gruposEquipe,
-      setLista: setGruposEquipe,
-    });
-  };
-
   // Sincronização das equipes com a planilha do efetivo. Chega já conferida
   // pelo administrativo: aqui só grava, registra e sincroniza.
   // Zera o dia de uma equipe no serviço e limpa o retrato local. A reserva do
@@ -4070,6 +4056,7 @@ export default function App() {
     setPedidoFrota(atual => (atual.prefixo ? { ...atual, prefixo: '' } : atual));
     setPedidoManutencao(atual => (atual.prefixo ? { ...atual, prefixo: '' } : atual));
     setPedidoNovoColaborador(0);
+    setPedidoEquipes(0);
     // A busca do menu não fica filtrada depois de escolher a tela (B6).
     setMenuSearch('');
     // Endereço antigo abre a tela onde aquele dado mora hoje.
@@ -4302,8 +4289,10 @@ export default function App() {
                 podeExcluir={pode(currentUserRole, 'cadastros', 'excluir')}
                 ehAdmin={currentUserRole === 'admin'}
                 pedidoNovoColaborador={pedidoNovoColaborador}
+                pedidoEquipes={pedidoEquipes}
                 gruposEquipe={gruposEquipe}
                 onSaveGrupoEquipe={handleSaveGrupoEquipe}
+                onSyncEquipesPlanilha={handleSyncEquipesPlanilha}
                 onSaveEmpresa={handleSaveEmpresa}
                 onSaveObra={handleSaveObra}
                 onSaveEquipamento={handleSaveEquipamento}
@@ -4505,15 +4494,13 @@ export default function App() {
                 historicoPresencas={historicoPresencas}
                 pendingPublicSubmissionsCount={pendingPublicSubmissionsCount}
                 onRestorePresenceHistory={handleRestorePresenceHistory}
-                onSaveGrupoEquipe={handleSaveGrupoEquipe}
-                onDeleteGrupoEquipe={podeExcluirCadastro ? handleDeleteGrupoEquipe : undefined}
                 onUpdatePresencaLink={handleUpdatePresencaLink}
                 onLancarPresencaManual={handleLancarPresencaManual}
                 presencasInativas={presencasLinkInativas}
                 onInativarPresencaLink={handleInativarPresencaLink}
                 onReativarPresencaLink={handleReativarPresencaLink}
                 onResetPresencaDia={handleResetPresencaDia}
-                onSyncEquipesPlanilha={handleSyncEquipesPlanilha}
+                onGerenciarEquipes={() => { navigateTo('cadastros'); setPedidoEquipes(atual => atual + 1); }}
               />
             )}
 

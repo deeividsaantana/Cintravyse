@@ -18,12 +18,9 @@ import {
   FileText,
   Filter,
   History,
-  Plus,
-  Printer,
   Radio,
   RotateCcw,
   Search,
-  Trash2,
   Undo2,
   Users,
   UserX,
@@ -31,14 +28,6 @@ import {
   X,
   PieChart,
 } from 'lucide-react';
-import { companiesForTeams } from '../masterData/centralRegistry';
-import {
-  applyTeamSyncPlan,
-  buildTeamSyncPlan,
-  parseEfetivoRows,
-  type TeamSyncPlan,
-} from '../utils/teamSpreadsheetSync';
-import { generateSecurePublicToken } from '../utils/publicLinkSecurity';
 import { CartaoIndicador, ConfirmDialog, Modal, PageHeader } from '../shared/ui';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
@@ -58,7 +47,6 @@ import RelatoriosPresenca from './presenca/RelatoriosPresenca';
 import { EscalaSabado } from './presenca/EscalaSabado';
 import reneaLogo from '../assets/images/logo-renea-dark.svg';
 import { addCorporateSummarySheet, configureCorporateWorkbook, createCorporateWorkbook, downloadCorporateWorkbook, styleCorporateWorksheet } from '../utils/excelCorporate';
-import { baixarPlanilhaEquipes } from '../utils/exportarEquipesExcel';
 import { generateUniversalPdfReport } from '../utils/universalPdfReport';
 import { imprimirEmUmaFolha } from '../utils/imprimirEmUmaFolha';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
@@ -123,9 +111,6 @@ interface ControlePresencaTabProps {
   gruposEquipe: GrupoEquipe[];
   presencasLink: PresencaApontamento[];
   historicoPresencas: HistoricoPresenca[];
-  onSaveGrupoEquipe: (grupo: GrupoEquipe, isNew: boolean) => void;
-  /** Sem ele, não aparece Excluir equipe: só o administrador exclui cadastro. */
-  onDeleteGrupoEquipe?: (id: string) => void;
   onUpdatePresencaLink: (id: string, status: PresencaStatus, observacao: string, motivo: string) => void;
   /** Lançar a presença de uma equipe que não usou o link. */
   onLancarPresencaManual?: (
@@ -141,12 +126,6 @@ interface ControlePresencaTabProps {
   onReativarPresencaLink?: (ids: string[]) => void;
   /** Apaga os envios e a reserva do dia, liberando um novo apontamento. */
   onResetPresencaDia?: (grupoId: string, data: string) => Promise<{ success: boolean; message: string }>;
-  /** Grava a sincronização já conferida pelo administrativo. */
-  onSyncEquipesPlanilha?: (
-    funcionarios: Funcionario[],
-    gruposEquipe: GrupoEquipe[],
-    resumo: TeamSyncPlan['resumo'],
-  ) => Promise<{ success: boolean; message: string }>;
   /**
    * Envios do link público que já chegaram no Supabase mas ainda não foram
    * incorporados a este retrato local. Um número maior que zero por muito
@@ -162,9 +141,11 @@ interface ControlePresencaTabProps {
   onRestorePresenceHistory?: () => Promise<{ success: boolean; message: string }>;
   /** Parte que abre primeiro; a aba Relatórios pede 'relatorios'. */
   viewInicial?: View;
+  /** Leva para Cadastros > Equipes, a única tela onde as equipes se criam e se editam. */
+  onGerenciarEquipes?: () => void;
 }
 
-type View = 'ao-vivo' | 'relatorios' | 'equipes' | 'registros' | 'historico';
+type View = 'ao-vivo' | 'relatorios' | 'registros' | 'historico';
 
 const localToday = () => {
   const now = new Date();
@@ -208,10 +189,6 @@ const normalizeRecord = (record: PresencaApontamento): PresencaApontamento => ({
   status: STATUS_OPTIONS.includes(record?.status) ? record.status : 'Outro',
 });
 
-const generateToken = () => Array.from(crypto.getRandomValues(new Uint32Array(4)))
-  .map(part => part.toString(36))
-  .join('-');
-
 const presenceLink = (token: string) => `${window.location.origin}/presenca-link/${encodeURIComponent(token)}`;
 const duplicateKey = (record: PresencaApontamento) => `${record.grupoId}|${record.data}|${record.funcionarioId}`;
 
@@ -226,27 +203,6 @@ const saveBlob = (blob: Blob, name: string) => {
   URL.revokeObjectURL(url);
 };
 
-/** Lista de uma equipe no papel: folha A4 só, montada na hora e apagada depois. */
-const imprimirEquipe = (nome: string, detalhe: string, pessoas: readonly Funcionario[]) => {
-  const folha = document.createElement('section');
-  folha.style.cssText = 'font-family:Arial,sans-serif;color:black;background:white';
-  const linha = (celulas: string[], cabecalho = false) => {
-    const div = document.createElement('div');
-    div.style.cssText = `display:grid;grid-template-columns:1fr 120px 120px;gap:8px;border-bottom:1px solid lightgray;padding:10px 0${cabecalho ? ';background:whitesmoke;font-weight:bold' : ''}`;
-    for (const texto of celulas) div.appendChild(document.createElement('span')).textContent = texto;
-    return div;
-  };
-  const titulo = folha.appendChild(document.createElement('h1'));
-  titulo.style.cssText = 'font-size:22px;margin:0 0 8px';
-  titulo.textContent = nome;
-  const sub = folha.appendChild(document.createElement('p'));
-  sub.style.cssText = 'color:gray;margin:0 0 12px';
-  sub.textContent = detalhe;
-  folha.appendChild(linha(['Colaborador', 'Matrícula', 'Situação'], true));
-  for (const pessoa of pessoas) folha.appendChild(linha([pessoa.nome || 'Sem nome', pessoa.matricula || '—', pessoa.status || 'Ativo']));
-  document.body.appendChild(folha);
-  imprimirEmUmaFolha(folha, { titulo: nome, aoTerminar: () => folha.remove() });
-};
 const dataBr = (iso: string) => (iso ? iso.split('-').reverse().join('/') : '');
 
 /** "2026-09-03T14:05:00.000Z" vira "03/09/2026 11:05"; texto que não é data fica como veio. */
@@ -268,25 +224,20 @@ export default function ControlePresencaTab({
   gruposEquipe = [],
   presencasLink = [],
   historicoPresencas = [],
-  onSaveGrupoEquipe,
-  onDeleteGrupoEquipe,
   onUpdatePresencaLink,
   onLancarPresencaManual,
   presencasInativas = [],
   onInativarPresencaLink,
   onReativarPresencaLink,
   onResetPresencaDia,
-  onSyncEquipesPlanilha,
   pendingPublicSubmissionsCount = 0,
   onRestorePresenceHistory,
   viewInicial,
+  onGerenciarEquipes,
 }: ControlePresencaTabProps) {
   const today = localToday();
   const safeFuncionarios = useMemo(() => (Array.isArray(funcionarios) ? funcionarios : []).filter(Boolean), [funcionarios]);
   const safeEmpresas = useMemo(() => (Array.isArray(empresas) ? empresas : []).filter(Boolean), [empresas]);
-  // No editor de equipe só entram empresas que fornecem gente: locadoras e
-  // fornecedores de material ficam de fora, salvo se já tiverem colaborador.
-  const teamCompanies = useMemo(() => companiesForTeams(safeEmpresas, safeFuncionarios), [safeEmpresas, safeFuncionarios]);
   const safeObras = useMemo(() => (Array.isArray(obras) ? obras : []).filter(Boolean), [obras]);
   const safeRecords = useMemo(() => (Array.isArray(presencasLink) ? presencasLink : []).filter(Boolean).map(normalizeRecord), [presencasLink]);
   const inativos = useMemo(() => (Array.isArray(presencasInativas) ? presencasInativas : []).filter(Boolean).map(normalizeRecord), [presencasInativas]);
@@ -313,32 +264,16 @@ export default function ControlePresencaTab({
   const [recordGroup, setRecordGroup] = useState('todos');
   const [recordStatus, setRecordStatus] = useState<'todos' | PresencaStatus>('todos');
   const [recordSearch, setRecordSearch] = useState('');
-  const [teamSearch, setTeamSearch] = useState('');
-  const [employeeSearch, setEmployeeSearch] = useState('');
-  const [employeeCompany, setEmployeeCompany] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [isGroupEditorOpen, setIsGroupEditorOpen] = useState(false);
-  const groupEditorScrollRef = useRef<HTMLDivElement>(null);
-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
-  // Ao editar, a lista abre só com quem já está na equipe; "Todos ativos" mostra o efetivo inteiro.
-  const [membrosAoAbrir, setMembrosAoAbrir] = useState<string[] | null>(null);
   const [editingRecord, setEditingRecord] = useState<PresencaApontamento | null>(null);
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   /** Lista mostra os inativados, para reativar. */
   const [verInativos, setVerInativos] = useState(false);
   /** Últimos inativados, para o Desfazer do aviso. */
   const [desfazerInativacao, setDesfazerInativacao] = useState<string[]>([]);
-  /** Equipe esperando confirmação para excluir (A29): um toque errado não apaga. */
-  const [equipeExcluindo, setEquipeExcluindo] = useState<GrupoEquipe | null>(null);
   const [editStatus, setEditStatus] = useState<PresencaStatus>('Presente');
   const [editObservation, setEditObservation] = useState('');
   const [editReason, setEditReason] = useState('');
-  // Sincronização pela planilha do efetivo: o plano é montado e conferido
-  // antes de qualquer gravação.
-  const [syncPlan, setSyncPlan] = useState<TeamSyncPlan | null>(null);
-  const [syncFileName, setSyncFileName] = useState('');
-  const [syncError, setSyncError] = useState('');
-  const [syncBusy, setSyncBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
   const [confirmandoInativacao, setConfirmandoInativacao] = useState(false);
   const [resumoZerarDia, setResumoZerarDia] = useState<{ equipe: string; quantos: number } | null>(null);
@@ -392,23 +327,6 @@ export default function ControlePresencaTab({
   };
   const liveViewRef = useRef<HTMLDivElement>(null);
   const tabRef = useRef<HTMLElement>(null);
-
-  const createEmptyGroup = (): GrupoEquipe => ({
-    id: '',
-    nome: '',
-    responsavel: '',
-    frenteServico: safeObras[0]?.nome || '',
-    obraId: safeObras[0]?.id || '',
-    funcionarioIds: [],
-    funcionarioMatriculas: [],
-    status: 'ativo',
-    token: generateToken(),
-    linkAtivo: true,
-    createdAt: '',
-    updatedAt: '',
-  });
-
-  const [groupForm, setGroupForm] = useState<GrupoEquipe>(() => createEmptyGroup());
 
   const activeGroups = useMemo(
     () => safeGroups.filter(group => group.status === 'ativo' && group.linkAtivo),
@@ -664,23 +582,6 @@ export default function ControlePresencaTab({
     };
   }), [activeGroups, dayRecords]);
 
-  const filteredGroups = useMemo(() => {
-    const query = teamSearch.trim().toLocaleLowerCase('pt-BR');
-    return safeGroups.filter(group => !query || [group.nome, group.responsavel, group.frenteServico]
-      .some(value => value.toLocaleLowerCase('pt-BR').includes(query)));
-  }, [safeGroups, teamSearch]);
-
-  const visibleEmployees = useMemo(() => {
-    const query = employeeSearch.trim().toLocaleLowerCase('pt-BR');
-    return safeFuncionarios
-      .filter(employee => employee?.ativo && !['INATIVO', 'DESMOBILIZADO'].includes(safeText(employee.status)))
-      .filter(employee => !membrosAoAbrir || membrosAoAbrir.includes(employee.id))
-      .filter(employee => !employeeCompany || employee.empresaId === employeeCompany)
-      .filter(employee => !query || [safeText(employee.nome), safeText(employee.cargo), safeText(employee.matricula)]
-        .some(value => value.toLocaleLowerCase('pt-BR').includes(query)))
-      .sort((a, b) => safeText(a.nome).localeCompare(safeText(b.nome), 'pt-BR'));
-  }, [employeeCompany, employeeSearch, membrosAoAbrir, safeFuncionarios]);
-
   const filteredRecords = useMemo(() => {
     const query = recordSearch.trim().toLocaleLowerCase('pt-BR');
     return (verInativos ? inativos : safeRecords)
@@ -704,62 +605,6 @@ export default function ControlePresencaTab({
     record.horaEnvio,
   ]);
 
-  // O painel de edição é o mesmo elemento reaproveitado entre "Nova equipe" e
-  // "Editar equipe": sem isso, quem tinha rolado até a lista de colaboradores
-  // numa abertura anterior reabria o painel já rolado lá embaixo, parecendo
-  // que "sumiu" o formulário. Trava o fundo também, para não rolar por baixo
-  // do painel no celular.
-  useEffect(() => {
-    if (!isGroupEditorOpen) return;
-    groupEditorScrollRef.current?.scrollTo({ top: 0 });
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [isGroupEditorOpen]);
-
-  const openNewGroup = () => {
-    setEditingGroupId(null);
-    setMembrosAoAbrir(null);
-    setGroupForm(createEmptyGroup());
-    setFeedback('');
-    setIsGroupEditorOpen(true);
-  };
-
-  const openGroup = (group: GrupoEquipe) => {
-    setEditingGroupId(group.id);
-    setGroupForm(normalizeGroup(group));
-    setMembrosAoAbrir(safeIds(normalizeGroup(group).funcionarioIds));
-    setFeedback('');
-    setIsGroupEditorOpen(true);
-  };
-
-  const saveGroup = () => {
-    if (!groupForm.nome.trim() || !groupForm.responsavel.trim() || !groupForm.frenteServico.trim()) {
-      setFeedback('Informe o nome da equipe, o responsável e a frente de serviço.');
-      return;
-    }
-    if (safeIds(groupForm.funcionarioIds).length === 0) {
-      setFeedback('Selecione pelo menos um colaborador para a equipe.');
-      return;
-    }
-    const now = new Date().toISOString();
-    const funcionarioIds = [...new Set(safeIds(groupForm.funcionarioIds))]
-      .filter(id => safeFuncionarios.some(employee => employee.id === id && employee.ativo));
-    const payload: GrupoEquipe = {
-      ...normalizeGroup(groupForm),
-      id: editingGroupId || `grp-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      funcionarioIds,
-      funcionarioMatriculas: [...new Set(funcionarioIds
-        .map(id => safeText(safeFuncionarios.find(employee => employee.id === id)?.matricula))
-        .filter(Boolean))],
-      token: groupForm.token || generateToken(),
-      createdAt: groupForm.createdAt || now,
-      updatedAt: now,
-    };
-    onSaveGrupoEquipe(payload, !editingGroupId);
-    setIsGroupEditorOpen(false);
-    setFeedback('Equipe salva e disponível no controle ao vivo.');
-  };
 
   const exportCsv = () => {
     const csv = toCsv([
@@ -767,85 +612,6 @@ export default function ControlePresencaTab({
       ...exportRows,
     ]);
     saveBlob(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }), `presenca-${today}.csv`);
-  };
-
-  // Lê a aba "Efetivo" e monta o plano. Nada é gravado aqui.
-  const lerPlanilhaEfetivo = async (file: File) => {
-    setSyncBusy(true);
-    setSyncError('');
-    setSyncPlan(null);
-    try {
-      const workbook = await createCorporateWorkbook();
-      await workbook.xlsx.load(await file.arrayBuffer());
-      const sheet = workbook.getWorksheet('Efetivo')
-        || workbook.worksheets.find(item => /efetivo/i.test(item.name));
-      if (!sheet) throw new Error('A planilha não tem a aba "Efetivo".');
-
-      // O cabeçalho não fica na primeira linha: a aba abre com um título.
-      let headerRow = 0;
-      let headers: string[] = [];
-      for (let row = 1; row <= Math.min(sheet.rowCount, 10); row += 1) {
-        const values = (sheet.getRow(row).values as unknown[]).slice(1).map(value => String(value ?? '').trim());
-        if (values.some(value => /mat/i.test(value)) && values.some(value => /encarregado/i.test(value))) {
-          headerRow = row;
-          headers = values;
-          break;
-        }
-      }
-      if (!headerRow) throw new Error('Não encontrei o cabeçalho com "MAT. COLAB." e "NOME ENCARREGADO".');
-
-      const rows: Array<Record<string, unknown>> = [];
-      for (let row = headerRow + 1; row <= sheet.rowCount; row += 1) {
-        const values = (sheet.getRow(row).values as unknown[]).slice(1);
-        const registro: Record<string, unknown> = {};
-        headers.forEach((header, index) => {
-          if (header) registro[header] = values[index];
-        });
-        if (Object.values(registro).some(value => value !== undefined && value !== null && String(value).trim())) {
-          rows.push(registro);
-        }
-      }
-
-      const { linhas, ignoradas, matriculasNaPlanilha } = parseEfetivoRows(rows);
-      if (linhas.length === 0) throw new Error('Nenhuma linha aproveitável: confira as colunas de matrícula e encarregado.');
-      const plano = buildTeamSyncPlan({
-        linhas,
-        ignoradas,
-        matriculasNaPlanilha,
-        funcionarios: safeFuncionarios,
-        gruposEquipe: safeGroups,
-        obraId: safeObras[0]?.id || '',
-        empresaId: safeEmpresas[0]?.id || '',
-        criarToken: () => generateSecurePublicToken('presenca'),
-      });
-      setSyncFileName(file.name);
-      setSyncPlan(plano);
-    } catch (error) {
-      setSyncError(error instanceof Error ? error.message : 'Não foi possível ler a planilha.');
-    } finally {
-      setSyncBusy(false);
-    }
-  };
-
-  const confirmarSincronizacao = async () => {
-    if (!syncPlan || !onSyncEquipesPlanilha) return;
-    setSyncBusy(true);
-    setSyncError('');
-    const { funcionarios: proximosFuncionarios, gruposEquipe: proximasEquipes } =
-      applyTeamSyncPlan(syncPlan, safeFuncionarios, safeGroups);
-    try {
-      const result = await onSyncEquipesPlanilha(proximosFuncionarios, proximasEquipes, syncPlan.resumo);
-      if (!result.success) {
-      setSyncError(`As equipes foram salvas neste computador, mas o Supabase não foi atualizado: ${result.message}`);
-        return;
-      }
-      setSyncPlan(null);
-      setSyncFileName('');
-      const desmobilizados = syncPlan.resumo.desmobilizar > 0 ? ` ${syncPlan.resumo.desmobilizar} colaborador(es) desmobilizado(s) por sair da planilha.` : '';
-      setFeedback(`Equipes sincronizadas no Supabase: ${syncPlan.resumo.criar} criadas, ${syncPlan.resumo.atualizar} atualizadas, ${syncPlan.resumo.desativar} desativadas.${desmobilizados}`);
-    } finally {
-      setSyncBusy(false);
-    }
   };
 
   // Zerar o dia é a saída quando o apontamento sai errado: sem apagar a
@@ -947,8 +713,6 @@ export default function ControlePresencaTab({
     })),
   });
 
-  const exportEquipesExcel = () => baixarPlanilhaEquipes(safeGroups, safeFuncionarios, safeEmpresas, today);
-
   const exportExcel = () => exportExcelRecords(filteredRecords, recordDate || today, 'Relatório de presença');
   const exportPdf = () => exportPdfRecords(filteredRecords, recordDate || today, 'Relatório de presença', pendingGroups.length);
   const exportDailyExcel = () => exportExcelRecords(dayRecords, referenceDate, 'Relatório da situação do dia');
@@ -994,10 +758,9 @@ export default function ControlePresencaTab({
     setSelectedRecordIds([]);
   };
 
-  // Três opções no topo: o dia, as equipes e um grupo com tudo que é consulta.
+  // Duas opções no topo: o dia e um grupo com tudo que é consulta. Equipes moram só em Cadastros.
   const navItems: ReadonlyArray<ItemDasAbas<View>> = [
     { id: 'ao-vivo', rotulo: 'Ao vivo', icone: Radio },
-    { id: 'equipes', rotulo: 'Equipes', icone: Users },
     {
       grupo: 'consulta', rotulo: 'Relatórios', icone: PieChart, abas: [
         { id: 'relatorios', rotulo: 'Resumo', icone: PieChart },
@@ -1158,37 +921,6 @@ export default function ControlePresencaTab({
     </section>
   );
 
-  const faixaEquipes = (
-    <div className={`${PANEL} flex flex-col gap-2 p-3 sm:flex-row sm:flex-wrap sm:items-center`}>
-      <label className="relative min-w-0 flex-1 sm:min-w-64">
-        <span className="sr-only">Buscar equipe</span>
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5b6870]" aria-hidden="true" />
-        <input type="search" value={teamSearch} onChange={event => setTeamSearch(event.target.value)} placeholder="Buscar equipe, responsável ou frente" className={`${FIELD} pl-10`} />
-      </label>
-      {onSyncEquipesPlanilha && (
-        <label className={`${SECONDARY_BUTTON} cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--renea-focus)`}>
-          {syncBusy ? <RotateCcw className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />}
-          {syncBusy ? 'Lendo planilha' : 'Sincronizar pela planilha'}
-          <input
-            type="file"
-            accept=".xlsx,.xlsm"
-            className="sr-only"
-            disabled={syncBusy}
-            onChange={event => {
-              const file = event.target.files?.[0];
-              event.target.value = '';
-              if (file) void lerPlanilhaEfetivo(file);
-            }}
-          />
-        </label>
-      )}
-      <button type="button" onClick={() => void exportEquipesExcel()} className={SECONDARY_BUTTON} title="Baixa um Excel com cada pessoa e a sua equipe"><Download className="h-4 w-4" aria-hidden="true" /> Exportar equipes</button>
-      {syncError && (
-        <div role="alert" className="w-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800">{syncError}</div>
-      )}
-    </div>
-  );
-
   const faixaRegistros = (
     <div className={`${PANEL} space-y-3 p-3`}>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[170px_minmax(0,220px)_minmax(0,200px)_minmax(0,1fr)]">
@@ -1245,13 +977,10 @@ export default function ControlePresencaTab({
   );
 
   const faixaDaVista = view === 'ao-vivo' || view === 'relatorios' ? faixaPainel
-    : view === 'equipes' ? faixaEquipes
       : view === 'registros' ? faixaRegistros
         : null;
 
-  const acaoPrincipal = view === 'equipes'
-    ? <button type="button" onClick={openNewGroup} className={PRIMARY_BUTTON}><Plus className="h-4 w-4" aria-hidden="true" /> Nova equipe</button>
-    : view === 'registros'
+  const acaoPrincipal = view === 'registros'
       ? <button type="button" onClick={() => void exportExcel()} className={PRIMARY_BUTTON} disabled={filteredRecords.length === 0}><FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Baixar Excel</button>
       : undefined;
 
@@ -1459,7 +1188,7 @@ export default function ControlePresencaTab({
                   <input type="date" value={referenceDate} onChange={event => setReferenceDate(event.target.value)} max={today} className={`${FIELD} w-auto`} aria-label="Data do relatório diário" />
                   <button type="button" onClick={() => void exportDailyExcel()} className={PRIMARY_BUTTON} disabled={dayRecords.length === 0} title="Baixar situação do dia em Excel"><FileSpreadsheet className="h-4 w-4" /> Excel</button>
                   <button type="button" onClick={() => void exportDailyPdf()} className={SECONDARY_BUTTON} disabled={dayRecords.length === 0} title="Imprimir situação do dia em PDF"><FileText className="h-4 w-4" /> PDF</button>
-                  <button type="button" onClick={() => setView('equipes')} className="inline-flex items-center gap-1 px-2 text-sm font-bold text-emerald-800 hover:text-emerald-950">Gerenciar <ChevronRight className="h-4 w-4" /></button>
+                  {onGerenciarEquipes && <button type="button" onClick={onGerenciarEquipes} className="inline-flex items-center gap-1 px-2 text-sm font-bold text-emerald-800 hover:text-emerald-950" data-testid="presenca-gerenciar-equipes">Gerenciar equipes <ChevronRight className="h-4 w-4" /></button>}
                 </div>
               </div>
               <div className="divide-y divide-slate-200">
@@ -1622,29 +1351,6 @@ export default function ControlePresencaTab({
         />
       )}
 
-      {view === 'equipes' && (
-        filteredGroups.length === 0 ? (
-          <div className={`${PANEL} px-5 py-14 text-center text-sm text-[#5b6870]`}>{teamSearch.trim() ? 'Nenhuma equipe com esse nome.' : 'Nenhuma equipe cadastrada. Toque em Nova equipe para começar.'}</div>
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-            {filteredGroups.map(group => {
-              const members = group.funcionarioIds.map(id => safeFuncionarios.find(employee => employee.id === id)).filter(Boolean) as Funcionario[];
-              return (
-                <article key={group.id} role="button" tabIndex={0} onClick={() => openGroup(group)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openGroup(group); } }} aria-label={`Abrir equipe ${group.nome || 'sem nome'} para editar`} className={`${PANEL} cursor-pointer p-3 transition hover:border-emerald-300 hover:bg-emerald-50/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)`}>
-                  <div className="flex items-center gap-3"><div className="grid size-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-900"><Users className="h-5 w-5" aria-hidden="true" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="truncate text-base font-black text-slate-900">{group.nome || 'Equipe sem nome'}</h2><span className={`rounded-md px-2 py-1 text-xs font-bold ${group.status === 'ativo' && group.linkAtivo ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-700'}`}>{group.status === 'ativo' && group.linkAtivo ? 'Ativa' : 'Inativa'}</span></div><p className="truncate text-xs text-[#5b6870]">{group.responsavel || 'Sem responsável'} · {group.frenteServico || 'Sem frente'}</p></div><Edit3 className="size-4 shrink-0 text-[#5b6870]" aria-hidden="true" /></div>
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs"><span><strong className="mr-1 text-lg font-black text-slate-900">{members.length}</strong><span className="text-[#5b6870]">colaboradores</span></span><span className="font-bold text-[#5b6870]">Clique para editar</span></div>
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                    {onDeleteGrupoEquipe && <button type="button" onClick={event => { event.stopPropagation(); setEquipeExcluindo(group); }} className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-rose-700 hover:text-rose-900 ${FOCO}`}><Trash2 className="h-4 w-4" aria-hidden="true" /> Excluir</button>}
-                    <button type="button" onClick={event => { event.stopPropagation(); openGroup(group); }} className={`ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-slate-700 hover:text-slate-950 ${FOCO}`}><Edit3 className="h-4 w-4" aria-hidden="true" /> Editar equipe</button>
-                    <button type="button" onClick={event => { event.stopPropagation(); imprimirEquipe(group.nome || 'Equipe sem nome', `${group.responsavel || 'Sem responsável'} · ${group.frenteServico || 'Sem frente'}`, members); }} className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-slate-700 hover:text-slate-950 ${FOCO}`}><Printer className="h-4 w-4" aria-hidden="true" /> Imprimir</button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )
-      )}
-
       {view === 'registros' && (
         <TabelaPadrao
           titulo={verInativos ? 'Registros de presença inativados' : 'Registros de presença'}
@@ -1683,119 +1389,6 @@ export default function ControlePresencaTab({
           testId="presenca-historico"
         />
       )}
-      {syncPlan && createPortal(
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-label="Conferir sincronização das equipes">
-          <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg bg-white">
-            <header className="flex items-start justify-between gap-4 border-b border-slate-200 p-5">
-              <div>
-                <h2 className="text-lg font-black text-slate-900">Conferir antes de gravar</h2>
-                <p className="mt-1 text-sm text-slate-500">{syncFileName} · {syncPlan.resumo.pessoasNaPlanilha} pessoas na planilha</p>
-              </div>
-              <button type="button" onClick={() => setSyncPlan(null)} aria-label="Fechar" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
-            </header>
-
-            <div className="grid grid-cols-2 gap-3 border-b border-slate-200 p-5 sm:grid-cols-5">
-              {[
-                { rotulo: 'Equipes novas', valor: syncPlan.resumo.criar },
-                { rotulo: 'Atualizadas', valor: syncPlan.resumo.atualizar },
-                { rotulo: 'Desativadas', valor: syncPlan.resumo.desativar },
-                { rotulo: 'Colaboradores criados', valor: syncPlan.resumo.colaboradoresNovos },
-                { rotulo: 'Saem do efetivo', valor: syncPlan.resumo.desmobilizar, destaque: syncPlan.resumo.desmobilizar > 0 },
-              ].map(item => (
-                <div key={item.rotulo} className={`rounded-xl p-3 ${item.destaque ? 'bg-rose-50' : 'bg-slate-50'}`}>
-                  <strong className={`text-2xl font-black ${item.destaque ? 'text-rose-800' : 'text-slate-900'}`}>{item.valor}</strong>
-                  <span className="mt-1 block text-xs text-slate-500">{item.rotulo}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
-              {syncPlan.resumo.inalteradas > 0 && (
-                <p className="mb-3 text-xs text-slate-500">{syncPlan.resumo.inalteradas} equipe(s) sem alteração, não listadas.</p>
-              )}
-              <ul className="space-y-2">
-                {syncPlan.entradas.filter(entry => entry.acao !== 'inalterada').map(entry => (
-                  <li key={entry.grupo.id} className="rounded-xl border border-slate-200 p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-md px-2 py-1 text-xs font-bold ${
-                        entry.acao === 'criar' ? 'bg-emerald-100 text-emerald-800'
-                          : entry.acao === 'desativar' ? 'bg-rose-100 text-rose-800'
-                            : 'bg-amber-100 text-amber-900'}`}
-                      >{entry.acao}</span>
-                      <strong className="text-sm font-bold text-slate-900">{entry.nome}</strong>
-                      <span className="text-xs text-slate-500">{entry.total} pessoa(s)</span>
-                    </div>
-                    {entry.entram.length > 0 && (
-                      <p className="mt-2 text-xs text-emerald-800"><b>Entram:</b> {entry.entram.map(item => item.nome).join(', ')}</p>
-                    )}
-                    {entry.saem.length > 0 && (
-                      <p className="mt-1 text-xs text-rose-800"><b>Saem:</b> {entry.saem.map(item => item.nome).join(', ')}</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {syncPlan.colaboradoresParaDesmobilizar.length > 0 && (
-                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3">
-                  <p className="text-xs font-bold text-rose-900">{syncPlan.colaboradoresParaDesmobilizar.length} colaborador(es) fora da planilha — serão marcados como DESMOBILIZADO</p>
-                  <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto text-xs text-rose-900">
-                    {syncPlan.colaboradoresParaDesmobilizar.map(item => (
-                      <li key={item.id}>{item.nome}{item.matricula ? ` · ${item.matricula}` : ''}{item.cargo ? ` · ${item.cargo}` : ''}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {syncPlan.colaboradoresReativados.length > 0 && (
-                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                  <p className="text-xs font-bold text-emerald-900">{syncPlan.colaboradoresReativados.length} colaborador(es) de volta na planilha: voltam ao efetivo como ATIVO</p>
-                  <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto text-xs text-emerald-900">
-                    {syncPlan.colaboradoresReativados.map(item => (
-                      <li key={item.id}>{item.nome}{item.matricula ? ` · ${item.matricula}` : ''}{item.cargo ? ` · ${item.cargo}` : ''}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {syncPlan.ignoradas.length > 0 && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-xs font-bold text-amber-900">{syncPlan.ignoradas.length} linha(s) ignorada(s)</p>
-                  <ul className="mt-1 space-y-0.5 text-xs text-amber-900">
-                    {syncPlan.ignoradas.slice(0, 8).map(item => <li key={item.linha}>Linha {item.linha}: {item.motivo}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <footer className="flex flex-col gap-3 border-t border-slate-200 p-5 sm:flex-row sm:justify-end">
-              <p className="flex-1 text-xs text-slate-500">Equipes fora da planilha ficam inativas, nunca são excluídas. Colaboradores fora da planilha são marcados como desmobilizados (saem do efetivo), o cadastro nunca é apagado. Os links já distribuídos continuam valendo.</p>
-              <button type="button" onClick={() => setSyncPlan(null)} className={SECONDARY_BUTTON}>Cancelar</button>
-              <button type="button" onClick={() => void confirmarSincronizacao()} disabled={syncBusy} className={PRIMARY_BUTTON}>{syncBusy ? <RotateCcw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {syncBusy ? 'Gravando no Supabase' : 'Gravar sincronização'}</button>
-            </footer>
-          </div>
-        </div>,
-        document.body,
-      )}
-
-      {isGroupEditorOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-0 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label={editingGroupId ? 'Editar equipe' : 'Nova equipe'}>
-          <div ref={groupEditorScrollRef} className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-[1.75rem] bg-white p-5  sm:rounded-[1.75rem] sm:p-7">
-            <div className="flex items-start justify-between gap-4"><div><h2 className="text-2xl font-black tracking-tight text-slate-900">{editingGroupId ? 'Editar equipe' : 'Nova equipe'}</h2></div><button type="button" onClick={() => setIsGroupEditorOpen(false)} className="rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:text-slate-900"><X className="h-5 w-5" /></button></div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Nome da equipe</span><input value={groupForm.nome} onChange={event => setGroupForm(current => ({ ...current, nome: event.target.value }))} className={FIELD} /></label>
-              <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Responsável</span><input value={groupForm.responsavel} onChange={event => setGroupForm(current => ({ ...current, responsavel: event.target.value }))} className={FIELD} /></label>
-              <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Obra</span><select value={groupForm.obraId} onChange={event => { const work = safeObras.find(item => item.id === event.target.value); setGroupForm(current => ({ ...current, obraId: event.target.value, frenteServico: work?.nome || current.frenteServico })); }} className={FIELD}><option value="">Selecione</option>{safeObras.map(work => <option key={work.id} value={work.id}>{work.nome}</option>)}</select></label>
-              <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Frente de serviço</span><input value={groupForm.frenteServico} onChange={event => setGroupForm(current => ({ ...current, frenteServico: event.target.value }))} className={FIELD} /></label>
-              <label><span className="mb-1.5 block text-xs font-bold text-slate-600">Situação</span><select value={groupForm.status} onChange={event => setGroupForm(current => ({ ...current, status: event.target.value as GrupoEquipe['status'] }))} className={FIELD}><option value="ativo">Ativa</option><option value="inativo">Inativa</option></select></label>
-              <label className="flex min-h-11 items-center gap-3 self-end rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700"><input type="checkbox" checked={groupForm.linkAtivo} onChange={event => setGroupForm(current => ({ ...current, linkAtivo: event.target.checked }))} className="h-4 w-4 accent-emerald-700" /> Link de campo ativo</label>
-            </div>
-            <div className="mt-6 border-t border-slate-200 pt-5">{editingGroupId && <div className="mb-3 inline-flex rounded-2xl border border-slate-300 bg-white p-1" role="group" aria-label="Quais colaboradores mostrar"><button type="button" aria-pressed={Boolean(membrosAoAbrir)} onClick={() => setMembrosAoAbrir(safeIds(groupForm.funcionarioIds))} className={`min-h-10 rounded-lg px-4 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus) ${membrosAoAbrir ? 'bg-[#176b4d] text-white' : 'text-slate-600 hover:text-slate-900'}`}>Da equipe ({safeIds(groupForm.funcionarioIds).length})</button><button type="button" aria-pressed={!membrosAoAbrir} onClick={() => setMembrosAoAbrir(null)} className={`min-h-10 rounded-lg px-4 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus) ${!membrosAoAbrir ? 'bg-[#176b4d] text-white' : 'text-slate-600 hover:text-slate-900'}`}>Todos ativos</button></div>}<div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input value={employeeSearch} onChange={event => setEmployeeSearch(event.target.value)} placeholder="Buscar colaborador, função ou matrícula" className={`${FIELD} pl-10`} /></div><select value={employeeCompany} onChange={event => setEmployeeCompany(event.target.value)} className={`${FIELD} sm:w-64`}><option value="">Todas as empresas</option>{teamCompanies.map(company => <option key={company.id} value={company.id}>{company.nome}</option>)}</select></div>
-              <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">{membrosAoAbrir && visibleEmployees.length === 0 && <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">Nenhum colaborador ativo nesta equipe. Toque em <strong>Todos ativos</strong> para incluir.</p>}{visibleEmployees.map(employee => { const checked = safeIds(groupForm.funcionarioIds).includes(employee.id); return <label key={employee.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${checked ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'}`}><input type="checkbox" checked={checked} onChange={event => setGroupForm(current => ({ ...current, funcionarioIds: event.target.checked ? [...safeIds(current.funcionarioIds), employee.id] : safeIds(current.funcionarioIds).filter(id => id !== employee.id) }))} className="h-4 w-4 accent-emerald-700" /><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{employee.nome}</p><p className="truncate text-xs text-slate-500">{employee.cargo}{employee.matricula ? ` · ${employee.matricula}` : ''}</p></div></label>; })}</div>
-            </div>
-            {feedback && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{feedback}</p>}
-            <div className="sticky bottom-0 mt-6 flex gap-3 border-t border-slate-200 bg-white pt-4"><button type="button" onClick={() => setIsGroupEditorOpen(false)} className={`${SECONDARY_BUTTON} flex-1`}>Cancelar</button><button type="button" onClick={saveGroup} className={`${PRIMARY_BUTTON} flex-1`}><CheckCircle2 className="h-4 w-4" /> Salvar equipe</button></div>
-          </div>
-        </div>,
-        document.body,
-      )}
-
       {editingRecord && createPortal(
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-0 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label="Atualizar presença">
           <div className="w-full max-w-lg rounded-t-[1.75rem] bg-white p-5  sm:rounded-[1.75rem] sm:p-7">
@@ -1807,15 +1400,6 @@ export default function ControlePresencaTab({
         document.body,
       )}
 
-      <ConfirmDialog
-        open={Boolean(equipeExcluindo)}
-        tone="danger"
-        title={`Excluir ${equipeExcluindo?.nome || 'a equipe'}?`}
-        description="O link de presença desta equipe para de funcionar. A equipe vai para a Lixeira de Cadastros, de onde o administrador pode devolver com o mesmo link."
-        confirmLabel="Excluir equipe"
-        onConfirm={() => { if (equipeExcluindo) onDeleteGrupoEquipe?.(equipeExcluindo.id); setFeedback(`Equipe ${equipeExcluindo?.nome || ''} excluída. Ela fica na Lixeira de Cadastros.`); setEquipeExcluindo(null); }}
-        onCancel={() => setEquipeExcluindo(null)}
-      />
       <ConfirmDialog
         open={confirmandoInativacao}
         tone="warning"
