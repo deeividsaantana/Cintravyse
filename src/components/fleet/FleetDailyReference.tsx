@@ -11,7 +11,7 @@ import {
 } from '../../fleet/operationalFleetReference';
 import { TabelaPadrao, type ColunaTabela } from '../../shared/ui/TabelaPadrao';
 import { useEntradaDeLista } from '../../shared/hooks/useEntradaDeLista';
-import { AvisoRecolhivel, GradeConferencia, ResumoConferencia, type CartaoConferencia, type FiltroConferencia } from './ConferenciaDoDia';
+import { AvisoRecolhivel, GradeConferencia, ResumoConferencia, type CartaoConferencia } from './ConferenciaDoDia';
 
 interface Props {
   records: ControleEquipamentoDiario[];
@@ -46,7 +46,6 @@ const COLUNAS_EDITOR = (
  * aparecem primeiro, em cartões de destaque, com o botão Lançar.
  */
 export default function FleetDailyReference({ records, date, onLancar, onRelacaoChange }: Props) {
-  const [visibility, setVisibility] = useState<FiltroConferencia>('pending');
   const [editing, setEditing] = useState(false);
   const [reference, setReference] = useState(lerRelacaoEquipamentos);
   useEffect(() => {
@@ -62,9 +61,8 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
     () => reconcileOperationalFleetDay(records, date, reference),
     [date, records, reference],
   );
-  const visibleItems = visibility === 'all'
-    ? reconciliation.items
-    : reconciliation.items.filter(item => visibility === 'informed' ? item.informed : !item.informed);
+  // Só quem falta: os lançados estão na lista do dia (pedido de 23/11/2026).
+  const visibleItems = reconciliation.items.filter(item => !item.informed);
   const cartoes: CartaoConferencia[] = visibleItems.map(item => ({
     id: `${item.group}-${item.prefix}`,
     titulo: item.prefix,
@@ -76,7 +74,7 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
     rotuloLancar: `Lançar ${item.prefix}`,
     onLancar: onLancar ? () => onLancar({ prefixo: item.prefix }) : undefined,
   }));
-  const escopo = useEntradaDeLista<HTMLDivElement>([visibility, date]);
+  const escopo = useEntradaDeLista<HTMLDivElement>([date]);
   const mudarItem = (indice: number, parcial: Partial<OperationalFleetReferenceItem>) =>
     setReference(itens => itens.map((atual, posicao) => (posicao === indice ? { ...atual, ...parcial } : atual)));
   const linhasEditor = reference.map((item, indice) => ({ ...item, indice }));
@@ -88,13 +86,6 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
         titulo="Máquinas"
         lancados={reconciliation.informed}
         total={reconciliation.total}
-        filtro={visibility}
-        onFiltro={setVisibility}
-        rotuloFiltro="Filtrar máquinas"
-        opcoesFiltro={[
-          ['pending', `Faltam ${reconciliation.missing}`],
-          ['all', 'Todas'],
-        ]}
         acao={<button type="button" onClick={() => setEditing(value => !value)} className={BOTAO_SECUNDARIO}>{editing ? <Save className="size-4" aria-hidden="true" /> : <Pencil className="size-4" aria-hidden="true" />} {editing ? 'Concluir' : 'Editar lista'}</button>}
       />
 
@@ -131,7 +122,7 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
           nomeFaltantes="Equipamentos faltantes"
           nomeLancados="Equipamentos lançados"
           colunas="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
-          vazio={reconciliation.missing === 0 && visibility === 'pending' ? (
+          vazio={reconciliation.missing === 0 ? (
             <div className="m-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900"><CheckCircle2 className="size-5" aria-hidden="true" /><div><strong className="block text-sm">Relação completa</strong><span className="text-sm">Os {reconciliation.total} equipamentos foram informados nesta data.</span></div></div>
           ) : 'Nenhum equipamento nesta lista.'}
         />

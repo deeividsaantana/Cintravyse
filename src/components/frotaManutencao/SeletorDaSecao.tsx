@@ -1,11 +1,12 @@
-import { FOCO } from '../cadastros/estilos';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { BOTAO_SECUNDARIO, CAMPO_SELECT, FOCO } from '../cadastros/estilos';
 import type { OpcaoDaSecao, VistaFrotaManutencao } from './abasFrotaManutencao';
 
 /**
- * Escolha da tela dentro de uma seção (Lançados / Faltando, Paradas de hoje /
- * Ordens de serviço / Conferir 10 h...): botões lado a lado no começo da
- * tela, no lugar da segunda linha de abas do topo. Número só quando pede
- * atenção.
+ * Escolha da tela dentro de uma seção (Paradas de hoje / Ordens de serviço /
+ * Conferir 10 h, os relatórios). Pedido do Deivid em 23/11/2026: "várias abas
+ * iguais". Por isso não é mais uma fileira de botões embaixo das abas do
+ * topo: é uma caixinha de escolha "Ver", que não se confunde com aba.
  */
 export function SeletorDaSecao({ opcoes, ativa, onTrocar, rotulo }: {
   opcoes: readonly OpcaoDaSecao[];
@@ -15,18 +16,54 @@ export function SeletorDaSecao({ opcoes, ativa, onTrocar, rotulo }: {
 }) {
   if (opcoes.length < 2) return null;
   return (
-    <div role="group" aria-label={rotulo} data-testid="frota-seletor"
-      className="flex w-full gap-1 overflow-x-auto rounded-xl bg-[#f7f8f6] p-1 ring-1 ring-inset ring-slate-200 sm:w-fit">
-      {opcoes.map(opcao => {
-        const escolhida = opcao.id === ativa;
-        return (
-          <button key={opcao.id} type="button" aria-pressed={escolhida} onClick={() => onTrocar(opcao.id)} data-testid={`frota-seletor-${opcao.id}`}
-            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-bold transition-colors sm:flex-none lg:min-h-9 ${escolhida ? 'bg-white text-[#176b4d] shadow-sm ring-1 ring-slate-200' : 'text-[#5b6870] hover:text-slate-900'} ${FOCO}`}>
-            {opcao.curto ? <><span className="max-sm:hidden">{opcao.rotulo}</span><span className="sm:hidden">{opcao.curto}</span></> : opcao.rotulo}
-            {Boolean(opcao.contador) && <span className="rounded-full bg-[#c2410c] px-1.5 text-xs font-bold tabular-nums text-white">{opcao.contador}</span>}
-          </button>
-        );
-      })}
+    <label className="flex w-full items-center gap-2 text-sm font-bold text-[#5b6870] sm:w-fit" data-testid="frota-seletor">
+      Ver
+      <select aria-label={rotulo} value={ativa} onChange={event => onTrocar(event.target.value as VistaFrotaManutencao)}
+        className={`${CAMPO_SELECT.replace('w-full', 'flex-1 sm:w-64 sm:flex-none')} font-bold`}>
+        {opcoes.map(opcao => (
+          <option key={opcao.id} value={opcao.id}>{opcao.rotulo}{opcao.contador ? ` (${opcao.contador})` : ''}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Lançamentos não tem escolha de tela: a lista do dia é a tela, e quem falta
+ * aparece numa faixa com o botão "Ver quem falta". Lá dentro, um "Voltar".
+ */
+export function AtalhoFaltando({ vista, maquinas, operadores, onTrocar }: {
+  vista: VistaFrotaManutencao;
+  maquinas: number;
+  operadores: number;
+  onTrocar: (vista: VistaFrotaManutencao) => void;
+}) {
+  if (vista === 'faltando') {
+    return (
+      <button type="button" onClick={() => onTrocar('dia')} className={`${BOTAO_SECUNDARIO} w-fit`} data-testid="frota-voltar-lancados">
+        <ArrowLeft className="size-4" aria-hidden="true" /> Voltar aos lançados
+      </button>
+    );
+  }
+  if (vista !== 'dia') return null;
+  const partes = [
+    maquinas ? `${maquinas} ${maquinas === 1 ? 'máquina' : 'máquinas'}` : '',
+    operadores ? `${operadores} ${operadores === 1 ? 'operador' : 'operadores'}` : '',
+  ].filter(Boolean);
+  if (!partes.length) {
+    return (
+      <p className="flex items-center gap-2 text-sm font-bold text-emerald-800" data-testid="frota-faltando-resumo">
+        <CheckCircle2 className="size-4" aria-hidden="true" /> Todas as máquinas e operadores da lista foram lançados.
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="frota-faltando-resumo">
+      <span className="flex-1"><strong>Falta lançar:</strong> {partes.join(' e ')}</span>
+      <button type="button" onClick={() => onTrocar('faltando')} data-testid="frota-ver-faltando"
+        className={`inline-flex min-h-11 items-center rounded-lg bg-[#176b4d] px-3 font-bold text-white hover:brightness-95 lg:min-h-9 ${FOCO}`}>
+        Ver quem falta
+      </button>
     </div>
   );
 }

@@ -1,13 +1,11 @@
 /**
  * Peças comuns das abas Equipamentos e Operadores do Controle de Frotas: o
- * resumo da conferência do dia (contadores, barra de preenchimento e filtro
- * A confirmar / Todos / Lançados) e a célula de situação da tabela.
+ * resumo da conferência do dia (contadores e barra de preenchimento) e a
+ * grade de quem falta.
  */
 import type { ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 import { FOCO } from '../cadastros/estilos';
-
-export type FiltroConferencia = 'pending' | 'all' | 'informed';
 
 export const dataCurta = (date: string): string => /^\d{4}-\d{2}-\d{2}$/.test(date)
   ? new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR')
@@ -18,18 +16,15 @@ interface ResumoProps {
   titulo: string;
   lancados: number;
   total: number;
-  filtro: FiltroConferencia;
-  onFiltro: (filtro: FiltroConferencia) => void;
-  opcoesFiltro: readonly (readonly [FiltroConferencia, string])[];
-  rotuloFiltro: string;
   acao: ReactNode;
 }
 
 /**
  * Cabeçalho curto de cada lista da conferência (pedido de 23/11/2026: menos
- * detalhe): título, "X de Y lançados" com a barrinha, o filtro e a ação.
+ * detalhe): título, "X de Y lançados" com a barrinha e a ação. Sem filtro:
+ * a tela já mostra só quem falta.
  */
-export function ResumoConferencia({ id, titulo, lancados, total, filtro, onFiltro, opcoesFiltro, rotuloFiltro, acao }: ResumoProps) {
+export function ResumoConferencia({ id, titulo, lancados, total, acao }: ResumoProps) {
   const progresso = total ? Math.round((lancados / total) * 100) : 0;
   return (
     <header className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
@@ -42,14 +37,7 @@ export function ResumoConferencia({ id, titulo, lancados, total, filtro, onFiltr
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex gap-1 rounded-xl bg-[#f7f8f6] p-1 ring-1 ring-inset ring-slate-200" role="group" aria-label={rotuloFiltro}>
-          {opcoesFiltro.map(([valor, rotulo]) => (
-            <button key={valor} type="button" aria-pressed={filtro === valor} onClick={() => onFiltro(valor)} className={`min-h-11 whitespace-nowrap rounded-lg px-3 text-sm font-bold lg:min-h-8 ${filtro === valor ? 'bg-white text-[#176b4d] ring-1 ring-slate-200' : 'text-[#5b6870] hover:text-slate-800'} ${FOCO}`}>{rotulo}</button>
-          ))}
-        </div>
-        {acao}
-      </div>
+      {acao}
     </header>
   );
 }

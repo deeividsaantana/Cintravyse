@@ -45,6 +45,21 @@ test('sem segunda linha de abas: o topo tem só as seções, e a escolha da tela
   assert.match(moldura, /<SeletorDaSecao/);
 });
 
+test('sem fileiras de botões iguais às abas ("várias abas iguais", 23/11/2026)', () => {
+  const seletor = readFileSync('src/components/frotaManutencao/SeletorDaSecao.tsx', 'utf8');
+  // A escolha da tela é uma caixinha "Ver", não outra fileira de botões.
+  assert.match(seletor, /<select aria-label=\{rotulo\}/);
+  assert.doesNotMatch(seletor, /aria-pressed/);
+  // Lançamentos: a lista do dia é a tela; quem falta abre pela faixa e volta por um botão.
+  assert.match(moldura, /secao === 'lancamentos' \? \(\s*<AtalhoFaltando/);
+  assert.match(seletor, /data-testid="frota-ver-faltando"/);
+  assert.match(seletor, /data-testid="frota-voltar-lancados"/);
+  // Faltando mostra só quem falta, sem o filtro Faltam / Todas.
+  for (const arquivo of ['FleetDailyReference', 'FleetDriverReference']) {
+    assert.doesNotMatch(readFileSync(`src/components/fleet/${arquivo}.tsx`, 'utf8'), /opcoesFiltro|visibility/);
+  }
+});
+
 test('quem só tem uma permissão vê só a parte dela', () => {
   const soFrota = idsDasTelas({ frota: true, manutencao: false });
   const soManutencao = idsDasTelas({ frota: false, manutencao: true });

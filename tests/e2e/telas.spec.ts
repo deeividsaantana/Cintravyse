@@ -435,7 +435,7 @@ test('Quadro e Manutenção se abrem um no outro dentro da mesma aba, já buscan
   await page.getByTestId('quadro-situacao-manutencao').click();
   await page.getByTestId('quadro-arrastar-CB1012').getByRole('button').first().click();
   await page.getByTestId('quadro-ver-ordens').click();
-  await expect(page.getByTestId('frota-seletor-ordens')).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
+  await expect(page.getByTestId('frota-seletor').locator('select')).toHaveValue('ordens', { timeout: 20_000 });
   await expect(page.getByPlaceholder('Número, prefixo, problema, responsável...')).toHaveValue('CB1012');
 });
 

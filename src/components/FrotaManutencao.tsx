@@ -27,7 +27,7 @@ import {
   type SecaoFrotaManutencao,
   type VistaFrotaManutencao,
 } from './frotaManutencao/abasFrotaManutencao';
-import { SeletorDaSecao } from './frotaManutencao/SeletorDaSecao';
+import { AtalhoFaltando, SeletorDaSecao } from './frotaManutencao/SeletorDaSecao';
 
 type FixasDaFrota = 'vista' | 'onVista' | 'abas' | 'idAbaAtiva' | 'diaInicial' | 'onDia' | 'onRelacaoMudou' | 'quadro' | 'quadroBusca' | 'onOpenMaintenance';
 type FixasDaManutencao = 'subtela' | 'onSubtela' | 'abas' | 'idAbaAtiva' | 'buscaInicial' | 'onVerNoQuadro';
@@ -125,12 +125,20 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
     />
   );
   const idAbaAtiva = idDaAba(ID_ABAS, secao);
-  const seletor = (
+  // Sem fileira de botões embaixo das abas (pedido de 23/11/2026: "várias abas iguais").
+  const seletor = secao === 'lancamentos' ? (
+    <AtalhoFaltando
+      vista={vista}
+      maquinas={conferencia?.equipamentos.missing ?? 0}
+      operadores={conferencia?.operadores.missing ?? 0}
+      onTrocar={trocar}
+    />
+  ) : (
     <SeletorDaSecao
       opcoes={opcoesDaSecao(secao, acesso, contadores)}
       ativa={vista}
       onTrocar={trocar}
-      rotulo={`Telas de ${secao === 'lancamentos' ? 'lançamentos' : secao === 'manutencao' ? 'manutenção' : 'relatórios'}`}
+      rotulo={`Tela de ${secao === 'manutencao' ? 'manutenção' : 'relatórios'}`}
     />
   );
 
