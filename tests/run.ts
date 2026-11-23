@@ -167,6 +167,7 @@ import './salvamentoLeveSemFila.test';
 import './salvamentoMaisRapido.test';
 import './lancamentosEmTabelaPropria.test';
 import './leituraRapidaDoBloco.test';
+import './blocoMontadoComoTexto.test';
 import './historicoVersoesNuvem.test';
 import './frotaDataPlanilha.test';
 import './dataLocalHoje.test';

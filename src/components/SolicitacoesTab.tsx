@@ -858,7 +858,7 @@ export default function SolicitacoesTab({
     },
     {
       id: "aprovacao",
-      rotulo: "Aprovações",
+      rotulo: "A aprovar",
       valor: aguardandoAprovacao.length,
       detalhe: exerce(ator, "aprovador")
         ? "aguardando sua decisão"
@@ -954,7 +954,7 @@ export default function SolicitacoesTab({
       faixa={
         <div
           data-sol-reveal
-          className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]"
+          className="flex min-w-0 flex-wrap items-center gap-2 px-1 pb-1 sm:flex-nowrap sm:overflow-x-auto sm:[scrollbar-width:thin]"
         >
           {/* No celular as abas ocupam a linha toda; o Filtros vem para cá. */}
           {subtela === "pedidos" && (
@@ -974,7 +974,7 @@ export default function SolicitacoesTab({
           {subtela === "pedidos" && (
             <section
               aria-label="Resumo operacional de solicitações"
-              className="flex min-w-0 flex-1 items-center gap-1.5"
+              className="grid min-w-0 basis-full grid-cols-3 gap-1.5 sm:flex sm:flex-1 sm:basis-auto sm:items-center"
             >
               <span className="sr-only">Resumo operacional</span>
               {resumo.map((item) => (
@@ -984,7 +984,7 @@ export default function SolicitacoesTab({
                   className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
                   title={`${item.rotulo}: ${item.valor} ${item.detalhe}`}
                 >
-                  <span className="hidden truncate text-xs font-bold text-slate-600 sm:inline">
+                  <span className="truncate text-xs font-bold text-slate-600">
                     {item.rotulo}
                   </span>
                   <strong
@@ -1007,7 +1007,7 @@ export default function SolicitacoesTab({
                 <span>
                   Seu login só consulta este módulo.
                   {ehAdmin &&
-                    " Vincule o login a uma pessoa em Cadastros > Acessos."}
+                    " Marque o papel de cada pessoa na aba Dev."}
                 </span>
               </span>
             )}
@@ -1017,7 +1017,7 @@ export default function SolicitacoesTab({
                 <button
                   type="button"
                   onClick={irParaAprovacao}
-                  className="flex min-h-9 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-900"
+                  className="flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-900"
                 >
                   <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />{" "}
                   {aguardandoAprovacao.length} para você aprovar
@@ -1030,7 +1030,7 @@ export default function SolicitacoesTab({
                   type="button"
                   onClick={() => irPara("atraso")}
                   title="Passou o fim da janela sem confirmação de chegada"
-                  className={`flex min-h-9 items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 text-sm font-bold text-rose-800`}
+                  className="flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-rose-200 bg-rose-50 px-3 text-sm font-bold text-rose-800"
                 >
                   <AlertTriangle
                     className="size-4 shrink-0"
@@ -1090,7 +1090,7 @@ export default function SolicitacoesTab({
             </p>
           )}
           {subtela === "aprovacao" && !aberta && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 sm:w-auto">
               <span>
                 <strong>Fila do gerente:</strong> confira o pedido, o
                 fornecedor, o valor e o prazo antes de decidir.

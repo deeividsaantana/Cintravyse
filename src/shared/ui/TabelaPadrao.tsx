@@ -96,6 +96,8 @@ export interface ColunaTabela<T> {
   valorExportacao?: (linha: T) => ValorCelula;
   /** `false` tira a coluna do cartão do celular. Padrão: aparece. */
   noCartao?: boolean;
+  /** `true` ocupa a largura inteira do cartão do celular (selos e botões que não cabem em meia coluna). */
+  cartaoInteiro?: boolean;
 }
 
 export interface SelecaoTabela<T> {
@@ -538,7 +540,7 @@ export function TabelaPadrao<T>({
           {resto.length > 0 && (
             <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
               {resto.map(coluna => (
-                <div key={coluna.chave} className="min-w-0">
+                <div key={coluna.chave} className={cn('min-w-0', coluna.cartaoInteiro && 'col-span-2')}>
                   <dt className="text-xs font-semibold text-slate-500">{coluna.titulo}</dt>
                   <dd className={cn('text-sm text-slate-800 [overflow-wrap:anywhere]', coluna.alinhamento === 'direita' && 'tabular-nums')}>{coluna.render(linha) ?? '—'}</dd>
                 </div>
