@@ -6,7 +6,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { ArrowLeft, Download, MoreVertical, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Download, FileSpreadsheet, FileText, MoreVertical, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
 import type {
   Canteiro,
   Cargo,
@@ -557,9 +557,39 @@ export default function CadastrosTab(props: CadastrosTabProps) {
     }
   };
 
+  /** Colaboradores da lista filtrada (ex.: uma equipe) em Excel ou PDF. */
+  const baixarLista = async (formato: 'excel' | 'pdf') => {
+    if (exportando) return;
+    setExportando(true);
+    try {
+      const { baixarExcelPessoas, baixarPdfPessoas } = await import('../utils/exportarPessoas');
+      const lista = {
+        titulo: filtros.equipe || 'Colaboradores',
+        subtitulo: [filtros.equipe ? 'Colaboradores da equipe' : '', situacao === 'ativos' ? 'Só ativos' : situacao === 'inativos' ? 'Só inativos' : 'Todos'].filter(Boolean).join(' · '),
+        pessoas: linhasFiltradas.map(linha => ({
+          nome: linha.colunas.nome || linha.titulo,
+          matricula: linha.colunas.matricula || '',
+          cargo: linha.colunas.cargo || '',
+          equipe: linha.colunas.equipe || '',
+          lider: linha.colunas.lider || '',
+          situacao: linha.situacao,
+        })),
+      };
+      await (formato === 'excel' ? baixarExcelPessoas(lista) : baixarPdfPessoas(lista));
+    } catch (error) {
+      console.error('Erro ao baixar a lista:', error);
+      setAviso({ tipo: 'erro', texto: 'Não deu para gerar o arquivo. Tente de novo.' });
+    } finally {
+      setExportando(false);
+    }
+  };
+
   // ---- Tela ---------------------------------------------------------------
 
   const filtrosDoTipo = FILTROS[categoria];
+  // Colaboradores: a equipe fica à vista, ao lado da busca (pedido de 23/11/2026).
+  const filtroPrincipal = categoria === 'funcionarios' ? filtrosDoTipo.find(filtro => filtro.id === 'equipe') : undefined;
+  const filtrosExtras = filtrosDoTipo.filter(filtro => filtro !== filtroPrincipal);
   const filtrosAtivos = Object.entries(filtros).filter(([, valor]) => valor);
   const temConsulta = Boolean(busca) || filtrosAtivos.length > 0 || situacao !== 'ativos';
   const emLixeira = vista === 'lixeira';
@@ -644,23 +674,37 @@ export default function CadastrosTab(props: CadastrosTabProps) {
                 ))}
               </div>
             )}
-            {filtrosDoTipo.length > 0 && (
+            {filtroPrincipal && (
+              <select
+                aria-label={filtroPrincipal.label}
+                value={filtros[filtroPrincipal.id] || ''}
+                onChange={event => setFiltros(atual => ({ ...atual, [filtroPrincipal.id]: event.target.value }))}
+                className={`${CAMPO} cursor-pointer sm:w-60 max-sm:basis-full ${filtros[filtroPrincipal.id] ? 'border-[#f26a2e]/60 bg-orange-50/40' : ''}`}
+                data-testid="cadastro-filtro-equipe"
+              >
+                <option value="">{filtroPrincipal.label}: todas</option>
+                {opcoesDoFiltro(todasAsLinhas, filtroPrincipal.id).map(opcao => (
+                  <option key={opcao.valor} value={opcao.valor}>{`${opcao.valor} (${opcao.total})`}</option>
+                ))}
+              </select>
+            )}
+            {filtrosExtras.length > 0 && (
               <button
                 type="button"
                 aria-expanded={filtrosAbertos}
                 aria-controls="cadastros-filtros-extras"
                 onClick={() => setFiltrosAbertos(atual => !atual)}
-                className={`${BOTAO_SECUNDARIO} max-sm:flex-1 ${filtrosAtivos.length > 0 ? 'border-[#f26a2e]/60' : ''}`}
+                className={`${BOTAO_SECUNDARIO} max-sm:flex-1 ${filtrosAtivos.some(([id]) => id !== filtroPrincipal?.id) ? 'border-[#f26a2e]/60' : ''}`}
               >
                 <SlidersHorizontal className="size-5" aria-hidden="true" />
-                {filtrosAtivos.length > 0 ? `Filtros · ${filtrosAtivos.length}` : 'Filtros'}
+                {filtrosAtivos.filter(([id]) => id !== filtroPrincipal?.id).length > 0 ? `Filtros · ${filtrosAtivos.filter(([id]) => id !== filtroPrincipal?.id).length}` : 'Filtros'}
               </button>
             )}
           </div>
 
-          {filtrosDoTipo.length > 0 && filtrosAbertos && (
+          {filtrosExtras.length > 0 && filtrosAbertos && (
             <div id="cadastros-filtros-extras" className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {filtrosDoTipo.map(filtro => (
+              {filtrosExtras.map(filtro => (
                 <label key={filtro.id} className="min-w-0">
                   <span className="sr-only">{filtro.label}</span>
                   <select
@@ -700,6 +744,23 @@ export default function CadastrosTab(props: CadastrosTabProps) {
           )}
         </div>
       </FilterBar>
+
+      {categoria === 'funcionarios' && (filtros.equipe || '') !== '' && (
+        <div role="region" aria-label="Baixar a equipe" data-testid="equipe-baixar" className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+          <p className="min-w-0 flex-1 text-sm text-slate-700 max-sm:basis-full">
+            <strong className="text-slate-900">{filtros.equipe}</strong>
+            {` · ${linhasFiltradas.length} ${linhasFiltradas.length === 1 ? 'pessoa' : 'pessoas'} na lista`}
+          </p>
+          <button type="button" onClick={() => void baixarLista('excel')} disabled={exportando || linhasFiltradas.length === 0} className={`${BOTAO_SECUNDARIO} bg-white max-sm:flex-1`} data-testid="equipe-baixar-excel">
+            <FileSpreadsheet className="size-5" aria-hidden="true" />
+            Baixar Excel
+          </button>
+          <button type="button" onClick={() => void baixarLista('pdf')} disabled={exportando || linhasFiltradas.length === 0} className={`${BOTAO_SECUNDARIO} bg-white max-sm:flex-1`} data-testid="equipe-baixar-pdf">
+            <FileText className="size-5" aria-hidden="true" />
+            Baixar PDF
+          </button>
+        </div>
+      )}
 
       {faltamCargos.length > 0 && podeEditar && (
         <div role="region" aria-label="Cargos sem cadastro" data-testid="cargos-faltando" className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
@@ -778,6 +839,9 @@ export default function CadastrosTab(props: CadastrosTabProps) {
                 </button>
                 {acoesAbertas && <div role="menu" className="absolute right-0 top-12 z-30 grid min-w-48 gap-1 rounded-md border border-slate-200 bg-white p-1.5 shadow-xl">
                   <button type="button" role="menuitem" onClick={() => { setAcoesAbertas(false); void exportar(); }} disabled={exportando || linhasFiltradas.length === 0} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Download className="mr-2 inline size-4" aria-hidden="true" />{exportando ? 'Gerando…' : 'Exportar lista'}</button>
+                  {categoria === 'funcionarios' && (
+                    <button type="button" role="menuitem" onClick={() => { setAcoesAbertas(false); void baixarLista('pdf'); }} disabled={exportando || linhasFiltradas.length === 0} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><FileText className="mr-2 inline size-4" aria-hidden="true" />Baixar lista em PDF</button>
+                  )}
                   {podeEditar && importaPlanilha && <button type="button" role="menuitem" onClick={() => { setAcoesAbertas(false); arquivoRef.current?.click(); }} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"><Upload className="mr-2 inline size-4" aria-hidden="true" />Importar planilha</button>}
                   {mostrarLixeira && <button type="button" role="menuitem" data-testid="cadastro-categoria-lixeira" onClick={() => escolherVista('lixeira')} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"><Trash2 className="mr-2 inline size-4" aria-hidden="true" />Lixeira{lixeira.length > 0 ? ` (${lixeira.length.toLocaleString('pt-BR')})` : ''}</button>}
                 </div>}

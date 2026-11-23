@@ -1,4 +1,4 @@
-import { MapPin, Network, Pencil, RotateCcw, Trash2, UserMinus, Users } from 'lucide-react';
+import { FileSpreadsheet, FileText, MapPin, Network, Pencil, RotateCcw, Trash2, UserMinus, Users } from 'lucide-react';
 import React, { useMemo } from 'react';
 import type { Cargo, Funcionario, GrupoEquipe, HistoryLog } from '../../types';
 import { chaveDoCargo, equipePorPessoa, linhaDeComando, mapaDeCargos, montarEstrutura, nomeDoNivel } from '../../utils/hierarquia';
@@ -144,6 +144,22 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
     const membros = equipe.funcionarioIds.map(id => porId.get(id)).filter((item): item is Funcionario => Boolean(item))
       .sort((a, b) => (nivelDe(a.cargo) ?? 9) - (nivelDe(b.cargo) ?? 9) || a.nome.localeCompare(b.nome, 'pt-BR'));
     const encarregado = equipe.liderMatricula ? dados.funcionarios.find(item => item.matricula === equipe.liderMatricula) : undefined;
+    const baixarEquipe = async (formato: 'excel' | 'pdf') => {
+      const { baixarExcelPessoas, baixarPdfPessoas } = await import('../../utils/exportarPessoas');
+      const lista = {
+        titulo: equipe.nome,
+        subtitulo: [equipe.frenteServico, equipe.responsavel && `Encarregado: ${equipe.responsavel}`].filter(Boolean).join(' · '),
+        pessoas: membros.map(item => ({
+          nome: item.nome,
+          matricula: item.matricula || '',
+          cargo: item.cargo || '',
+          equipe: equipe.nome,
+          lider: item.liderNome || '',
+          situacao: (() => { const st = (item.status || (item.ativo === false ? 'INATIVO' : 'ATIVO')).toLowerCase(); return st.charAt(0).toUpperCase() + st.slice(1); })(),
+        })),
+      };
+      await (formato === 'excel' ? baixarExcelPessoas(lista) : baixarPdfPessoas(lista));
+    };
     return (
       <CadastroPainel telaCheia titulo={equipe.nome} onFechar={onFechar} testId="cadastro-detalhe" rodape={rodapeTelaCheia}>
         <div className="space-y-4">
@@ -182,6 +198,18 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
 
             <div className="lg:col-span-2">
               <Bloco titulo={`Quem faz parte (${membros.length})`} testId="equipe-membros">
+                {membros.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => void baixarEquipe('excel')} className={`${BOTAO_SECUNDARIO} max-sm:flex-1`} data-testid="equipe-ficha-excel">
+                      <FileSpreadsheet className="size-5" aria-hidden="true" />
+                      Baixar Excel
+                    </button>
+                    <button type="button" onClick={() => void baixarEquipe('pdf')} className={`${BOTAO_SECUNDARIO} max-sm:flex-1`} data-testid="equipe-ficha-pdf">
+                      <FileText className="size-5" aria-hidden="true" />
+                      Baixar PDF
+                    </button>
+                  </div>
+                )}
                 {membros.length === 0 ? <p className="text-sm text-slate-600">Ninguém na equipe ainda. Toque em Editar para escolher as pessoas.</p> : (
                   <ul className="grid gap-2 sm:grid-cols-2">
                     {membros.map(item => (
