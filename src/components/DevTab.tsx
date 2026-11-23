@@ -8,6 +8,7 @@ import { AbasDaTela, idDaAba, type AbaDaTela } from '../shared/ui/AbasDaTela';
 import { Avatar } from '../shared/ui/Avatar';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CAMPO_SELECT, CARTAO, FOCO, ROTULO, TOM_SITUACAO } from './cadastros/estilos';
 import type { Capacidade } from '../utils/permissoes';
+import { definirPapelDoLogin, pessoaDoUsuario, type PapelSuprimentos, type PessoaSuprimentos } from '../utils/solicitacoes';
 import { PERFIS_DE_ACESSO } from './perfil/perfisDeAcesso';
 import { AvisoDePrimeiroAcesso } from './perfil/AvisoDePrimeiroAcesso';
 import type { UserRole } from '../app/navigation/navigation';
@@ -54,6 +55,14 @@ const PAPEIS_CONTRATACAO: Array<{ id: PapelContratacaoDev; nome: string; faz: st
   { id: 'gerente_2', nome: 'Gerência (ex.: Marcelo)', faz: 'Faz a 3ª assinatura e conclui. Uma pessoa só.' },
   { id: 'auxiliar', nome: 'Auxiliar', faz: 'Só acompanha os pedidos.' },
 ];
+/** Papel em Solicitações e Compras (marcado aqui desde 23/11/2026). */
+const PAPEIS_COMPRAS: Array<{ id: PapelSuprimentos | null; nome: string; faz: string }> = [
+  { id: null, nome: 'Nenhum', faz: 'Só consulta os pedidos.' },
+  { id: 'solicitante', nome: 'Solicitante', faz: 'Abre pedidos de material e serviço.' },
+  { id: 'suprimentos', nome: 'Suprimentos', faz: 'Assume, cota, compra e muda prazo.' },
+  { id: 'aprovador', nome: 'Aprovador', faz: 'Aprova ou recusa a compra. Só vale para o Bruno.' },
+  { id: 'recebedor', nome: 'Recebimento', faz: 'Confere o que chegou e aponta falta.' },
+];
 const ACOES: Capacidade[] = ['ver', 'editar', 'aprovar', 'excluir'];
 const tomDoResumo = (acoes: readonly Capacidade[]) => (
   !acoes.length ? 'bg-white text-slate-500 ring-1 ring-inset ring-slate-200'
@@ -86,7 +95,13 @@ export const descreverMudanca = (mudanca: Pick<MudancaDeAcesso, 'kind' | 'item' 
 
 type Pendente = { titulo: string; descricao: string; botao: string; executar: () => Promise<unknown> };
 
-export default function DevTab() {
+interface DevTabProps {
+  /** Quem faz o quê em Solicitações e Compras (coleção pessoasSuprimentos). */
+  pessoasCompras?: PessoaSuprimentos[];
+  onSalvarPessoasCompras?: (pessoas: PessoaSuprimentos[]) => void;
+}
+
+export default function DevTab({ pessoasCompras, onSalvarPessoasCompras }: DevTabProps = {}) {
   const escopo = useRef<HTMLElement>(null);
   const [subtela, setSubtela] = useState<Subtela>('pessoas');
   const [dados, setDados] = useState<DadosPainelDev | null>(null);
@@ -317,8 +332,36 @@ export default function DevTab() {
               );
             })}
           </div>
-          <p className="text-xs text-slate-600">Compras e Solicitações seguem com quem faz o quê definido na própria aba.</p>
         </section>
+
+        {pessoasCompras && onSalvarPessoasCompras && (() => {
+          const cadastro = pessoaDoUsuario(pessoasCompras, { nome: pessoa.name, email: pessoa.email });
+          const atual = cadastro?.papel ?? null;
+          const mudarCompras = (papel: PapelSuprimentos | null) => {
+            onSalvarPessoasCompras(definirPapelDoLogin(pessoasCompras, { nome: pessoa.name, email: pessoa.email }, papel, `sup-${Date.now()}`));
+            const nome = PAPEIS_COMPRAS.find(item => item.id === papel)?.nome ?? '';
+            setAviso({ texto: papel ? `${pessoa.name} agora é ${nome} em Compras.` : `${pessoa.name} não tem mais papel em Compras.` });
+          };
+          return (
+            <section className={`${CARTAO} grid gap-2 p-4`} aria-labelledby="dev-compras-titulo" data-dev-reveal data-testid="dev-compras">
+              <h3 id="dev-compras-titulo" className="text-base font-black text-slate-900">Papel em Solicitações e Compras</h3>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5" role="radiogroup" aria-labelledby="dev-compras-titulo">
+                {PAPEIS_COMPRAS.map(papel => {
+                  const marcado = atual === papel.id || (papel.id === null && atual === 'dev');
+                  return (
+                    <label key={papel.id ?? 'nenhum'} className={`flex min-h-11 cursor-pointer items-start gap-2 rounded-xl border p-3 ${marcado ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}>
+                      <input type="radio" name={`compras-${pessoa.user_id}`} checked={marcado} disabled={ocupado} className="mt-0.5 size-5 accent-[#176b4d]"
+                        onChange={() => mudarCompras(papel.id)} />
+                      <span><span className="block text-sm font-bold text-slate-900">{papel.nome}</span><span className="block text-xs text-slate-600">{papel.faz}</span></span>
+                    </label>
+                  );
+                })}
+              </div>
+              {atual === 'dev' && <p className="text-xs text-slate-600">Hoje faz tudo em Compras (acesso total). Escolher um papel acima troca isso.</p>}
+              {cadastro && cadastro.nome !== pessoa.name && <p className="text-xs text-slate-600">Ligado ao cadastro "{cadastro.nome}" de Compras.</p>}
+            </section>
+          );
+        })()}
 
         <section className={`${CARTAO} grid gap-3 p-4 sm:grid-cols-2`} aria-labelledby="dev-perfil-titulo" data-dev-reveal>
           <h3 id="dev-perfil-titulo" className="text-base font-black text-slate-900 sm:col-span-2">Perfil e situação</h3>

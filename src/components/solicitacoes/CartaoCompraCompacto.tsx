@@ -129,7 +129,7 @@ export function CartaoCompraCompacto({ sol, hoje, ativo, onAbrir }: Props) {
                     {feito ? <Check className="size-3.5" /> : indice + 1}
                   </span>
                   <span
-                    className={`max-w-full truncate px-0.5 text-xs ${atual ? "font-bold text-slate-900" : "text-slate-600"}`}
+                    className={`max-w-full px-0.5 text-center text-xs leading-tight ${atual ? "font-bold text-slate-900" : "text-slate-600"}`}
                   >
                     {nome}
                   </span>
