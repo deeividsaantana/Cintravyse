@@ -364,6 +364,12 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   min-height: 100dvh;
   width: 100%;
   background: var(--renea-stone);
+  /* Nada dentro do app pode alargar a página (23/11/2026): com o body em
+     overflow-x hidden, um foco ou scrollIntoView num item mais largo que a
+     tela rolava a página de lado sem barra para voltar, e o menu lateral e o
+     começo das abas sumiam (tela do Dev em branco). clip não cria área de
+     rolagem, então o menu continua sticky. */
+  overflow-x: clip;
 }
 .erp-sidebar {
   position: sticky;

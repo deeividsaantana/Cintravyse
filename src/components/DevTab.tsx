@@ -134,7 +134,9 @@ export default function DevTab({ pessoasCompras, onSalvarPessoasCompras }: DevTa
   useGSAP(() => {
     const raiz = escopo.current;
     if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    gsap.fromTo(raiz.querySelectorAll('[data-dev-reveal]'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, stagger: 0.04, ease: 'power3.out', clearProps: 'transform,opacity' });
+    // Só desliza, sem esconder (23/11/2026): com opacidade 0 no começo, uma
+    // animação interrompida deixava a tela inteira em branco.
+    gsap.fromTo(raiz.querySelectorAll('[data-dev-reveal]'), { y: 8 }, { y: 0, duration: 0.3, stagger: 0.03, ease: 'power3.out', clearProps: 'transform' });
   }, { scope: escopo, dependencies: [subtela, selecionadaId, Boolean(dados)] });
 
   const pessoas = useMemo(() => dados?.people ?? [], [dados]);
