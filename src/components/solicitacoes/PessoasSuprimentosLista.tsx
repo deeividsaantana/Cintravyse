@@ -26,12 +26,6 @@ export function PessoasSuprimentosLista({ pessoas, onSalvar }: { pessoas: Pessoa
         {PAPEIS_SUPRIMENTOS.map(papel => <option key={papel} value={papel}>{NOME_DO_PAPEL[papel]}</option>)}
       </select>
     ), valorOrdenacao: pessoa => pessoa.papel, valorExportacao: pessoa => NOME_DO_PAPEL[pessoa.papel] },
-    { chave: 'podeAprovar', titulo: 'Pode aprovar', larguraMinima: 150, render: pessoa => (
-      <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
-        <input type="checkbox" aria-label={`Pode aprovar pedidos: ${pessoa.nome}`} checked={pessoa.podeAprovar === true} onChange={event => mudar(pessoa.id, { podeAprovar: event.target.checked })} className="size-5 accent-[#176b4d]" />
-        {pessoa.podeAprovar ? 'Sim' : 'Não'}
-      </label>
-    ), valorExportacao: pessoa => (pessoa.podeAprovar ? 'Sim' : 'Não') },
     { chave: 'ativo', titulo: 'Ativo', render: pessoa => (
       <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
         <input type="checkbox" checked={pessoa.ativo} onChange={event => mudar(pessoa.id, { ativo: event.target.checked })} className="size-5 accent-[#176b4d]" />
@@ -42,6 +36,10 @@ export function PessoasSuprimentosLista({ pessoas, onSalvar }: { pessoas: Pessoa
 
   return (
     <div className="grid min-h-0 gap-3">
+      <p className="text-sm text-slate-600">
+        Quem abre pedido é <strong>Solicitante</strong>, quem cota e compra é <strong>Suprimentos</strong>, quem confere o que chegou é <strong>Recebimento</strong>.
+        Cada pessoa é achada pelo e-mail do login; sem e-mail, pelo nome igual ao do login.
+      </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => { setSalvo(false); setRascunho(atual => [...atual, { id: `sup-${Date.now()}`, nome: 'Nova pessoa', papel: 'recebedor', ativo: true }]); }} className={BOTAO_SECUNDARIO}>
           <Plus className="size-4" aria-hidden="true" /> Adicionar pessoa

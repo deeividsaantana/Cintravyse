@@ -320,7 +320,7 @@ export default function ContratacaoTab() {
                   <button type="button" onClick={() => setAbertoId(pedido.id)} className="flex w-full flex-wrap gap-x-2 py-2 text-left text-sm text-slate-700 hover:text-emerald-800">
                     <span className="tabular-nums text-[#5b6870]">{dataHoraBr(evento.created_at)}</span>
                     <strong className="text-slate-900">{pedido.request_number}</strong>
-                    <span>{evento.actor_name} · {evento.to_status ? SITUACOES[evento.to_status as SituacaoContratacao] ?? evento.to_status : ''}</span>
+                    <span>{[evento.actor_name, evento.to_status ? SITUACOES[evento.to_status as SituacaoContratacao] ?? evento.to_status : ''].filter(Boolean).join(' · ')}</span>
                   </button>
                 </li>
               ))}

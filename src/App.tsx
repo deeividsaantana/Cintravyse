@@ -4342,6 +4342,7 @@ export default function App() {
                 podeApagar={meuAcesso.ehDev}
                 apagadas={solicitacoesApagadas}
                 onExcluir={handleExcluirSolicitacao}
+                onSalvarPessoas={currentUserRole === 'admin' ? handleSavePessoasSuprimentos : undefined}
               />
             )}
 
