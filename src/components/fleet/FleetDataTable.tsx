@@ -19,7 +19,6 @@ interface Props {
   onApprove?: (state: FleetCurrentState, status: 'APROVADO' | 'REJEITADO') => void;
 }
 
-const observacaoDe = (row: FleetCurrentState) => [row.maintenanceReason, row.note].filter(Boolean).join('. ');
 
 const TOM_APROVACAO = {
   APROVADO: { rotulo: 'Aprovado', tom: TOM_SITUACAO.ok },
@@ -56,15 +55,8 @@ const colunas = (
     chave: 'prefix',
     titulo: 'Máquina',
     valorOrdenacao: row => row.equipment.normalizedPrefix,
-    dica: row => row.equipment.prefix,
+    dica: row => [row.equipment.prefix, row.equipment.equipmentType || row.equipment.family].filter(Boolean).join(' · '),
     render: row => <span className="whitespace-nowrap font-mono text-sm font-bold text-slate-950">{row.equipment.prefix}</span>,
-  },
-  {
-    chave: 'type',
-    titulo: 'Tipo',
-    valorOrdenacao: row => row.equipment.equipmentType || row.equipment.family || null,
-    dica: row => [row.equipment.equipmentType, row.equipment.family].filter(Boolean).join(' · '),
-    render: row => <span className={`${UMA_LINHA} md:max-w-[9rem] 2xl:max-w-[18rem]`}>{row.equipment.equipmentType || row.equipment.family || 'Sem tipo'}</span>,
   },
   {
     chave: 'driver',
@@ -74,7 +66,6 @@ const colunas = (
     render: row => row.driver?.employeeName ? (
       <span className={`${UMA_LINHA} md:max-w-[11rem] 2xl:max-w-[20rem]`}>
         <span className="font-semibold text-slate-900">{row.driver.employeeName}</span>
-        {row.driver.employeeCode && <span className="text-[#5b6870]"> · {row.driver.employeeCode}</span>}
       </span>
     ) : <span className="whitespace-nowrap text-[#5b6870]">Sem motorista</span>,
   },
@@ -106,12 +97,6 @@ const colunas = (
     render: (row: FleetCurrentState) => row.location
       ? <span className={`${UMA_LINHA} md:max-w-[10rem] 2xl:max-w-[14rem]`}>{row.location}</span>
       : <span className="whitespace-nowrap text-[#5b6870]">—</span>,
-  }] : []),
-  ...(rows.some(row => observacaoDe(row)) ? [{
-    chave: 'note',
-    titulo: 'Observação',
-    dica: observacaoDe,
-    render: (row: FleetCurrentState) => <span className={`${UMA_LINHA} md:max-w-[7rem] 2xl:max-w-[28rem]`}>{observacaoDe(row) || '—'}</span>,
   }] : []),
   {
     chave: 'approval',

@@ -20,7 +20,7 @@ test('Estacas e Cadastros têm no máximo quatro opções no topo', () => {
 });
 
 test('Frotas e Manutenção tem no máximo quatro opções no topo, com qualquer acesso', () => {
-  const contadores = { equipamentosAConfirmar: 2, operadoresAConfirmar: 1, paradosAgora: 3, paraConferir10h: 1 };
+  const contadores = { faltando: 2, paradosAgora: 3, paraConferir10h: 1 };
   for (const frota of [true, false]) {
     for (const manutencao of [true, false]) {
       if (!frota && !manutencao) continue;

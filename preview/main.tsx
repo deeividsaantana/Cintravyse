@@ -76,7 +76,10 @@ const noopImportAbastecimentos = (items: unknown[] = []) => ({
  */
 function FrotaManutencaoPreview({ vistaInicial, soManutencao = false }: { vistaInicial?: VistaFrotaManutencao; soManutencao?: boolean }) {
   const [registros, setRegistros] = React.useState(() => [...fx.controlesEquipamentos, ...fx.controlesBasculantes, ...fx.controlesManutencao]);
-  const [ordens, setOrdens] = React.useState(() => [...fx.ordensManutencao, ...fx.ordensServico]);
+  const [ordens, setOrdens] = React.useState(() => {
+    const vistas = new Set<string>();
+    return [...fx.ordensManutencao, ...fx.ordensServico].filter(item => !vistas.has(item.id) && vistas.add(item.id));
+  });
   const [logs, setLogs] = React.useState<HistoryLog[]>([]);
   const equipamentos = React.useMemo(() => {
     const vistos = new Set<string>();

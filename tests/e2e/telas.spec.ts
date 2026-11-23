@@ -145,8 +145,8 @@ test('manutenção apresenta central operacional e fluxo das OS', async ({ page 
   await page.goto('/?screen=manutencao');
 
   await expect(page.getByRole('heading', { name: 'Frotas e Manutenção', level: 1 })).toBeVisible();
-  // Parados agora abre primeiro, com os números do dia e as máquinas paradas.
-  await expect(page.getByRole('region', { name: 'Números de hoje' })).toBeVisible();
+  // Paradas de hoje abre primeiro, com uma linha de números e as máquinas paradas.
+  await expect(page.getByTestId('manutencao-resumo-hoje')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Equipamentos que pararam hoje', level: 2 })).toBeVisible();
 });
 
@@ -435,7 +435,7 @@ test('Quadro e Manutenção se abrem um no outro dentro da mesma aba, já buscan
   await page.getByTestId('quadro-situacao-manutencao').click();
   await page.getByTestId('quadro-arrastar-CB1012').getByRole('button').first().click();
   await page.getByTestId('quadro-ver-ordens').click();
-  await expect(page.getByRole('tab', { name: /^(Ordens de serviço|OS)/, selected: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('frota-seletor-ordens')).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
   await expect(page.getByPlaceholder('Número, prefixo, problema, responsável...')).toHaveValue('CB1012');
 });
 

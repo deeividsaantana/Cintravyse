@@ -19,11 +19,15 @@ import {
   VISTA_DA_MANUTENCAO,
   VISTA_DE_FROTA,
   VISTA_DE_MANUTENCAO,
+  SECAO_DA_VISTA,
   abasFrotaManutencao,
+  opcoesDaSecao,
   vistaPadrao,
   vistaPermitida,
+  type SecaoFrotaManutencao,
   type VistaFrotaManutencao,
 } from './frotaManutencao/abasFrotaManutencao';
+import { SeletorDaSecao } from './frotaManutencao/SeletorDaSecao';
 
 type FixasDaFrota = 'vista' | 'onVista' | 'abas' | 'idAbaAtiva' | 'diaInicial' | 'onDia' | 'onRelacaoMudou' | 'quadro' | 'quadroBusca' | 'onOpenMaintenance';
 type FixasDaManutencao = 'subtela' | 'onSubtela' | 'abas' | 'idAbaAtiva' | 'buscaInicial' | 'onVerNoQuadro';
@@ -99,22 +103,36 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
     };
   }, [manutencao, registros, agora]);
 
+  const contadores = { faltando: conferencia?.equipamentos.missing ?? 0, ...contadoresManutencao };
+  const secao = SECAO_DA_VISTA[vista];
+  // Voltar a uma seção abre a última tela usada nela.
+  const [ultimaDaSecao, setUltimaDaSecao] = useState<Partial<Record<SecaoFrotaManutencao, VistaFrotaManutencao>>>({});
+  useEffect(() => { setUltimaDaSecao(atual => (atual[secao] === vista ? atual : { ...atual, [secao]: vista })); }, [secao, vista]);
+  const abrirSecao = (proxima: SecaoFrotaManutencao) => {
+    const opcoes = opcoesDaSecao(proxima, acesso, contadores);
+    const lembrada = ultimaDaSecao[proxima];
+    trocar(lembrada && opcoes.some(opcao => opcao.id === lembrada) ? lembrada : opcoes[0].id);
+  };
   const abas = (
-    <AbasDaTela<VistaFrotaManutencao>
+    <AbasDaTela<SecaoFrotaManutencao>
       id={ID_ABAS}
       rotulo="Subtelas de frotas e manutenção"
-      abas={abasFrotaManutencao(acesso, {
-        equipamentosAConfirmar: conferencia?.equipamentos.missing ?? 0,
-        operadoresAConfirmar: conferencia?.operadores.missing ?? 0,
-        ...contadoresManutencao,
-      })}
-      ativa={vista}
-      onTrocar={trocar}
+      abas={abasFrotaManutencao(acesso, contadores)}
+      ativa={secao}
+      onTrocar={abrirSecao}
       idPainel={VISTA_DA_FROTA[vista] ? 'frota-dados' : 'manutencao-dados'}
       testId="frota-aba"
     />
   );
-  const idAbaAtiva = idDaAba(ID_ABAS, vista);
+  const idAbaAtiva = idDaAba(ID_ABAS, secao);
+  const seletor = (
+    <SeletorDaSecao
+      opcoes={opcoesDaSecao(secao, acesso, contadores)}
+      ativa={vista}
+      onTrocar={trocar}
+      rotulo={`Telas de ${secao === 'lancamentos' ? 'lançamentos' : secao === 'manutencao' ? 'manutenção' : 'relatórios'}`}
+    />
+  );
 
   const verOrdens = manutencao ? (prefixo: string) => {
     setPedidoOrdens(atual => ({ prefixo, vez: atual.vez + 1 }));
@@ -133,6 +151,7 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
         vista={vistaFrota}
         onVista={(proxima: FleetView) => trocar(VISTA_DE_FROTA[proxima])}
         abas={abas}
+        seletor={seletor}
         idAbaAtiva={idAbaAtiva}
         diaInicial={dia}
         onDia={setDia}
@@ -152,6 +171,7 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
         subtela={subtela}
         onSubtela={(proxima: Subtela) => trocar(VISTA_DE_MANUTENCAO[proxima])}
         abas={abas}
+        seletor={seletor}
         idAbaAtiva={idAbaAtiva}
         buscaInicial={pedidoOrdens.prefixo}
         onVerNoQuadro={verNoQuadro}

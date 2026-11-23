@@ -1,25 +1,26 @@
 import { BarChart3, ClipboardList, LayoutGrid, Wrench } from 'lucide-react';
-import type { ItemDasAbas } from '../../shared/ui/AbasDaTela';
+import type { AbaDaTela } from '../../shared/ui/AbasDaTela';
 import type { FleetView } from '../ControleEquipamentosDiarioTab';
 import type { Subtela as SubtelaManutencao } from '../ManutencaoTab';
 
 /**
- * Aba única Frotas e Manutenção (pedido do Deivid em 23/11/2026): o que
- * ficava espalhado em Controle de Frotas (Dia, Quadro, Conferência,
- * Relatórios) e na aba Manutenção vira uma aba só, com quatro opções no
- * topo. A conferência da frota mora junto dos lançamentos do dia, e a
- * conferência das 10 h mora junto das ordens de serviço.
+ * Aba única Frotas e Manutenção (pedido do Deivid em 23/11/2026): quatro
+ * opções no topo e nenhuma segunda linha de abas. Cada seção que tem mais de
+ * uma tela mostra a escolha dentro da própria tela, em poucas palavras.
+ * O que repetia saiu: "Conferir equipamentos" e "Conferir operadores" viraram
+ * "Faltando"; o "Relatório do dia" da frota virou botão de baixar nos
+ * Lançamentos; Motoristas foi para "Mais ações".
  */
+export type SecaoFrotaManutencao = 'quadro' | 'lancamentos' | 'manutencao' | 'relatorios';
+
 export type VistaFrotaManutencao =
   | 'quadro'
   | 'dia'
-  | 'equipamentos'
-  | 'operadores'
+  | 'faltando'
   | 'motoristas'
   | 'parados'
   | 'ordens'
   | 'conferir-10h'
-  | 'frota-dia'
   | 'fechamento'
   | 'manutencao-dia'
   | 'historico-os';
@@ -28,10 +29,8 @@ export type VistaFrotaManutencao =
 export const VISTA_DA_FROTA: Readonly<Partial<Record<VistaFrotaManutencao, FleetView>>> = {
   quadro: 'quadro',
   dia: 'today',
-  equipamentos: 'equipamentos',
-  operadores: 'operadores',
+  faltando: 'faltando',
   motoristas: 'registry',
-  'frota-dia': 'relatorio',
   fechamento: 'history',
 };
 
@@ -50,54 +49,72 @@ const inverter = <T extends string>(mapa: Partial<Record<VistaFrotaManutencao, T
 export const VISTA_DE_FROTA = inverter<FleetView>(VISTA_DA_FROTA);
 export const VISTA_DE_MANUTENCAO = inverter<SubtelaManutencao>(VISTA_DA_MANUTENCAO);
 
+export const SECAO_DA_VISTA: Readonly<Record<VistaFrotaManutencao, SecaoFrotaManutencao>> = {
+  quadro: 'quadro',
+  dia: 'lancamentos',
+  faltando: 'lancamentos',
+  motoristas: 'lancamentos',
+  parados: 'manutencao',
+  ordens: 'manutencao',
+  'conferir-10h': 'manutencao',
+  fechamento: 'relatorios',
+  'manutencao-dia': 'relatorios',
+  'historico-os': 'relatorios',
+};
+
 export interface ContadoresFrotaManutencao {
-  equipamentosAConfirmar: number;
-  operadoresAConfirmar: number;
+  /** Máquinas da relação do dia ainda sem lançamento. */
+  faltando: number;
   paradosAgora: number;
   paraConferir10h: number;
 }
 
-/** Quem só tem uma das duas permissões vê só a parte dela. */
-export const abasFrotaManutencao = (
-  acesso: { frota: boolean; manutencao: boolean },
-  contadores: ContadoresFrotaManutencao,
-): ItemDasAbas<VistaFrotaManutencao>[] => {
-  const relatorios = [
-    ...(acesso.frota ? [
-      { id: 'frota-dia' as const, rotulo: 'Frota do dia', curto: 'Frota' },
-      { id: 'fechamento' as const, rotulo: 'Fechamento por dia', curto: 'Por dia' },
-    ] : []),
-    ...(acesso.manutencao ? [
-      { id: 'manutencao-dia' as const, rotulo: 'Manutenção do dia', curto: 'Manutenção' },
-      { id: 'historico-os' as const, rotulo: 'Histórico das OS', curto: 'Histórico' },
-    ] : []),
-  ];
-  return [
-    ...(acesso.frota ? [
-      { id: 'quadro' as const, rotulo: 'Quadro', icone: LayoutGrid },
-      {
-        grupo: 'lancamentos', rotulo: 'Lançamentos', icone: ClipboardList, abas: [
-          { id: 'dia' as const, rotulo: 'Lançamentos do dia', curto: 'Do dia' },
-          { id: 'equipamentos' as const, rotulo: 'Conferir equipamentos', curto: 'Equipamentos', contador: contadores.equipamentosAConfirmar, contadorRotulo: 'a confirmar' },
-          { id: 'operadores' as const, rotulo: 'Conferir operadores', curto: 'Operadores', contador: contadores.operadoresAConfirmar, contadorRotulo: 'a confirmar' },
-          { id: 'motoristas' as const, rotulo: 'Motoristas' },
-        ],
-      },
-    ] : []),
-    ...(acesso.manutencao ? [{
-      grupo: 'manutencao', rotulo: 'Manutenção', icone: Wrench, abas: [
-        { id: 'parados' as const, rotulo: 'Parados agora', curto: 'Parados', contador: contadores.paradosAgora, contadorRotulo: 'parados agora', tom: 'neutro' as const },
-        { id: 'ordens' as const, rotulo: 'Ordens de serviço', curto: 'OS' },
-        { id: 'conferir-10h' as const, rotulo: 'Conferir 10 h', curto: 'Conferir', contador: contadores.paraConferir10h, contadorRotulo: 'para conferir' },
-      ],
-    }] : []),
-    ...(relatorios.length ? [{ grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: relatorios }] : []),
-  ];
+type Acesso = { frota: boolean; manutencao: boolean };
+
+export const vistaPermitida = (vista: VistaFrotaManutencao, acesso: Acesso) =>
+  (VISTA_DA_FROTA[vista] ? acesso.frota : acesso.manutencao);
+
+export interface OpcaoDaSecao {
+  id: VistaFrotaManutencao;
+  rotulo: string;
+  /** Nome curto no celular, para as opções caberem lado a lado. */
+  curto?: string;
+  contador?: number;
+}
+
+/** As telas de cada seção, na ordem em que aparecem; quem não tem a permissão não vê. */
+export const opcoesDaSecao = (secao: SecaoFrotaManutencao, acesso: Acesso, contadores: ContadoresFrotaManutencao): OpcaoDaSecao[] => {
+  const todas: Record<SecaoFrotaManutencao, OpcaoDaSecao[]> = {
+    quadro: [{ id: 'quadro', rotulo: 'Quadro' }],
+    lancamentos: [
+      { id: 'dia', rotulo: 'Lançados' },
+      { id: 'faltando', rotulo: 'Faltando', contador: contadores.faltando },
+    ],
+    manutencao: [
+      { id: 'parados', rotulo: 'Paradas de hoje', curto: 'Hoje', contador: contadores.paradosAgora },
+      { id: 'ordens', rotulo: 'Ordens de serviço', curto: 'Ordens' },
+      { id: 'conferir-10h', rotulo: 'Conferir 10 h', curto: 'Conferir', contador: contadores.paraConferir10h },
+    ],
+    relatorios: [
+      { id: 'fechamento', rotulo: 'Frota por dia', curto: 'Frota' },
+      { id: 'manutencao-dia', rotulo: 'Manutenção do dia', curto: 'Manutenção' },
+      { id: 'historico-os', rotulo: 'Histórico das OS', curto: 'Histórico' },
+    ],
+  };
+  return todas[secao].filter(opcao => vistaPermitida(opcao.id, acesso));
 };
 
-/** Primeira vista que a pessoa pode abrir. */
-export const vistaPadrao = (acesso: { frota: boolean; manutencao: boolean }): VistaFrotaManutencao =>
-  (acesso.frota ? 'quadro' : 'parados');
+/** As opções do topo: no máximo quatro, sem segunda linha. */
+export const abasFrotaManutencao = (
+  acesso: Acesso,
+  contadores: ContadoresFrotaManutencao,
+): AbaDaTela<SecaoFrotaManutencao>[] => [
+  { id: 'quadro' as const, rotulo: 'Quadro', icone: LayoutGrid },
+  { id: 'lancamentos' as const, rotulo: 'Lançamentos', icone: ClipboardList, contador: contadores.faltando, contadorRotulo: 'máquinas faltando' },
+  { id: 'manutencao' as const, rotulo: 'Manutenção', icone: Wrench, contador: contadores.paraConferir10h, contadorRotulo: 'para conferir' },
+  { id: 'relatorios' as const, rotulo: 'Relatórios', icone: BarChart3 },
+].filter(aba => opcoesDaSecao(aba.id, acesso, contadores).length > 0);
 
-export const vistaPermitida = (vista: VistaFrotaManutencao, acesso: { frota: boolean; manutencao: boolean }) =>
-  (VISTA_DA_FROTA[vista] ? acesso.frota : acesso.manutencao);
+/** Primeira vista que a pessoa pode abrir. */
+export const vistaPadrao = (acesso: Acesso): VistaFrotaManutencao =>
+  (acesso.frota ? 'quadro' : 'parados');

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardPaste, Pencil, Plus, RotateCcw, Save, Trash2, Users } from 'lucide-react';
+import { CheckCircle2, ClipboardPaste, Pencil, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, FOCO } from '../cadastros/estilos';
 import type { ControleEquipamentoDiario, Funcionario } from '../../types';
 import {
@@ -68,7 +68,6 @@ export default function FleetDriverReference({ records, date, drivers, onAddDriv
     () => reconcileOperationalDriversDay(records, date, reference),
     [date, records, reference],
   );
-  const progress = reconciliation.total ? Math.round((reconciliation.informed / reconciliation.total) * 100) : 0;
   const visibleItems = visibility === 'all'
     ? reconciliation.items
     : reconciliation.items.filter(item => visibility === 'informed' ? item.informed : !item.informed);
@@ -123,30 +122,20 @@ export default function FleetDriverReference({ records, date, drivers, onAddDriv
     <section className="flex min-h-0 flex-1 flex-col gap-3" aria-labelledby="driver-reference-title">
       <ResumoConferencia
         id="driver-reference-title"
-        Icone={Users}
-        data={date}
-        titulo="Operadores do dia"
-        descricao={<>{reference.length} operadores esperados{relacaoGuardada ? ', relação escolhida à mão' : ', lista de operadores de basculante de 16/10/2026'}.</>}
-        contadores={[
-          { rotulo: 'Esperados', valor: reconciliation.total },
-          { rotulo: 'Em operação', valor: reconciliation.operating, tom: 'text-emerald-700' },
-          { rotulo: 'Lançados', valor: reconciliation.informed },
-          { rotulo: 'Faltantes', valor: reconciliation.missing, tom: 'text-amber-700' },
-        ]}
-        rotuloProgresso="Operadores lançados"
-        progresso={progress}
+        titulo="Operadores"
+        lancados={reconciliation.informed}
+        total={reconciliation.total}
         filtro={visibility}
         onFiltro={setVisibility}
         rotuloFiltro="Filtrar operadores"
         opcoesFiltro={[
-          ['pending', `Faltantes ${reconciliation.missing}`],
-          ['all', `Todos ${reconciliation.total}`],
-          ['informed', `Lançados ${reconciliation.informed}`],
+          ['pending', `Faltam ${reconciliation.missing}`],
+          ['all', 'Todos'],
         ]}
         acao={(
           <button type="button" onClick={() => { setEditing(value => !value); setColando(false); }} className={BOTAO_SECUNDARIO} data-testid="frota-operadores-editar">
             {editing ? <Save className="size-4" aria-hidden="true" /> : <Pencil className="size-4" aria-hidden="true" />}
-            {editing ? 'Concluir edição' : 'Editar relação'}
+            {editing ? 'Concluir' : 'Editar lista'}
           </button>
         )}
       />
@@ -222,7 +211,7 @@ export default function FleetDriverReference({ records, date, drivers, onAddDriv
       )}
 
 
-      <div ref={escopo} className="flex min-h-[16rem] flex-1 flex-col">
+      <div ref={escopo}>
         <GradeConferencia
           testId="frota-operadores-lista"
           itens={cartoes}

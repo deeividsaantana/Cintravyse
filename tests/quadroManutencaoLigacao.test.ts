@@ -5,6 +5,7 @@ import {
   VISTA_DA_FROTA,
   VISTA_DA_MANUTENCAO,
   abasFrotaManutencao,
+  opcoesDaSecao,
   vistaPadrao,
 } from '../src/components/frotaManutencao/abasFrotaManutencao';
 
@@ -12,9 +13,9 @@ const ler = (arquivo: string) => readFileSync(arquivo, 'utf8');
 const app = ler('src/App.tsx');
 const moldura = ler('src/components/FrotaManutencao.tsx');
 
-const idsDasAbas = (acesso: { frota: boolean; manutencao: boolean }) =>
-  abasFrotaManutencao(acesso, { equipamentosAConfirmar: 0, operadoresAConfirmar: 0, paradosAgora: 0, paraConferir10h: 0 })
-    .flatMap(item => ('grupo' in item ? item.abas.map(aba => aba.id) : [item.id]));
+const CONTADORES = { faltando: 0, paradosAgora: 0, paraConferir10h: 0 };
+const idsDasTelas = (acesso: { frota: boolean; manutencao: boolean }) =>
+  abasFrotaManutencao(acesso, CONTADORES).flatMap(aba => opcoesDaSecao(aba.id, acesso, CONTADORES).map(opcao => opcao.id));
 
 test('Frotas e Manutenção é uma aba só: Controle de Frotas e Manutenção abrem a mesma moldura (23/11/2026)', () => {
   assert.match(app, /\(activeTab === 'controle-equipamentos' \|\| activeTab === 'manutencao'\) && \(\s*<FrotaManutencao/);
@@ -23,22 +24,30 @@ test('Frotas e Manutenção é uma aba só: Controle de Frotas e Manutenção ab
   assert.match(app, /activeTab === 'manutencao' && allowedTabs\.includes\('controle-equipamentos'\)[\s\S]{0,200}vista: 'ordens'/);
 });
 
-test('nenhuma subtela antiga se perdeu na junção', () => {
-  const todas = idsDasAbas({ frota: true, manutencao: true });
+test('nenhuma função antiga se perdeu na junção (23/11/2026)', () => {
   const daFrota = new Set(Object.values(VISTA_DA_FROTA));
   const daManutencao = new Set(Object.values(VISTA_DA_MANUTENCAO));
-  for (const antiga of ['today', 'quadro', 'equipamentos', 'operadores', 'registry', 'relatorio', 'history']) {
-    assert.ok(daFrota.has(antiga as never), `Frotas perdeu ${antiga}`);
-  }
-  for (const antiga of ['hoje', 'conferencia', 'ordens', 'relatorio', 'historico']) {
-    assert.ok(daManutencao.has(antiga as never), `Manutenção perdeu ${antiga}`);
-  }
-  assert.equal(todas.length, Object.keys(VISTA_DA_FROTA).length + Object.keys(VISTA_DA_MANUTENCAO).length);
+  // Conferir equipamentos e Conferir operadores viraram "Faltando", uma tela só.
+  for (const tela of ['today', 'quadro', 'faltando', 'registry', 'history']) assert.ok(daFrota.has(tela as never), `Frotas perdeu ${tela}`);
+  for (const tela of ['hoje', 'conferencia', 'ordens', 'relatorio', 'historico']) assert.ok(daManutencao.has(tela as never), `Manutenção perdeu ${tela}`);
+  const frota = ler('src/components/ControleEquipamentosDiarioTab.tsx');
+  assert.match(frota, /<FleetDailyReference[\s\S]{0,400}<FleetDriverReference/, 'máquinas e operadores faltando na mesma tela');
+  // O antigo Relatório do dia da frota virou botões de baixar em Mais ações.
+  for (const id of ['frota-relatorio-pdf', 'frota-relatorio-excel', 'frota-faltantes-pdf', 'frota-abrir-motoristas']) assert.match(frota, new RegExp(`data-testid="${id}"`));
+  // Motoristas abre por Mais ações e não ocupa lugar na escolha de telas.
+  const todas = idsDasTelas({ frota: true, manutencao: true });
+  assert.ok(!todas.includes('motoristas'));
+  assert.equal(todas.length, Object.keys(VISTA_DA_FROTA).length + Object.keys(VISTA_DA_MANUTENCAO).length - 1);
+});
+
+test('sem segunda linha de abas: o topo tem só as seções, e a escolha da tela fica dentro dela', () => {
+  for (const aba of abasFrotaManutencao({ frota: true, manutencao: true }, CONTADORES)) assert.ok(!('grupo' in aba));
+  assert.match(moldura, /<SeletorDaSecao/);
 });
 
 test('quem só tem uma permissão vê só a parte dela', () => {
-  const soFrota = idsDasAbas({ frota: true, manutencao: false });
-  const soManutencao = idsDasAbas({ frota: false, manutencao: true });
+  const soFrota = idsDasTelas({ frota: true, manutencao: false });
+  const soManutencao = idsDasTelas({ frota: false, manutencao: true });
   assert.ok(soFrota.every(id => VISTA_DA_FROTA[id]));
   assert.ok(soManutencao.every(id => VISTA_DA_MANUTENCAO[id]));
   assert.equal(vistaPadrao({ frota: false, manutencao: true }), 'parados');

@@ -121,10 +121,10 @@ export function CartaoParada({ registro, parada, ordemNumero, tipo, podeEditar, 
   };
 
   return (
-    <article data-manutencao-reveal data-testid="cartao-parada" aria-labelledby={`${idBase}-prefixo`} className={`${CARTAO} flex min-w-0 flex-col gap-4 p-5`}>
+    <article data-manutencao-reveal data-testid="cartao-parada" aria-labelledby={`${idBase}-prefixo`} className={`${CARTAO} flex min-w-0 flex-col gap-3 p-4`}>
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 id={`${idBase}-prefixo`} className="truncate text-3xl font-black leading-tight tracking-tight text-slate-950">{registro.prefixo}</h3>
+          <h3 id={`${idBase}-prefixo`} className="truncate font-mono text-xl font-bold leading-tight text-slate-950">{registro.prefixo}</h3>
           <p className="mt-1 break-words text-xs font-semibold text-slate-500">{[tipo, ordemNumero].filter(Boolean).join(' · ')}</p>
           {onVerNoQuadro && (
             <button type="button" onClick={onVerNoQuadro} aria-label={`Ver ${registro.prefixo} no quadro`} className={`-ml-1 mt-1 inline-flex min-h-11 items-center px-1 text-sm font-bold text-[#176b4d] underline-offset-4 hover:underline ${FOCO}`}>
@@ -173,7 +173,14 @@ export function CartaoParada({ registro, parada, ordemNumero, tipo, podeEditar, 
         {parada.motivoInconsistencia && <p className="text-xs font-semibold text-amber-800">{parada.motivoInconsistencia} Confira na aba Conferência.</p>}
       </div>
 
+      {/* Horários do dia só ao abrir (23/11/2026: menos detalhe à vista). */}
       {itens.length > 0 && (
+        <details className="group rounded-lg border border-slate-200 px-3">
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-semibold text-slate-700 [&::-webkit-details-marker]:hidden ${FOCO}`}>
+            Ver horários ({itens.length})
+            <span className="text-slate-500 transition group-open:rotate-180" aria-hidden="true">▾</span>
+          </summary>
+          <div className="pb-3">
         <TimelineManutencao
           eventos={itens.map((item): EventoTimeline => {
             const isPaused = item.texto.includes('Entrou') || item.texto.includes('Aguardando');
@@ -191,6 +198,8 @@ export function CartaoParada({ registro, parada, ordemNumero, tipo, podeEditar, 
           })}
           statusAtual={parada.situacao === 'LIBERADO' ? 'liberado' : emManutencao ? 'manutencao' : 'parado'}
         />
+          </div>
+        </details>
       )}
 
       {podeEditar && !aberto && (

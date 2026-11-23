@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardCheck, Pencil, Plus, Save, Trash2 } from 'lucide-react';
+import { CheckCircle2, Pencil, Plus, Save, Trash2 } from 'lucide-react';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, FOCO } from '../cadastros/estilos';
 import type { ControleEquipamentoDiario } from '../../types';
 import {
@@ -62,9 +62,6 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
     () => reconcileOperationalFleetDay(records, date, reference),
     [date, records, reference],
   );
-  const progress = reconciliation.total
-    ? Math.round((reconciliation.informed / reconciliation.total) * 100)
-    : 0;
   const visibleItems = visibility === 'all'
     ? reconciliation.items
     : reconciliation.items.filter(item => visibility === 'informed' ? item.informed : !item.informed);
@@ -79,10 +76,6 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
     rotuloLancar: `Lançar ${item.prefix}`,
     onLancar: onLancar ? () => onLancar({ prefixo: item.prefix }) : undefined,
   }));
-  const porGrupo = GROUPS.map(grupo => {
-    const itens = reconciliation.items.filter(item => item.group === grupo);
-    return `${grupo} ${itens.filter(item => item.informed).length}/${itens.length}`;
-  }).join(' · ');
   const escopo = useEntradaDeLista<HTMLDivElement>([visibility, date]);
   const mudarItem = (indice: number, parcial: Partial<OperationalFleetReferenceItem>) =>
     setReference(itens => itens.map((atual, posicao) => (posicao === indice ? { ...atual, ...parcial } : atual)));
@@ -92,27 +85,17 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
     <section className="flex min-h-0 flex-1 flex-col gap-3" aria-labelledby="fleet-reference-title">
       <ResumoConferencia
         id="fleet-reference-title"
-        Icone={ClipboardCheck}
-        data={date}
-        titulo="Relação operacional do dia"
-        descricao={<>{reference.length} equipamentos esperados ({porGrupo}). Quem não foi lançado aparece como faltante.</>}
-        contadores={[
-          { rotulo: 'Esperados', valor: reconciliation.total },
-          { rotulo: 'Em operação', valor: reconciliation.operating, tom: 'text-emerald-700' },
-          { rotulo: 'Manutenção', valor: reconciliation.maintenance, tom: 'text-rose-700' },
-          { rotulo: 'Faltantes', valor: reconciliation.missing, tom: 'text-amber-700' },
-        ]}
-        rotuloProgresso="Preenchimento do dia"
-        progresso={progress}
+        titulo="Máquinas"
+        lancados={reconciliation.informed}
+        total={reconciliation.total}
         filtro={visibility}
         onFiltro={setVisibility}
-        rotuloFiltro="Filtrar relação operacional"
+        rotuloFiltro="Filtrar máquinas"
         opcoesFiltro={[
-          ['pending', `Faltantes ${reconciliation.missing}`],
-          ['all', `Todos ${reconciliation.total}`],
-          ['informed', `Lançados ${reconciliation.informed}`],
+          ['pending', `Faltam ${reconciliation.missing}`],
+          ['all', 'Todas'],
         ]}
-        acao={<button type="button" onClick={() => setEditing(value => !value)} className={BOTAO_SECUNDARIO}>{editing ? <Save className="size-4" aria-hidden="true" /> : <Pencil className="size-4" aria-hidden="true" />} {editing ? 'Concluir edição' : 'Editar relação'}</button>}
+        acao={<button type="button" onClick={() => setEditing(value => !value)} className={BOTAO_SECUNDARIO}>{editing ? <Save className="size-4" aria-hidden="true" /> : <Pencil className="size-4" aria-hidden="true" />} {editing ? 'Concluir' : 'Editar lista'}</button>}
       />
 
       {editing && (
@@ -141,7 +124,7 @@ export default function FleetDailyReference({ records, date, onLancar, onRelacao
         </section>
       )}
 
-      <div ref={escopo} className="flex min-h-[16rem] flex-1 flex-col">
+      <div ref={escopo}>
         <GradeConferencia
           testId="frota-equipamentos-lista"
           itens={cartoes}
