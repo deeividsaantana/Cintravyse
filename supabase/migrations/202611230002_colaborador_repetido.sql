@@ -25,10 +25,16 @@ returns trigger
 language plpgsql
 set search_path = public
 as $$
+declare
+  v_antes integer := 0;
 begin
-  if new.payload ? 'funcionarios'
-    and public.erp_matriculas_repetidas(new.payload)
-      > case when tg_op = 'UPDATE' then public.erp_matriculas_repetidas(old.payload) else 0 end then
+  if not (new.payload ? 'funcionarios') then
+    return new;
+  end if;
+  if tg_op = 'UPDATE' then
+    v_antes := public.erp_matriculas_repetidas(old.payload);
+  end if;
+  if public.erp_matriculas_repetidas(new.payload) > v_antes then
     raise exception 'COLABORADOR_REPETIDO: já existe um colaborador com esta matrícula.';
   end if;
   return new;
