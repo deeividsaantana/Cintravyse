@@ -225,6 +225,32 @@ export const pessoaDoUsuario = (
   return comeco.filter(pessoa => normalizar(pessoa.nome).length === maior).length === 1 ? comeco[0] : null;
 };
 
+/**
+ * Papel de Compras de um login, marcado na aba Dev (23/11/2026). Acha a pessoa
+ * como o módulo acha (e-mail, senão nome) e grava o e-mail do login nela, para
+ * a ligação não depender mais do nome. `null` inativa (não apaga: o nome segue
+ * nos pedidos antigos). Sem cadastro, cria um com o nome do login.
+ */
+export const definirPapelDoLogin = (
+  pessoas: readonly PessoaSuprimentos[],
+  login: { nome: string; email: string },
+  papel: PapelSuprimentos | null,
+  novoId: string,
+): PessoaSuprimentos[] => {
+  const email = login.email.trim();
+  const achada = pessoaDoUsuario(pessoas, { nome: login.nome, email });
+  if (achada) {
+    return pessoas.map(pessoa => (pessoa.id === achada.id
+      ? { ...pessoa, email: email || pessoa.email, ...(papel ? { papel, ativo: true } : { ativo: false }) }
+      : pessoa));
+  }
+  if (!papel) return [...pessoas];
+  // Cadastro inativo com o mesmo e-mail volta a valer, em vez de duplicar.
+  const inativa = email ? pessoas.find(pessoa => !pessoa.ativo && pessoa.email && normalizar(pessoa.email) === normalizar(email)) : undefined;
+  if (inativa) return pessoas.map(pessoa => (pessoa.id === inativa.id ? { ...pessoa, papel, ativo: true } : pessoa));
+  return [...pessoas, { id: novoId, nome: login.nome.trim(), ...(email ? { email } : {}), papel, ativo: true }];
+};
+
 /** Próximo número do ano: SOL-2026-0001, PC-2026-0001... */
 export const proximoNumero = (prefixo: 'SOL' | 'PC', existentes: readonly (string | undefined)[], ano: number): string => {
   const inicio = `${prefixo}-${ano}-`;
