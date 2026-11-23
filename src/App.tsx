@@ -916,7 +916,9 @@ export default function App() {
     try {
       // No Supabase, a autorização é uma associação explícita na organização;
       // A autorização vem da associação do usuário no Supabase.
-      const memberships = await loadSupabaseMemberships();
+      // As duas leituras saem juntas: uma não depende da outra, e a entrada
+      // espera uma ida ao banco a menos.
+      const [memberships, acesso] = await Promise.all([loadSupabaseMemberships(), carregarMeuAcesso(user.uid)]);
       const membership = memberships[0];
       if (!membership) {
         await signOutCurrentUser(auth);
@@ -927,7 +929,7 @@ export default function App() {
       }
       setCurrentUserRole(roleFromMembership(membership.role, user.app_metadata?.role));
       // Antes de entrar, para o endereço ?tab=dev não cair no Painel.
-      setMeuAcesso(await carregarMeuAcesso(user.uid));
+      setMeuAcesso(acesso);
       setCurrentUser(user);
       setIsLoggedIn(true);
     } catch (error) {
