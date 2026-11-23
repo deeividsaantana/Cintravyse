@@ -327,21 +327,13 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
   return (
     <div ref={escopo} id="quadro-frota-tab" data-testid="quadro-frota-tab" className="space-y-3">
       <section aria-label="Resumo do dia" data-quadro-reveal className={`${CARTAO} p-3 sm:p-4`}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
-            <p className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-slate-600">
-              Lançadas no dia
-              <span className="font-mono text-2xl font-extrabold tabular-nums text-slate-900">{lancadas}</span>
-              <span className="font-bold text-slate-500">de {indicadores.total}</span>
-              <span className="font-bold text-[#176b4d]">· {porcento}%</span>
+            <h2 className="text-base font-bold text-slate-900">Situação da frota no dia</h2>
+            <p className="text-sm text-slate-600">
+              <strong className="font-bold tabular-nums text-slate-900">{lancadas} de {indicadores.total}</strong> máquinas lançadas
+              <span className="font-bold text-[#176b4d]"> · {porcento}%</span>
             </p>
-            {/* Uma barra só mostra a frota inteira: cada cor é uma situação. */}
-            <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`Frota do dia: ${COLUNAS.map(grupo => `${CONTA[grupo](indicadores)} ${ROTULO_GRUPO[grupo].toLowerCase()}`).join(', ')}`} data-testid="quadro-barra-situacoes">
-              {(['operando', 'manutencao', 'parado', 'sem-lancamento'] as const).map(grupo => {
-                const total = CONTA[grupo](indicadores);
-                return total ? <span key={grupo} className={`h-full ${TOM[grupo].ponto} transition-[width] duration-500 [&+&]:border-l-2 [&+&]:border-white`} style={{ width: `${(total / indicadores.total) * 100}%` }} /> : null;
-              })}
-            </div>
           </div>
           {podeEditar && (
             <button type="button" onClick={atualizarPendentes} disabled={pendentes.length === 0} className={`${BOTAO_PRIMARIO} w-full px-4 sm:w-auto sm:shrink-0`} data-testid="quadro-acao-principal">
@@ -350,16 +342,28 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
             </button>
           )}
         </div>
+        {/* Uma barra só mostra a frota inteira: cada cor é uma situação. */}
+        <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`Frota do dia: ${COLUNAS.map(grupo => `${CONTA[grupo](indicadores)} ${ROTULO_GRUPO[grupo].toLowerCase()}`).join(', ')}`} data-testid="quadro-barra-situacoes">
+          {(['operando', 'manutencao', 'parado', 'sem-lancamento'] as const).map(grupo => {
+            const total = CONTA[grupo](indicadores);
+            return total ? <span key={grupo} className={`h-full ${TOM[grupo].ponto} transition-[width] duration-500 [&+&]:border-l-2 [&+&]:border-white`} style={{ width: `${(total / indicadores.total) * 100}%` }} /> : null;
+          })}
+        </div>
+        {/* Cada número é também o filtro: tocar mostra só aquela situação. */}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" role="group" aria-label="Situação" data-testid="quadro-situacoes">
           {situacoes.map(([grupo, rotulo, total, ponto]) => {
             const ligado = filtros.grupo === grupo;
+            const parte = indicadores.total ? Math.round((total / indicadores.total) * 100) : 0;
             return (
-              <button key={grupo || 'todas'} type="button" aria-pressed={ligado} onClick={() => mudar({ grupo: ligado ? '' : grupo as GrupoStatus | '' })} data-testid={`quadro-situacao-${grupo || 'todas'}`} className={`flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-xl px-3 py-2 ${grupo ? '' : 'max-sm:col-span-2'} text-left ring-1 transition duration-200 active:scale-[0.97] ${ligado ? 'bg-[#176b4d] text-white ring-[#176b4d]' : 'bg-white text-slate-700 ring-slate-200 hover:ring-emerald-300'} ${FOCO}`}>
-                <span className="inline-flex min-w-0 items-center gap-2 text-sm font-bold leading-tight">
-                  <span className={`size-2.5 shrink-0 rounded-full ${ligado ? 'bg-white' : ponto}`} aria-hidden="true" />
-                  {rotulo}
+              <button key={grupo || 'todas'} type="button" aria-pressed={ligado} onClick={() => mudar({ grupo: ligado ? '' : grupo as GrupoStatus | '' })} data-testid={`quadro-situacao-${grupo || 'todas'}`} className={`flex min-w-0 flex-col gap-1 rounded-xl px-3 py-2.5 text-left transition duration-200 active:scale-[0.98] ${grupo ? '' : 'max-sm:col-span-2'} ${ligado ? 'bg-emerald-50 ring-2 ring-[#176b4d]' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'} ${FOCO}`}>
+                <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold leading-tight text-slate-600">
+                  <span className={`size-2.5 shrink-0 rounded-full ${ponto}`} aria-hidden="true" />
+                  <span className="truncate">{rotulo}</span>
                 </span>
-                <span className={`font-mono text-lg font-extrabold tabular-nums ${ligado ? '' : total ? 'text-slate-900' : 'text-slate-500'}`}>{total}</span>
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className={`text-2xl font-extrabold leading-none tabular-nums ${total ? 'text-slate-900' : 'text-slate-500'}`}>{total}</span>
+                  <span className="text-xs font-semibold tabular-nums text-slate-500">{grupo ? `${parte}%` : 'na frota'}</span>
+                </span>
               </button>
             );
           })}
@@ -526,7 +530,7 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
                 return (
                   <ColunaCanteiro key={grupo.canteiro} canteiro={grupo.canteiro} className={`mb-3 break-inside-avoid overflow-hidden rounded-2xl border bg-white ${semCanteiro ? 'border-dashed border-slate-300' : 'border-slate-200'}`}>
                     <section aria-label={`Canteiro ${grupo.canteiro}`} data-testid="quadro-coluna">
-                      <header className="flex items-center gap-2.5 border-b border-slate-100 px-3.5 py-2.5">
+                      <header className="flex items-center gap-2.5 bg-slate-50 px-3.5 py-2.5">
                         <MapPin className={`size-4 shrink-0 ${semCanteiro ? 'text-slate-500' : 'text-[#176b4d]'}`} aria-hidden="true" />
                         <h2 className={`min-w-0 truncate text-[0.95rem] font-bold ${semCanteiro ? 'text-slate-500' : 'text-slate-900'}`}>{grupo.canteiro}</h2>
                         <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold tabular-nums text-slate-600">{grupo.cartoes.length}</span>
@@ -539,7 +543,10 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
                           ))}
                         </span>
                       </header>
-                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(8.75rem,1fr))]">
+                      <div className="flex h-1 bg-slate-100" aria-hidden="true">
+                        {contagem.map(([situacao, total]) => <span key={situacao} className={TOM[situacao].ponto} style={{ width: `${(total / grupo.cartoes.length) * 100}%` }} />)}
+                      </div>
+                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr))]">
                         {lista.map(cartao => (
                           <CartaoArrastavel
                             key={cartao.equipamentoId}

@@ -21,7 +21,6 @@ import {
   type RascunhoQuadro,
 } from '../../modules/frota/quadroFrota';
 import { Modal } from '../../shared/ui';
-import { DesenhoMaquina } from './DesenhoMaquina';
 import { TOM } from './CartaoEquipamento';
 import { BOTAO_PERIGO, BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CARTAO, FOCO } from '../cadastros/estilos';
 
@@ -241,31 +240,28 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
               <li
                 key={id}
                 data-testid={`lancar-linha-${cartao.prefixo}`}
-                className={`relative grid gap-2.5 px-3 py-2.5 transition-colors lg:gap-3 lg:py-1.5 duration-300 lg:grid-cols-[2.75rem_minmax(13rem,1.2fr)_minmax(17rem,1.3fr)_minmax(9rem,0.9fr)_minmax(9rem,0.9fr)_minmax(11rem,1fr)] lg:items-center ${erro ? 'bg-rose-50/60' : mudou ? 'bg-emerald-50/50' : marcadas.has(id) ? 'bg-slate-50' : 'bg-white'}`}
+                className={`relative grid grid-cols-2 gap-2.5 px-3 py-2.5 transition-colors lg:gap-3 lg:py-1.5 duration-300 lg:grid-cols-[2.75rem_minmax(13rem,1.2fr)_minmax(17rem,1.3fr)_minmax(9rem,0.9fr)_minmax(9rem,0.9fr)_minmax(11rem,1fr)] lg:items-center ${erro ? 'bg-rose-50/60' : mudou ? 'bg-emerald-50/50' : marcadas.has(id) ? 'bg-slate-50' : 'bg-white hover:bg-slate-50/70'}`}
               >
                 <span className={`absolute inset-y-0 left-0 w-1 ${erro ? 'bg-rose-500' : mudou ? 'bg-[#176b4d]' : 'bg-transparent'}`} aria-hidden="true" />
-                <div className="flex items-center gap-3 lg:contents">
+                <div className="col-span-2 flex items-center gap-3 lg:contents">
                   <label className="grid size-11 shrink-0 cursor-pointer place-items-center">
                     <span className="sr-only">Selecionar {cartao.prefixo}</span>
                     <input type="checkbox" checked={marcadas.has(id)} onChange={() => marcar(id)} className="size-5 accent-[#176b4d]" />
                   </label>
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className={`grid h-10 w-12 shrink-0 place-items-center overflow-hidden rounded-lg ${tom.fundo} ring-1 ring-inset ring-slate-200`}>
-                      {cartao.foto ? <img src={cartao.foto} alt="" className="h-full w-full object-cover" loading="lazy" /> : <DesenhoMaquina tipo={cartao.silhueta} className="h-8 w-11" />}
-                    </span>
                     <span className="min-w-0">
                       <span className="flex items-center gap-2">
                         <strong className="font-mono text-[0.95rem] font-extrabold text-slate-900">{cartao.prefixo}</strong>
-                        <span className={`inline-flex shrink-0 items-center gap-1 text-xs font-bold ${mudou ? 'text-[#176b4d]' : 'text-slate-500'}`}>
-                          <span className={`size-2 rounded-full ${mudou ? 'bg-[#176b4d]' : tom.ponto}`} aria-hidden="true" />
+                        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-bold ring-1 ring-inset ${mudou ? 'bg-emerald-50 text-[#176b4d] ring-emerald-300' : tom.etiqueta}`}>
+                          <span className={`size-1.5 rounded-full ${mudou ? 'bg-[#176b4d]' : tom.ponto}`} aria-hidden="true" />
                           {mudou ? 'Não salvo' : ROTULO_GRUPO[cartao.grupo]}
                         </span>
                       </span>
-                      <span className="block truncate text-xs font-medium text-slate-500">{cartao.modelo}</span>
+                      <span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{[cartao.tipo, cartao.modelo].filter(Boolean).join(' · ')}</span>
                     </span>
                   </div>
                 </div>
-                <div className="grid gap-1.5">
+                <div className="col-span-2 grid gap-1.5 lg:col-span-1">
                   <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" role="group" aria-label={`Situação de ${cartao.prefixo}`}>
                     {RAPIDAS.map(item => {
                       const ligado = atual.status === item.status;
@@ -293,12 +289,12 @@ export function LancarFrota({ cartoes, dia, equipamentos, registros, canteiros =
                     {Array.from(new Set([...frentes, ...(atual.frente ? [atual.frente] : [])])).map(frente => <option key={frente} value={frente}>{frente}</option>)}
                   </select>
                 </label>
-                <label className="block">
+                <label className="col-span-2 block lg:col-span-1">
                   <span className="mb-1 block text-xs font-semibold text-slate-500 lg:sr-only">Operador</span>
                   <input value={atual.operador} onChange={event => mudar([id], { operador: event.target.value })} list={idLista} placeholder="Nome do operador" autoComplete="off" className={CAMPO_LINHA} data-testid={`lancar-${cartao.prefixo}-operador`} />
                 </label>
                 {(EM_MANUTENCAO.has(atual.status) || erro) && (
-                  <div className="grid gap-2 lg:col-span-6 lg:grid-cols-[2.75rem_1fr] lg:gap-3">
+                  <div className="col-span-2 grid gap-2 lg:col-span-6 lg:grid-cols-[2.75rem_1fr] lg:gap-3">
                     <span className="hidden lg:block" />
                     <div className="grid gap-2 sm:grid-cols-[minmax(0,24rem)_1fr] sm:items-center">
                       {EM_MANUTENCAO.has(atual.status) && (
