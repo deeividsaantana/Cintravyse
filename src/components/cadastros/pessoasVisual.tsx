@@ -105,7 +105,7 @@ export function ResumoColaboradores({ linhas, filtros, onFiltrar }: {
             className={`flex min-h-16 flex-col justify-center rounded-2xl border bg-white px-4 py-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#176b4d]/40 ${ligado ? 'border-[#f26a2e]/60 ring-2 ring-[#f26a2e]/20' : 'border-slate-200 hover:border-emerald-300'}`}
           >
             <span className="text-2xl font-black tabular-nums text-slate-900">{quadro.total.toLocaleString('pt-BR')}</span>
-            <span className={`text-sm font-semibold ${atencao ? 'text-[#b4471a]' : 'text-slate-600'}`}>{quadro.rotulo}</span>
+            <span className={`text-sm font-semibold ${atencao ? 'text-[#c2410c]' : 'text-slate-600'}`}>{quadro.rotulo}</span>
           </button>
         );
       })}

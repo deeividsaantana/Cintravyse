@@ -14,6 +14,7 @@ import { montarRegistro, valoresIniciais } from '../src/components/cadastros/cam
 import { montarLinhas, type DadosCadastros } from '../src/utils/cadastrosLista';
 import { usosDoCadastro, type CadastroUsage } from '../src/masterData/registryDependencies';
 import { abasCadastros } from '../src/components/cadastros/abasCadastros';
+import { validateCentralRecord } from '../src/masterData/centralRegistry';
 
 /**
  * Pessoas em Cadastros (22/11/2026): cargos com nível, equipes, organograma
@@ -166,4 +167,16 @@ test('Pessoas reúne colaboradores, cargos, equipes, organograma e pirâmide', (
   assert.deepEqual(pessoas.abas.map(aba => aba.id), ['funcionarios', 'cargos', 'equipes', 'organograma', 'piramide']);
   const [comAdmin] = abasCadastros(() => 1, true);
   assert.ok('grupo' in comAdmin && comAdmin.abas.some(aba => aba.id === 'acessos'));
+});
+
+test('colaborador repetido não entra: matrícula (sem zeros à esquerda) ou nome igual', () => {
+  const base = { empresas: [], equipamentos: [], obras: [], funcionarios: todos };
+  const novo = (extra: Partial<Funcionario>) => validateCentralRecord({ ...base, record: pessoa('novo', 'Fulano Novo', 'Operador', undefined, { matricula: '999', ...extra }) });
+  assert.match(novo({ matricula: '0001' }).join(' '), /matrícula: Paulo/);
+  assert.match(novo({ nome: 'josé ' }).join(' '), /mesmo nome|este nome/);
+  assert.deepEqual(novo({}), []);
+  // Quem já está repetido no cadastro continua podendo ser editado.
+  const gemeo = pessoa('p99', 'José', 'Operador', '3', { matricula: '' });
+  const comGemeo = { ...base, funcionarios: [...todos, gemeo] };
+  assert.deepEqual(validateCentralRecord({ ...comGemeo, record: { ...gemeo, telefone: '79' } }).filter(erro => /Já existe/.test(erro)), []);
 });
