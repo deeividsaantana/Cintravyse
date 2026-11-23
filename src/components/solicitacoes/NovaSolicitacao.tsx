@@ -63,10 +63,10 @@ export function NovaSolicitacao({ solicitante, solicitantesPermitidos, onEnviar,
   };
 
   return (
-    <form ref={formRef} data-lancamento="" onSubmit={event => { event.preventDefault(); enviar(); }} data-testid="solicitacao-nova-form" className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="grid min-w-0 gap-4">
+    <form ref={formRef} data-lancamento="" onSubmit={event => { event.preventDefault(); enviar(); }} data-testid="solicitacao-nova-form" className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid min-w-0 grid-cols-1 gap-4">
         <Etapa numero={0} titulo="Quem está solicitando" feita={Boolean(solicitanteSelecionado)}>
-          <Campo rotulo="Solicitante autorizado" para="sol-solicitante" obrigatorio erro={tentou && !solicitanteSelecionado ? 'Selecione José Augusto, Thiago, Alvaro ou José Augusto Mineiro.' : null}>
+          <Campo rotulo="Solicitante autorizado" para="sol-solicitante" obrigatorio erro={tentou && !solicitanteSelecionado ? 'Escolha quem está pedindo.' : null}>
             <select id="sol-solicitante" value={solicitanteSelecionado} onChange={event => setSolicitanteSelecionado(event.target.value)} className={CAMPO}>
               <option value="">Selecione uma pessoa</option>
               {solicitantesPermitidos.map(nome => <option key={nome}>{nome}</option>)}

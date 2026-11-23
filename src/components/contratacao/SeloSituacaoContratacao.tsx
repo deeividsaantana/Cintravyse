@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { CARGO_DA_ETAPA, ETAPAS, SITUACOES, etapaPendente, nomeDaEtapa } from '../../../api/_shared/contratacao-regras.js';
+import { CARGO_DA_ETAPA, ETAPAS, SITUACOES, etapaPendente } from '../../../api/_shared/contratacao-regras.js';
 import type { Etapa, PedidoContratacao, SituacaoContratacao } from '../../services/contratacaoApi';
 import { dataHoraBr } from './formatos';
 
@@ -36,7 +36,7 @@ export function SelosDasEtapas({ pedido }: { pedido: PedidoContratacao }) {
             {indice > 0 && <span aria-hidden="true" className="text-[#5b6870]">›</span>}
             <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${tom}`}>
               {feito && <Check className="size-3" aria-hidden="true" />}
-              {nomeDaEtapa(etapa)}
+              {indice + 1}ª {CARGO_DA_ETAPA[etapa]}
               <span className="sr-only">{recusou ? ' (recusou)' : feito ? ' (assinou)' : daVez ? ' (é a vez)' : ' (aguardando)'}</span>
             </span>
           </li>

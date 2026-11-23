@@ -185,22 +185,22 @@ export default function ContratacaoTab() {
 
   const colunas: ColunaTabela<PedidoContratacao>[] = [
     { chave: 'numero', titulo: 'N°', render: p => <strong className="tabular-nums">{p.request_number}</strong>, valorOrdenacao: p => p.request_number, larguraMinima: 150 },
-    { chave: 'tipo', titulo: 'Tipo', render: p => resumoDoPedido(p.form).nomeDoTipo, valorOrdenacao: p => resumoDoPedido(p.form).nomeDoTipo, larguraMinima: 120 },
-    { chave: 'candidato', titulo: 'Pessoa', render: p => p.form.candidato || '—', valorOrdenacao: p => p.form.candidato || '', larguraMinima: 180 },
-    { chave: 'posicao', titulo: 'Cargo', render: p => resumoDoPedido(p.form).cargo, valorOrdenacao: p => resumoDoPedido(p.form).cargo, larguraMinima: 150 },
-    { chave: 'area', titulo: 'Frente/Setor', render: p => p.form.area || '—', valorOrdenacao: p => p.form.area || '', larguraMinima: 140 },
-    { chave: 'situacao', titulo: 'Assinaturas', render: p => (p.status === 'concluido' || p.status === 'recusada' ? <SeloSituacaoContratacao situacao={p.status} /> : <SelosDasEtapas pedido={p} />), valorOrdenacao: p => p.status, valorExportacao: p => SITUACOES[p.status] ?? p.status, larguraMinima: 300 },
-    { chave: 'acoes', titulo: 'Ações', valorExportacao: () => '', larguraMinima: 280, render: p => (
+    { chave: 'tipo', titulo: 'Tipo', render: p => resumoDoPedido(p.form).nomeDoTipo, valorOrdenacao: p => resumoDoPedido(p.form).nomeDoTipo, larguraMinima: 100 },
+    { chave: 'candidato', titulo: 'Pessoa', render: p => p.form.candidato || '—', valorOrdenacao: p => p.form.candidato || '', larguraMinima: 150 },
+    { chave: 'posicao', titulo: 'Cargo', render: p => resumoDoPedido(p.form).cargo, valorOrdenacao: p => resumoDoPedido(p.form).cargo, larguraMinima: 130 },
+    { chave: 'area', titulo: 'Frente/Setor', render: p => p.form.area || '—', valorOrdenacao: p => p.form.area || '', larguraMinima: 110 },
+    { chave: 'situacao', titulo: 'Assinaturas', render: p => (p.status === 'concluido' || p.status === 'recusada' ? <SeloSituacaoContratacao situacao={p.status} /> : <SelosDasEtapas pedido={p} />), valorOrdenacao: p => p.status, valorExportacao: p => SITUACOES[p.status] ?? p.status, larguraMinima: 180, cartaoInteiro: true },
+    { chave: 'acoes', titulo: 'Ações', valorExportacao: () => '', larguraMinima: 204, cartaoInteiro: true, render: p => (
       // Copiar Link só com o pedido correndo; Baixar só depois da 3ª assinatura.
-      <span className="flex flex-nowrap gap-2" onClick={evento => evento.stopPropagation()} onKeyDown={evento => evento.stopPropagation()}>
+      <span className="flex flex-wrap gap-2 lg:flex-nowrap" onClick={evento => evento.stopPropagation()} onKeyDown={evento => evento.stopPropagation()}>
         {emAberto(p.status) && p.link_token && (
-          <button type="button" onClick={() => void copiarLink(p)} className={BOTAO_SECUNDARIO} data-testid="copiar-link-pedido">
+          <button type="button" onClick={() => void copiarLink(p)} className={`${BOTAO_SECUNDARIO} whitespace-nowrap`} data-testid="copiar-link-pedido">
             <Link2 className="size-4" aria-hidden="true" /> Copiar Link
           </button>
         )}
         {p.status === 'concluido' && (
-          <button type="button" onClick={() => baixar(p)} className={BOTAO_SECUNDARIO} data-testid="baixar-pedido">
-            <Download className="size-4" aria-hidden="true" /> Baixar documento assinado
+          <button type="button" onClick={() => baixar(p)} className={`${BOTAO_SECUNDARIO} whitespace-nowrap`} data-testid="baixar-pedido" title="Baixar o documento assinado em PDF">
+            <Download className="size-4" aria-hidden="true" /> Baixar PDF
           </button>
         )}
         {me?.dev && (
