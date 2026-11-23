@@ -6,7 +6,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { CheckCircle2, Hammer, Target, X } from 'lucide-react';
+import { CheckCircle2, FileSpreadsheet, Hammer, Target, X } from 'lucide-react';
 import type { ControleEstacas, CravacaoEstaca, LoteEstaca, ObraLocal } from '../types';
 import { estacasPorFrente, estaCravada, frenteDaEstaca, nomeDaEstaca, resumirEstacas } from '../modules/estacas/avancoEstacas';
 import { reconcileStakeInvoice } from '../utils/stakeOperations';
@@ -14,6 +14,7 @@ import { inativar, somenteAtivos } from '../utils/inativacao';
 import { PageHeader, isoDay } from '../shared/ui';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
+import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, FOCO } from './cadastros/estilos';
 import { abasEstacas, type SecaoEstacas } from './estacas/abasEstacas';
 import VisaoEstacas from './estacas/VisaoEstacas';
@@ -128,7 +129,7 @@ export default function EstacasTab({ controle, obras, onChange, responsavel = 'S
       rotulo="Controle de Estacas"
       longa={longa}
       // Lançando não há aba aberta: a folha é aberta pelo botão do topo.
-      idAbaAtiva={secao === 'cravar' ? undefined : idDaAba('estacas', secao)}
+      idAbaAtiva={secao === 'cravar' || secao === 'importar' ? undefined : idDaAba('estacas', secao)}
       idDados="estacas-dados"
       chaveRolagem={secao}
       // Lançando, a folha ocupa a área inteira da aba (padrão do Combustível).
@@ -147,6 +148,9 @@ export default function EstacasTab({ controle, obras, onChange, responsavel = 'S
                     <Target className="size-5" aria-hidden="true" /> Total previsto
                   </button>
                 )}
+                <MaisAcoes testId="estacas-mais-acoes" acoes={[
+                  { rotulo: 'Importar planilha', icone: FileSpreadsheet, onClick: () => escolherSecao('importar'), testId: 'estacas-importar' },
+                ]} />
                 <button type="button" onClick={() => abrirCravacao()} data-testid="estacas-acao-principal" className={`${BOTAO_PRIMARIO} max-sm:order-first px-5`}>
                   <Hammer className="size-5" aria-hidden="true" /> Lançar cravação
                 </button>

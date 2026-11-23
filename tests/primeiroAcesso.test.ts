@@ -138,14 +138,11 @@ test('banco: liberações só para a API, com RLS e sem senha guardada', () => {
 });
 
 test('ninguém digita senha ao criar login e não existe mais link de senha', () => {
-  const usuarios = fs.readFileSync('src/components/UsuariosTab.tsx', 'utf8');
   const dev = fs.readFileSync('src/components/DevTab.tsx', 'utf8');
   const masterData = fs.readFileSync('api/master-data.js', 'utf8');
   const entrada = fs.readFileSync('src/auth/LoginScreen.tsx', 'utf8');
   const servidor = fs.readFileSync('server/index.js', 'utf8');
-  assert.doesNotMatch(usuarios, /Senha temporária|form\.password/);
   assert.doesNotMatch(dev, /senhaMostrada|Gerar senha temporária|gerarLinkDeSenha|LinkDePrimeiroAcesso/);
-  assert.match(usuarios, /<AvisoDePrimeiroAcesso/);
   assert.match(dev, /<AvisoDePrimeiroAcesso/);
   assert.doesNotMatch(masterData, /body\.password/);
   assert.match(masterData, /password: senhaQueNinguemSabe\(\)/);

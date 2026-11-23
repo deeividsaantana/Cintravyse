@@ -101,9 +101,6 @@ export const decidirContratacao = async (pedido: Pick<PedidoContratacao, 'id'>, 
   });
   return pedidos.find(p => p.id === pedido.id)!;
 };
-export const definirPapelContratacao = async (userId: string, role: PapelContratacao, active: boolean) => {
-  pessoas = pessoas.map(p => (p.user_id === userId ? { ...p, roles: active ? [...p.roles, role] : p.roles.filter(r => r !== role) } : p));
-};
 export const apagarContratacao = async (requestId: string) => {
   if (!eu.dev) throw new Error('Só o dono do sistema apaga solicitações.');
   const pedido = pedidos.find(p => p.id === requestId);

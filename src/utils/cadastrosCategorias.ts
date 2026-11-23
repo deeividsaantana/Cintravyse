@@ -40,7 +40,7 @@ export interface CadastroCategoria {
 export const CADASTRO_GRUPOS: readonly { id: CadastroGrupoId; label: string }[] = [
   { id: 'pessoas', label: 'Pessoas' },
   { id: 'empresas', label: 'Empresas' },
-  { id: 'frota', label: 'Frota e insumos' },
+  { id: 'frota', label: 'Máquinas' },
   { id: 'obra', label: 'Obra' },
 ];
 
@@ -56,11 +56,11 @@ export const CADASTRO_CATEGORIAS: readonly CadastroCategoria[] = [
   { id: 'equipamentos', grupo: 'frota', label: 'Equipamentos', acaoNovo: 'Novo equipamento' },
   { id: 'veiculos', grupo: 'frota', label: 'Veículos', acaoNovo: 'Novo veículo' },
   { id: 'comboios', grupo: 'frota', label: 'Comboios', acaoNovo: 'Novo comboio' },
-  { id: 'canteiros', grupo: 'frota', label: 'Canteiros', acaoNovo: 'Novo canteiro' },
   { id: 'obras', grupo: 'obra', label: 'Locais', acaoNovo: 'Novo local' },
   { id: 'etapas', grupo: 'obra', label: 'Ramos e locais', acaoNovo: 'Novo ramo ou local' },
   { id: 'frentes', grupo: 'obra', label: 'Frentes de serviço', acaoNovo: 'Nova frente' },
   { id: 'servicos', grupo: 'obra', label: 'Serviços da obra', acaoNovo: 'Novo serviço' },
+  { id: 'canteiros', grupo: 'obra', label: 'Canteiros', acaoNovo: 'Novo canteiro' },
   { id: 'combustiveis', grupo: 'frota', label: 'Combustíveis', acaoNovo: 'Novo combustível' },
   { id: 'lubrificantes', grupo: 'frota', label: 'Lubrificantes', acaoNovo: 'Novo lubrificante' },
 ];

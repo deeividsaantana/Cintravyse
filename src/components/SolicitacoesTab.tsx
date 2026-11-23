@@ -29,6 +29,7 @@ import {
 import { Modal, PageHeader, isoDay } from "../shared/ui";
 import { TelaCheia } from "../shared/ui/TelaCheia";
 import { AbasDaTela, idDaAba, type ItemDasAbas } from "../shared/ui/AbasDaTela";
+import { MaisAcoes } from "../shared/ui/MaisAcoes";
 import { TabelaPadrao, type ColunaTabela } from "../shared/ui/TabelaPadrao";
 import {
   BOTAO_PRIMARIO,
@@ -624,7 +625,6 @@ export default function SolicitacoesTab({
           icone: PieChart,
         },
         { id: "historico", rotulo: "Histórico", icone: History },
-        { id: "planilha", rotulo: "Planilha", icone: FileSpreadsheet },
       ],
     },
   ];
@@ -894,7 +894,8 @@ export default function SolicitacoesTab({
       id="solicitacoes-tab"
       rotulo="Solicitações e compras"
       longa={!comTabela || Boolean(aberta)}
-      idAbaAtiva={idDaAba("solicitacoes", subtela)}
+      // Planilha não é aba (padrão de 23/11/2026): abre por "Mais ações".
+      idAbaAtiva={subtela === "planilha" ? undefined : idDaAba("solicitacoes", subtela)}
       idDados="solicitacoes-dados"
       chaveRolagem={`${subtela}-${abertaId ?? ""}`}
       // Lançando, a folha ocupa a área inteira da aba (padrão do Combustível).
@@ -936,6 +937,20 @@ export default function SolicitacoesTab({
           }
           actions={
             <>
+              <MaisAcoes
+                testId="solicitacoes-mais-acoes"
+                acoes={[
+                  {
+                    rotulo: "Planilha de compras",
+                    icone: FileSpreadsheet,
+                    onClick: () => {
+                      setAbertaId(null);
+                      setSubtela("planilha");
+                    },
+                    testId: "solicitacoes-aba-planilha",
+                  },
+                ]}
+              />
               {exerce(ator, "solicitante") && (
                 <button
                   type="button"

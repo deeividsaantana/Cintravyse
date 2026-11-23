@@ -21,10 +21,13 @@ test('lançamentos e consumo por máquina usam a TabelaPadrao, sem lista fingind
   }
 });
 
-test('combustivel has three screens: lançar, lançamentos e relatórios', () => {
+test('combustivel has three screens: lançar (botão do topo), lançamentos e relatórios', () => {
   assert.match(source, /type View = 'novo' \| 'historico' \| 'relatorios';/);
-  assert.match(source, /id: 'novo' as const, rotulo: [^\n]*'Lançar', icone: Plus[\s\S]*id: 'historico' as const, rotulo: 'Lançamentos', icone: History[\s\S]*grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3/);
-  // Resumo e Consumo por máquina são abas do topo (segunda linha do grupo), não botões soltos dentro do relatório.
+  // Padrão do site (23/11/2026): Lançar é o botão principal, não aba.
+  assert.doesNotMatch(source, /id: 'novo' as const, rotulo:/);
+  assert.match(source, /data-testid="combustivel-vista-novo" className=\{`\$\{BOTAO_PRIMARIO\}/);
+  assert.match(source, /id: 'historico' as const, rotulo: 'Lançamentos', icone: History[\s\S]*grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3/);
+  // Resumo e Consumo por máquina ficam na caixinha "Ver" do grupo, não em botões soltos dentro do relatório.
   assert.match(source, /id: 'resumo' as const, rotulo: 'Resumo'[\s\S]*id: 'consumo' as const, rotulo: 'Consumo por máquina'/);
   assert.doesNotMatch(relatorioSourceTopo, /aria-label="Parte do relatório"|setParte/);
   assert.match(source, /<AbasDaTela id="combustivel"[^>]*abas=\{vistas\}/);

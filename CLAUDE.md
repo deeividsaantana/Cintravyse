@@ -5,6 +5,7 @@ Leia antes de qualquer mudança:
 1. `AGENTS.md`: stack, invariantes de dados e regras de migração Firebase para Supabase.
 2. `CONTRIBUTING.md`: estrutura de pastas, nomes, etapas, checklist do PR e revisão.
 3. `docs/superpowers/CHECKLIST_REDESIGN_ABAS.md`: padrão visual das telas.
+4. `docs/PADRAO_DO_SITE.md`: regra única do topo, filtros, botão principal, cartões e celular (23/11/2026).
 
 ## Regras que não mudam
 
