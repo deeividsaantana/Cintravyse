@@ -6,9 +6,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { Download, MoreVertical, Network, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Download, MoreVertical, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
 import type {
   Canteiro,
+  Cargo,
   Comboio,
   Empresa,
   Equipamento,
@@ -24,7 +25,6 @@ import type {
 } from '../types';
 import { validateCentralRecord } from '../masterData/centralRegistry';
 import { exclusoesAtivas, type ExclusaoRegistro } from '../cloud/exclusoes';
-import OrganizationChart from './OrganizationChart';
 import SpreadsheetImportReview from './SpreadsheetImportReview';
 import { FilterBar, Modal, PageHeader } from '../shared/ui';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
@@ -47,7 +47,11 @@ import {
   type RegistroCadastro,
   type SituacaoLista,
 } from '../utils/cadastrosLista';
-import { abasCadastros, ehVistaSistema, type VistaCadastros } from './cadastros/abasCadastros';
+import { abasCadastros, ehVistaEstrutura, ehVistaSistema, type VistaCadastros } from './cadastros/abasCadastros';
+import Organograma from './cadastros/Organograma';
+import Piramide from './cadastros/Piramide';
+import { ResumoColaboradores } from './cadastros/pessoasVisual';
+import { cargosQueFaltam, novosCargos } from '../utils/hierarquia';
 import LinkPresenca from './cadastros/LinkPresenca';
 import UsuariosTab from './UsuariosTab';
 import CadastroLista from './cadastros/CadastroLista';
@@ -75,6 +79,7 @@ interface CadastrosTabProps {
   etapas: EtapaServico[];
   frentesServico: FrenteServico[];
   servicosObra: ServicoObra[];
+  cargos: Cargo[];
   historyLogs: HistoryLog[];
   exclusoes: ExclusaoRegistro[];
   podeEditar: boolean;
@@ -97,6 +102,9 @@ interface CadastrosTabProps {
   onSaveEtapaServico: (item: EtapaServico, isNew: boolean, onError?: (error: Error) => void) => void;
   onSaveFrente: (item: FrenteServico, isNew: boolean, onError?: (error: Error) => void) => void;
   onSaveServico: (item: ServicoObra, isNew: boolean, onError?: (error: Error) => void) => void;
+  onSaveCargo: (item: Cargo, isNew: boolean, onError?: (error: Error) => void) => void;
+  /** Cadastra de uma vez os cargos que as pessoas já usam. */
+  onSaveCargos: (itens: Cargo[]) => void;
   /** Inativa empresa, colaborador ou equipamento, mantendo o histórico. */
   onInativar: (tabela: string, id: string) => void;
   usosDoCadastro: (tabela: string, id: string) => UsoCadastro[];
@@ -130,14 +138,15 @@ const setAviso = (aviso: Aviso | null) => {
 
 export default function CadastrosTab(props: CadastrosTabProps) {
   const {
-    empresas, obras, equipamentos, funcionarios, comboios, combustiveis, lubrificantes, canteiros, etapas, frentesServico, servicosObra,
+    empresas, obras, equipamentos, funcionarios, comboios, combustiveis, lubrificantes, canteiros, etapas, frentesServico, servicosObra, cargos,
     historyLogs, exclusoes, podeEditar, podeExcluir,
     onInativar, usosDoCadastro, onExcluir, onRestaurar, onApagarDeVez, onImportCadastros,
   } = props;
 
+  const gruposEquipe = useMemo(() => props.gruposEquipe ?? [], [props.gruposEquipe]);
   const dados: DadosCadastros = useMemo(
-    () => ({ empresas, obras, equipamentos, funcionarios, comboios, combustiveis, lubrificantes, canteiros, etapas, frentesServico, servicosObra }),
-    [empresas, obras, equipamentos, funcionarios, comboios, combustiveis, lubrificantes, canteiros, etapas, frentesServico, servicosObra],
+    () => ({ empresas, obras, equipamentos, funcionarios, comboios, combustiveis, lubrificantes, canteiros, etapas, frentesServico, servicosObra, cargos, gruposEquipe }),
+    [empresas, obras, equipamentos, funcionarios, comboios, combustiveis, lubrificantes, canteiros, etapas, frentesServico, servicosObra, cargos, gruposEquipe],
   );
 
   // O tipo escolhido fica guardado mesmo com a Lixeira aberta: é ele que o
@@ -151,7 +160,8 @@ export default function CadastrosTab(props: CadastrosTabProps) {
   const [acoesAbertas, setAcoesAbertas] = useState(false);
   const [ordem, setOrdem] = useState<{ coluna: string; direcao: 'asc' | 'desc' }>({ coluna: COLUNAS.funcionarios[0].id, direcao: 'asc' });
   const [pagina, setPagina] = useState(1);
-  const [organograma, setOrganograma] = useState(false);
+  // Pessoa que o organograma abre já escolhida ("Ver no organograma" da ficha).
+  const [focoOrganograma, setFocoOrganograma] = useState<string | null>(null);
 
   const [detalheId, setDetalheId] = useState<string | null>(null);
   const [formulario, setFormulario] = useState<{ editandoId: string | null; valores: ValoresCadastro } | null>(null);
@@ -178,7 +188,8 @@ export default function CadastrosTab(props: CadastrosTabProps) {
   const comSituacao = temSituacao(categoria);
   // Frentes e serviços ainda não têm leitura de planilha: o botão não aparece
   // para não cair na importação de outro tipo.
-  const importaPlanilha = categoria !== 'frentes' && categoria !== 'servicos' && categoria !== 'canteiros';
+  const importaPlanilha = !['frentes', 'servicos', 'canteiros', 'cargos', 'equipes'].includes(categoria);
+  const faltamCargos = useMemo(() => (categoria === 'cargos' ? cargosQueFaltam(funcionarios, cargos) : []), [categoria, funcionarios, cargos]);
 
   const todasAsLinhas = useMemo(() => montarLinhas(categoria, dados), [categoria, dados]);
   const contagem = useMemo(() => contarSituacoes(todasAsLinhas), [todasAsLinhas]);
@@ -222,12 +233,13 @@ export default function CadastrosTab(props: CadastrosTabProps) {
     setVista(proxima);
     setDetalheId(null);
     setMarcados(new Set());
-    if (proxima === 'lixeira' || ehVistaSistema(proxima)) return;
+    setAcoesAbertas(false);
+    if (proxima !== 'organograma') setFocoOrganograma(null);
+    if (proxima === 'lixeira' || ehVistaSistema(proxima) || ehVistaEstrutura(proxima)) return;
     setCategoria(proxima);
     setBusca('');
     setFiltros({});
     setSituacao('ativos');
-    setOrganograma(false);
     setOrdem({ coluna: COLUNAS[proxima][0].id, direcao: 'asc' });
   };
 
@@ -260,11 +272,13 @@ export default function CadastrosTab(props: CadastrosTabProps) {
     else if (tabela === 'canteiros') props.onSaveCanteiro(registro as Canteiro, novo, onError);
     else if (tabela === 'frentesServico') props.onSaveFrente(registro as FrenteServico, novo, onError);
     else if (tabela === 'servicosObra') props.onSaveServico(registro as ServicoObra, novo, onError);
+    else if (tabela === 'cargos') props.onSaveCargo(registro as Cargo, novo, onError);
+    else if (tabela === 'gruposEquipe') props.onSaveGrupoEquipe?.(registro as GrupoEquipe, novo);
     else props.onSaveEtapaServico(registro as EtapaServico, novo, onError);
   };
 
   const abrirNovo = () => {
-    if (vista === 'lixeira' || ehVistaSistema(vista)) setVista(categoria);
+    if (vista === 'lixeira' || ehVistaSistema(vista) || ehVistaEstrutura(vista)) setVista(categoria);
     setErroFormulario('');
     setDetalheId(null);
     setFormulario({ editandoId: null, valores: valoresIniciais(categoria, undefined, dados) });
@@ -291,7 +305,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
 
   // Sem nenhuma janela aberta: N cadastra, / vai direto pra busca. É a mesma
   // ideia já usada em Manutenção e Combustível — só falta aqui.
-  const semJanelaAberta = !formulario && !confirmacao && !lote && !apagando && !escolhaDeAba && !importacao && !organograma;
+  const semJanelaAberta = !formulario && !confirmacao && !lote && !apagando && !escolhaDeAba && !importacao;
   useEffect(() => {
     if (!semJanelaAberta) return undefined;
     const handleShortcut = (event: KeyboardEvent) => {
@@ -303,7 +317,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
         abrirNovo();
         return;
       }
-      if (event.key === '/' && !isTyping && vista !== 'lixeira' && !ehVistaSistema(vista)) {
+      if (event.key === '/' && !isTyping && vista !== 'lixeira' && !ehVistaSistema(vista) && !ehVistaEstrutura(vista)) {
         event.preventDefault();
         buscaRef.current?.focus();
       }
@@ -364,11 +378,13 @@ export default function CadastrosTab(props: CadastrosTabProps) {
       const servico = registro as ServicoObra;
       return { ...servico, ativo, situacao: ativo && servico.situacao === 'Concluído' ? 'Ativo' : servico.situacao, atualizadoEm: new Date().toISOString() };
     }
+    if (tabela === 'cargos') return { ...(registro as Cargo), ativo, atualizadoEm: new Date().toISOString() };
+    if (tabela === 'gruposEquipe') return { ...(registro as GrupoEquipe), status: ativo ? 'ativo' : 'inativo', updatedAt: new Date().toISOString() };
     return { ...(registro as ObraLocal), status: ativo ? 'Ativa' : 'Concluída' };
   };
 
   const inativar = (linha: LinhaCadastro) => {
-    if (['obras', 'frentesServico', 'servicosObra'].includes(tabela)) gravar(registroComSituacao(linha, false), false);
+    if (['obras', 'frentesServico', 'servicosObra', 'cargos', 'gruposEquipe'].includes(tabela)) gravar(registroComSituacao(linha, false), false);
     else onInativar(tabela, linha.id);
     const original = linha.registro;
     const tabelaDoRegistro = tabela;
@@ -547,11 +563,30 @@ export default function CadastrosTab(props: CadastrosTabProps) {
   const temConsulta = Boolean(busca) || filtrosAtivos.length > 0 || situacao !== 'ativos';
   const emLixeira = vista === 'lixeira';
   const emSistema = ehVistaSistema(vista);
+  const emEstrutura = ehVistaEstrutura(vista);
+  const mostrarLixeira = podeExcluir || lixeira.length > 0;
 
-  const abas = abasCadastros(item => totais.get(item) ?? 0, podeExcluir || lixeira.length > 0, Boolean(props.ehAdmin));
+  const abas = abasCadastros(item => totais.get(item) ?? 0, Boolean(props.ehAdmin));
+
+  const cadastrarCargosQueFaltam = () => {
+    const novos = novosCargos(faltamCargos, cargos);
+    if (novos.length === 0) return;
+    props.onSaveCargos(novos);
+    setAviso({ tipo: 'ok', texto: `${novos.length} cargos cadastrados.` });
+  };
 
   const filtrosDaLista = (
     <div data-cadastros-reveal className="space-y-2">
+      {categoria === 'funcionarios' && todasAsLinhas.length > 0 && (
+        <ResumoColaboradores
+          linhas={todasAsLinhas}
+          filtros={filtros}
+          onFiltrar={(filtro, valor) => {
+            setSituacao('ativos');
+            setFiltros(filtro ? { [filtro]: valor || '' } : {});
+          }}
+        />
+      )}
       <FilterBar label="Filtros de cadastros" className="rounded-2xl border border-slate-200 bg-white p-3">
         <div className="w-full space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -600,18 +635,6 @@ export default function CadastrosTab(props: CadastrosTabProps) {
                 {filtrosAtivos.length > 0 ? `Filtros · ${filtrosAtivos.length}` : 'Filtros'}
               </button>
             )}
-            {categoria === 'funcionarios' && (
-              <button
-                type="button"
-                aria-haspopup="dialog"
-                onClick={() => setOrganograma(true)}
-                className={`${BOTAO_SECUNDARIO} px-3 max-sm:flex-1`}
-                data-testid="cadastro-organograma"
-              >
-                <Network className="size-5" aria-hidden="true" />
-                Organograma
-              </button>
-            )}
           </div>
 
           {filtrosDoTipo.length > 0 && filtrosAbertos && (
@@ -657,6 +680,19 @@ export default function CadastrosTab(props: CadastrosTabProps) {
         </div>
       </FilterBar>
 
+      {faltamCargos.length > 0 && podeEditar && (
+        <div role="region" aria-label="Cargos sem cadastro" data-testid="cargos-faltando" className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+          <p className="min-w-0 flex-1 text-sm text-slate-600">
+            <strong className="text-slate-900">{faltamCargos.length} {faltamCargos.length === 1 ? 'cargo usado' : 'cargos usados'} pelos colaboradores {faltamCargos.length === 1 ? 'ainda não está' : 'ainda não estão'} aqui</strong>
+            {`: ${faltamCargos.slice(0, 4).map(item => item.nome).join(', ')}${faltamCargos.length > 4 ? ' e outros' : ''}. O nível de cada um vem sugerido pelo nome e pode ser trocado depois.`}
+          </p>
+          <button type="button" onClick={cadastrarCargosQueFaltam} className={`${BOTAO_PRIMARIO} px-4 max-sm:basis-full`} data-testid="cargos-cadastrar-todos">
+            <Plus className="size-5" aria-hidden="true" />
+            Cadastrar {faltamCargos.length === 1 ? 'este cargo' : `os ${faltamCargos.length}`}
+          </button>
+        </div>
+      )}
+
       {podeExcluir && marcados.size > 0 && (
         <div role="region" aria-label="Cadastros marcados" data-testid="cadastro-barra-selecao" className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-2 sm:pl-4">
           <p className="basis-full px-2 pt-1 text-sm font-bold text-emerald-900 sm:mr-auto sm:basis-auto sm:p-0" aria-live="polite">
@@ -684,6 +720,10 @@ export default function CadastrosTab(props: CadastrosTabProps) {
       <p className="min-w-0 flex-1 text-sm text-slate-600">
         <strong className="text-slate-900">Cadastros excluídos.</strong> Restaurar devolve o cadastro para a lista em todos os aparelhos. Excluir de vez tira daqui e não tem volta.
       </p>
+      <button type="button" onClick={() => escolherVista(categoria)} className={BOTAO_SECUNDARIO} data-testid="lixeira-voltar">
+        <ArrowLeft className="size-5" aria-hidden="true" />
+        Voltar
+      </button>
       {podeExcluir && lixeira.length > 1 && (
         <button type="button" onClick={() => setApagando(lixeira)} className={BOTAO_PERIGO_LEVE} data-testid="lixeira-esvaziar">
           <Trash2 className="size-5" aria-hidden="true" />
@@ -699,7 +739,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
       id="cadastros-tab"
       testId="cadastros-tab"
       rotulo="Cadastros"
-      longa={emLixeira || emSistema}
+      longa={emLixeira || emSistema || emEstrutura}
       idAbaAtiva={idDaAba('cadastros', vista)}
       idDados="cadastros-dados"
       chaveRolagem={vista}
@@ -710,7 +750,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
             eyebrow="Base corporativa"
             title="Cadastros"
             abas={<AbasDaTela id="cadastros" rotulo="Tipos de cadastro" abas={abas} ativa={vista} onTrocar={escolherVista} idPainel="cadastros-dados" testId="cadastro-aba" />}
-            actions={emSistema ? undefined : <>
+            actions={emSistema || emEstrutura ? undefined : <>
               {!emLixeira && <div className="relative">
                 <button type="button" onClick={() => setAcoesAbertas(atual => !atual)} aria-expanded={acoesAbertas} aria-haspopup="menu" className={`${BOTAO_SECUNDARIO} size-11 min-w-11 justify-center !px-0`} aria-label="Mais ações">
                   <MoreVertical className="size-5" aria-hidden="true" />
@@ -718,6 +758,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
                 {acoesAbertas && <div role="menu" className="absolute right-0 top-12 z-30 grid min-w-48 gap-1 rounded-md border border-slate-200 bg-white p-1.5 shadow-xl">
                   <button type="button" role="menuitem" onClick={() => { setAcoesAbertas(false); void exportar(); }} disabled={exportando || linhasFiltradas.length === 0} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Download className="mr-2 inline size-4" aria-hidden="true" />{exportando ? 'Gerando…' : 'Exportar lista'}</button>
                   {podeEditar && importaPlanilha && <button type="button" role="menuitem" onClick={() => { setAcoesAbertas(false); arquivoRef.current?.click(); }} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"><Upload className="mr-2 inline size-4" aria-hidden="true" />Importar planilha</button>}
+                  {mostrarLixeira && <button type="button" role="menuitem" data-testid="cadastro-categoria-lixeira" onClick={() => escolherVista('lixeira')} className="min-h-10 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"><Trash2 className="mr-2 inline size-4" aria-hidden="true" />Lixeira{lixeira.length > 0 ? ` (${lixeira.length.toLocaleString('pt-BR')})` : ''}</button>}
                 </div>}
               </div>}
               <input ref={arquivoRef} type="file" accept=".xlsx,.xlsm,.csv,.tsv" onChange={importarArquivo} className="hidden" />
@@ -732,7 +773,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
           />
         </div>
       )}
-      faixa={emSistema ? undefined : emLixeira ? cabecalhoDaLixeira : filtrosDaLista}
+      faixa={emSistema || emEstrutura ? undefined : emLixeira ? cabecalhoDaLixeira : filtrosDaLista}
     >
       {vista === 'acessos' ? (
         <section aria-labelledby="cadastros-acessos-titulo" className="space-y-3">
@@ -742,6 +783,17 @@ export default function CadastrosTab(props: CadastrosTabProps) {
           </div>
           <UsuariosTab embutido />
         </section>
+      ) : vista === 'organograma' ? (
+        <Organograma
+          funcionarios={funcionarios}
+          cargos={cargos}
+          empresas={empresas}
+          gruposEquipe={gruposEquipe}
+          focoId={focoOrganograma}
+          onAbrirPessoa={id => { escolherVista('funcionarios'); setDetalheId(id); }}
+        />
+      ) : vista === 'piramide' ? (
+        <Piramide funcionarios={funcionarios} cargos={cargos} empresas={empresas} onIrParaCargos={() => escolherVista('cargos')} />
       ) : vista === 'link-presenca' ? (
         <LinkPresenca gruposEquipe={props.gruposEquipe ?? []} onSaveGrupoEquipe={props.onSaveGrupoEquipe} />
       ) : emLixeira ? (
@@ -763,7 +815,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
             vazio={todasAsLinhas.length === 0
               ? {
                   titulo: `Nenhum cadastro em ${categoriaAtual.label.toLowerCase()}`,
-                  texto: podeEditar ? 'Cadastre o primeiro pelo botão verde ou importe uma planilha.' : 'Ainda não há nada cadastrado aqui.',
+                  texto: podeEditar ? `Cadastre o primeiro pelo botão verde${importaPlanilha ? ' ou importe uma planilha' : ''}.` : 'Ainda não há nada cadastrado aqui.',
                   acao: podeEditar ? { label: categoriaAtual.acaoNovo, onClick: abrirNovo } : undefined,
                 }
               : {
@@ -775,15 +827,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
         </section>
       )}
 
-      <Modal
-        open={organograma && categoria === 'funcionarios'}
-        onClose={() => setOrganograma(false)}
-        title="Organograma de colaboradores"
-        size="xl"
-      >
-        <OrganizationChart funcionarios={linhasFiltradas.map(linha => linha.registro as Funcionario)} empresas={empresas} />
-      </Modal>
-      {linhaDetalhe && !formulario && !confirmacao && (
+      {linhaDetalhe && !formulario && !confirmacao && !emEstrutura && (
         <CadastroDetalhe
           categoria={categoria}
           linha={linhaDetalhe}
@@ -797,6 +841,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
           onReativar={() => reativar(linhaDetalhe)}
           onExcluir={() => pedirExclusao(linhaDetalhe)}
           onFechar={() => setDetalheId(null)}
+          onVerNoOrganograma={categoria === 'funcionarios' ? () => { const id = linhaDetalhe.id; escolherVista('organograma'); setFocoOrganograma(id); } : undefined}
         />
       )}
 

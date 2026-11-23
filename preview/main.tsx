@@ -30,6 +30,8 @@ function DevComCompras() {
 }
 import ProgramacaoTab from '../src/components/ProgramacaoTab';
 import { INITIAL_PROGRAMACAO } from '../src/utils/initialProgramacaoData';
+import { cargosQueFaltam, novosCargos } from '../src/utils/hierarquia';
+import type { Funcionario, GrupoEquipe } from '../src/types';
 import { DesktopSidebar } from '../src/app/shell/DesktopSidebar';
 import { DesktopTopBar } from '../src/app/shell/DesktopTopBar';
 import { MeuPerfilModal } from '../src/components/perfil/MeuPerfilModal';
@@ -153,10 +155,45 @@ function EstacasPreview() {
   return <EstacasTab controle={controle} obras={fx.obras} onChange={setControle} responsavel="Deivid" />;
 }
 
+/**
+ * Estrutura de exemplo para Pessoas (22/11/2026): um gerente, dois
+ * engenheiros, os encarregados abaixo deles e o resto da equipe abaixo dos
+ * encarregados. Com ?cargos=0 os cargos começam vazios (primeiro uso).
+ */
+const pessoasComLider = (): Funcionario[] => {
+  const gerente = { id: 'pg-1', matricula: '100001', nome: 'Paulo Henrique Rocha', cargo: 'GERENTE DE OBRA', telefone: '', empresaId: 'emp-1', ativo: true, status: 'ATIVO' } as Funcionario;
+  const engenheiros = [
+    { id: 'pg-2', matricula: '100002', nome: 'Ana Beatriz Lima', cargo: 'ENGENHEIRA CIVIL', telefone: '', empresaId: 'emp-1', ativo: true, status: 'ATIVO', liderMatricula: '100001', liderNome: gerente.nome } as Funcionario,
+    { id: 'pg-3', matricula: '100003', nome: 'Rodrigo Prado', cargo: 'ENGENHEIRO CIVIL', telefone: '', empresaId: 'emp-1', ativo: true, status: 'ATIVO', liderMatricula: '100001', liderNome: gerente.nome } as Funcionario,
+    { id: 'pg-4', matricula: '100004', nome: 'Carla Mendes', cargo: 'TÉCNICA DE SEGURANÇA', telefone: '', empresaId: 'emp-1', ativo: true, status: 'ATIVO', liderMatricula: '100001', liderNome: gerente.nome } as Funcionario,
+  ];
+  const efetivo = [...fx.funcionarios, ...fx.efetivoPresenca];
+  const encarregados = efetivo.filter(pessoa => pessoa.cargo === 'ENCARREGADO');
+  const resto = efetivo.filter(pessoa => pessoa.cargo !== 'ENCARREGADO');
+  const comLider = [
+    ...encarregados.map((pessoa, i) => ({ ...pessoa, liderMatricula: engenheiros[i % 2].matricula, liderNome: engenheiros[i % 2].nome })),
+    ...resto.map((pessoa, i) => {
+      const chefe = encarregados[i % encarregados.length];
+      return i % 11 === 10 ? pessoa : { ...pessoa, liderMatricula: chefe.matricula, liderNome: chefe.nome };
+    }),
+  ];
+  return [gerente, ...engenheiros, ...comLider];
+};
+
+const equipesComMembros = (pessoas: Funcionario[]): GrupoEquipe[] => fx.equipesPresenca.map((equipe, i) => ({
+  ...equipe,
+  funcionarioIds: pessoas.filter((_, j) => j >= 4 && j % fx.equipesPresenca.length === i).map(pessoa => pessoa.id),
+}));
+
 function CadastrosPreview({ pedidoNovoColaborador = 0 }: { pedidoNovoColaborador?: number } = {}) {
-  const [listas, setListas] = React.useState<Record<string, Array<{ id: string } & Record<string, unknown>>>>(() => ({
+  const [listas, setListas] = React.useState<Record<string, Array<{ id: string } & Record<string, unknown>>>>(() => {
+    const pessoas = pessoasComLider();
+    const semCargos = new URLSearchParams(location.search).get('cargos') === '0';
+    return ({
+    cargos: semCargos ? [] : novosCargos(cargosQueFaltam(pessoas, []), []),
+    gruposEquipe: equipesComMembros(pessoas),
     empresas: [...fx.empresas],
-    funcionarios: [...fx.funcionarios, ...fx.efetivoPresenca],
+    funcionarios: pessoas,
     equipamentos: [...fx.equipamentos],
     obras: [...fx.obras],
     comboios: [...fx.comboios],
@@ -175,7 +212,8 @@ function CadastrosPreview({ pedidoNovoColaborador = 0 }: { pedidoNovoColaborador
       { id: 'CAN-1', nome: 'Fábrica' },
       { id: 'CAN-2', nome: 'Pátio Aracaré' },
     ],
-  } as never));
+  } as never);
+  });
   const [exclusoes, setExclusoes] = React.useState<ExclusaoRegistro[]>([]);
   const salvar = (tabela: string) => (item: { id: string }) => setListas(atual => ({
     ...atual,
@@ -219,8 +257,11 @@ function CadastrosPreview({ pedidoNovoColaborador = 0 }: { pedidoNovoColaborador
     <CadastrosTab
       ehAdmin
       pedidoNovoColaborador={pedidoNovoColaborador}
-      gruposEquipe={[fx.grupo]}
-      onSaveGrupoEquipe={noop}
+      gruposEquipe={listas.gruposEquipe as never}
+      onSaveGrupoEquipe={salvar('gruposEquipe')}
+      cargos={listas.cargos as never}
+      onSaveCargo={salvar('cargos')}
+      onSaveCargos={novos => setListas(atual => ({ ...atual, cargos: [...novos, ...atual.cargos] as never }))}
       empresas={listas.empresas as never}
       obras={listas.obras as never}
       equipamentos={listas.equipamentos as never}

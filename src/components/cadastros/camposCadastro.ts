@@ -8,12 +8,14 @@
  * Salvar parte sempre do registro anterior: campo que a tela não mostra
  * (vínculos, datas de criação, classes da planilha mestre) continua igual.
  */
-import type { Canteiro, Comboio, Empresa, Equipamento, EtapaServico, TipoLocalObra, FrenteServico, Funcionario, ObraLocal, ProdutoLubrificacao, ServicoObra, TipoCombustivel } from '../../types';
+import type { Canteiro, Cargo, Comboio, GrupoEquipe, NivelCargo, Empresa, Equipamento, EtapaServico, TipoLocalObra, FrenteServico, Funcionario, ObraLocal, ProdutoLubrificacao, ServicoObra, TipoCombustivel } from '../../types';
 import { normalizarBusca } from '../../utils/cadastrosLista';
 import { EMPRESA_CLASSES, isSubSupplier, isSupplier, nextMasterId, type EmpresaTipo } from '../../masterData/centralRegistry';
 import { validateEquipmentMasterRecord } from '../../utils/equipmentOperations';
 import { TIPOS_POR_CATEGORIA_EMPRESA, isCategoriaEmpresa, type CadastroCategoriaId } from '../../utils/cadastrosCategorias';
 import { TABELA_DA_CATEGORIA, type DadosCadastros, type RegistroCadastro } from '../../utils/cadastrosLista';
+import { NIVEIS, chaveDoCargo, nivelSugerido } from '../../utils/hierarquia';
+import { generateSecurePublicToken } from '../../utils/publicLinkSecurity';
 
 const TIPOS_LOCAL: readonly TipoLocalObra[] = ['Ramo', 'Frente', 'Origem', 'Bota-fora', 'Bota-espera', 'Estoque', 'Canteiro', 'Serviço'];
 
@@ -41,10 +43,12 @@ export interface OpcaoCampo {
 export interface CampoCadastro {
   id: string;
   label: string;
-  tipo: 'texto' | 'numero' | 'data' | 'selecao' | 'marcar' | 'classes' | 'foto';
+  tipo: 'texto' | 'numero' | 'data' | 'selecao' | 'marcar' | 'classes' | 'foto' | 'pessoas';
   obrigatorio?: boolean;
   /** Fica em "Mais informações". */
   extra?: boolean;
+  /** Título da seção do formulário e da ficha ("Cargo e lugar na empresa"). */
+  secao?: string;
   placeholder?: string;
   ajuda?: string;
   maiusculas?: boolean;
@@ -63,6 +67,23 @@ const opcoesEmpresas = (dados: DadosCadastros) => dados.empresas
   .map(item => ({ valor: item.id, label: item.nome }));
 const opcoesObras = (dados: DadosCadastros) => dados.obras.map(item => ({ valor: item.id, label: item.nome }));
 const fixas = (...valores: string[]) => () => valores.map(valor => ({ valor, label: valor }));
+/** Pessoas ativas, para escolher líder, encarregado ou membros. */
+const opcoesPessoas = (dados: DadosCadastros, editandoId: string | null) => dados.funcionarios
+  .filter(item => item.id !== editandoId && item.ativo !== false)
+  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+  .map(item => ({ valor: item.id, label: item.matricula ? `${item.nome} (${item.matricula})` : item.nome }));
+
+/** Cargos do cadastro e, enquanto não forem cadastrados, os que as pessoas já usam. */
+const opcoesCargos = (dados: DadosCadastros) => {
+  const nomes = new Map<string, string>();
+  dados.cargos.filter(item => item.ativo !== false).forEach(item => nomes.set(chaveDoCargo(item.nome), item.nome));
+  dados.funcionarios.forEach(item => {
+    const chave = chaveDoCargo(item.cargo);
+    if (chave && !nomes.has(chave)) nomes.set(chave, item.cargo.trim());
+  });
+  return Array.from(nomes.values()).sort((a, b) => a.localeCompare(b, 'pt-BR')).map(valor => ({ valor, label: valor }));
+};
+
 const nomesUnicos = (nomes: string[]) => Array.from(new Set(nomes.filter(Boolean)))
   .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }))
   .map(valor => ({ valor, label: valor }));
@@ -116,21 +137,20 @@ const CAMPOS_EQUIPAMENTO: CampoCadastro[] = [
 
 export const CAMPOS: Record<CadastroCategoriaId, CampoCadastro[]> = {
   funcionarios: [
-    { id: 'matricula', label: 'Matrícula', tipo: 'texto', obrigatorio: true, placeholder: 'Ex.: 01063' },
-    { id: 'nome', label: 'Nome completo', tipo: 'texto', obrigatorio: true },
-    { id: 'cargo', label: 'Função', tipo: 'texto', obrigatorio: true, placeholder: 'Ex.: Operador de escavadeira' },
-    { id: 'empresaId', label: 'Empresa', tipo: 'selecao', obrigatorio: true, opcoes: opcoesEmpresas },
-    { id: 'status', label: 'Situação', tipo: 'selecao', opcoes: () => [
+    { id: 'matricula', label: 'Matrícula', tipo: 'texto', obrigatorio: true, placeholder: 'Ex.: 01063', secao: 'Identificação' },
+    { id: 'nome', label: 'Nome completo', tipo: 'texto', obrigatorio: true, secao: 'Identificação' },
+    { id: 'empresaId', label: 'Empresa', tipo: 'selecao', obrigatorio: true, opcoes: opcoesEmpresas, secao: 'Identificação' },
+    { id: 'status', label: 'Situação', tipo: 'selecao', secao: 'Identificação', opcoes: () => [
       { valor: 'ATIVO', label: 'Ativo' },
       { valor: 'FÉRIAS', label: 'Férias' },
       { valor: 'AFASTADO', label: 'Afastado' },
       { valor: 'INATIVO', label: 'Inativo' },
       { valor: 'DESMOBILIZADO', label: 'Desmobilizado' },
     ] },
-    { id: 'telefone', label: 'Telefone', tipo: 'texto', placeholder: '(79) 99999-0000' },
-    { id: 'liderId', label: 'Líder', tipo: 'selecao', opcoes: (dados, editandoId) => dados.funcionarios
-      .filter(item => item.id !== editandoId && item.matricula && item.ativo !== false)
-      .map(item => ({ valor: item.id, label: `${item.nome} (${item.matricula})` })) },
+    { id: 'cargo', label: 'Cargo', tipo: 'selecao', obrigatorio: true, secao: 'Cargo e lugar na empresa', ajuda: 'A lista vem de Cargos. Cargo novo: cadastre em Cargos.', opcoes: opcoesCargos },
+    { id: 'liderId', label: 'Líder (a quem responde)', tipo: 'selecao', secao: 'Cargo e lugar na empresa', opcoes: (dados, editandoId) => opcoesPessoas(dados, editandoId)
+      .filter(opcao => dados.funcionarios.some(item => item.id === opcao.valor && item.matricula)) },
+    { id: 'telefone', label: 'Telefone', tipo: 'texto', placeholder: '(79) 99999-0000', secao: 'Contato' },
     { id: 'divisao', label: 'Divisão', tipo: 'texto', extra: true },
     { id: 'secao', label: 'Seção', tipo: 'texto', extra: true },
     { id: 'area', label: 'Área', tipo: 'texto', extra: true },
@@ -139,6 +159,18 @@ export const CAMPOS: Record<CadastroCategoriaId, CampoCadastro[]> = {
     { id: 'dataDesmobilizacao', label: 'Data de desmobilização', tipo: 'data', extra: true },
     { id: 'situacaoRh', label: 'Situação no RH', tipo: 'texto', extra: true },
     { id: 'observacao', label: 'Observação', tipo: 'texto', extra: true },
+  ],
+  cargos: [
+    { id: 'nome', label: 'Nome do cargo', tipo: 'texto', obrigatorio: true, placeholder: 'Ex.: Operador de escavadeira' },
+    { id: 'nivel', label: 'Nível na pirâmide', tipo: 'selecao', obrigatorio: true, ajuda: '1 é o topo da empresa; 6 é a base.', opcoes: () => NIVEIS.map(item => ({ valor: String(item.nivel), label: `${item.nivel} · ${item.nome} (${item.explica.toLocaleLowerCase('pt-BR')})` })) },
+    { id: 'area', label: 'Área', tipo: 'texto', placeholder: 'Ex.: Terraplenagem' },
+    { id: 'descricao', label: 'O que faz', tipo: 'texto', extra: true },
+  ],
+  equipes: [
+    { id: 'nome', label: 'Nome da equipe', tipo: 'texto', obrigatorio: true, placeholder: 'Ex.: Terraplenagem A' },
+    { id: 'encarregadoId', label: 'Encarregado', tipo: 'selecao', obrigatorio: true, opcoes: opcoesPessoas },
+    { id: 'frenteServico', label: 'Frente de serviço', tipo: 'selecao', obrigatorio: true, ajuda: 'A lista vem de Frentes de serviço.', opcoes: dados => nomesUnicos(dados.frentesServico.filter(item => item.ativo !== false).map(item => item.nome)) },
+    { id: 'funcionarioIds', label: 'Pessoas da equipe', tipo: 'pessoas', obrigatorio: true, opcoes: (dados, editandoId) => opcoesPessoas(dados, null).filter(opcao => opcao.valor !== editandoId) },
   ],
   empresas: CAMPOS_EMPRESA,
   terceiras: CAMPOS_EMPRESA,
@@ -206,6 +238,7 @@ export const valoresIniciais = (
     const atual = fonte[campo.id];
     if (campo.tipo === 'marcar') valores[campo.id] = Boolean(atual);
     else if (campo.tipo === 'classes') valores[campo.id] = [];
+    else if (campo.tipo === 'pessoas') valores[campo.id] = Array.isArray(atual) ? atual.map(String) : [];
     else valores[campo.id] = texto(atual);
   });
 
@@ -219,6 +252,14 @@ export const valoresIniciais = (
     valores.status = pessoa?.status || (pessoa && !pessoa.ativo ? 'INATIVO' : 'ATIVO');
     const lider = pessoa?.liderMatricula ? dados.funcionarios.find(item => item.matricula === pessoa.liderMatricula) : undefined;
     valores.liderId = lider?.id || '';
+  }
+  if (categoria === 'cargos') valores.nivel = registro ? String((registro as Cargo).nivel || '') : '';
+  if (categoria === 'equipes') {
+    const equipe = registro as GrupoEquipe | undefined;
+    const encarregado = equipe?.liderMatricula
+      ? dados.funcionarios.find(item => item.matricula === equipe.liderMatricula)
+      : dados.funcionarios.find(item => equipe?.responsavel && chaveDoCargo(item.nome) === chaveDoCargo(equipe.responsavel));
+    valores.encarregadoId = encarregado?.id || '';
   }
   if (categoria === 'equipamentos' || categoria === 'veiculos') {
     if (!registro) {
@@ -259,6 +300,7 @@ export const camposFaltando = (categoria: CadastroCategoriaId, valores: ValoresC
 
 const PREFIXO_ID: Partial<Record<CadastroCategoriaId, string>> = {
   funcionarios: 'COL',
+  cargos: 'CAR',
   equipamentos: 'EQ',
   veiculos: 'VEI',
   fornecedores: 'FOR',
@@ -272,6 +314,7 @@ export const novoId = (categoria: CadastroCategoriaId, dados: DadosCadastros): s
   const prefixo = PREFIXO_ID[categoria];
   const tabela = TABELA_DA_CATEGORIA[categoria];
   if (prefixo) return nextMasterId(prefixo, (dados[tabela] as readonly { id: string }[]).map(item => item.id));
+  if (categoria === 'equipes') return `grp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   return `${categoria.substring(0, 3).toUpperCase()}-${Date.now()}`;
 };
 
@@ -342,6 +385,57 @@ export const montarRegistro = (
       dataDesmobilizacao: opcional(valores, 'dataDesmobilizacao'),
       situacaoRh: opcional(valores, 'situacaoRh'),
       observacao: opcional(valores, 'observacao'),
+    };
+    return { ok: true, registro };
+  }
+
+  if (categoria === 'cargos') {
+    const nome = str(valores, 'nome');
+    if (dados.cargos.some(item => item.id !== id && chaveDoCargo(item.nome) === chaveDoCargo(nome))) {
+      return { ok: false, erro: `Já existe o cargo ${nome}.` };
+    }
+    const agora = new Date().toISOString();
+    const cargo = anterior as Cargo | undefined;
+    const nivel = Number(str(valores, 'nivel')) as NivelCargo;
+    const registro: Cargo = {
+      ...cargo,
+      id,
+      nome,
+      nivel: NIVEIS.some(item => item.nivel === nivel) ? nivel : nivelSugerido(nome),
+      area: opcional(valores, 'area'),
+      descricao: opcional(valores, 'descricao'),
+      ativo: cargo?.ativo ?? true,
+      criadoEm: cargo?.criadoEm || agora,
+      atualizadoEm: agora,
+    };
+    return { ok: true, registro };
+  }
+
+  if (categoria === 'equipes') {
+    const nome = str(valores, 'nome');
+    if (dados.gruposEquipe.some(item => item.id !== id && item.status !== 'inativo' && chaveDoCargo(item.nome) === chaveDoCargo(nome))) {
+      return { ok: false, erro: `Já existe a equipe ${nome}.` };
+    }
+    const agora = new Date().toISOString();
+    const equipe = anterior as GrupoEquipe | undefined;
+    const encarregado = dados.funcionarios.find(item => item.id === str(valores, 'encarregadoId'));
+    const ids = Array.from(new Set((Array.isArray(valores.funcionarioIds) ? valores.funcionarioIds : []).map(String)))
+      .filter(pessoa => dados.funcionarios.some(item => item.id === pessoa));
+    const registro: GrupoEquipe = {
+      ...equipe,
+      id,
+      nome,
+      responsavel: encarregado?.nome || equipe?.responsavel || '',
+      liderMatricula: encarregado?.matricula || undefined,
+      frenteServico: str(valores, 'frenteServico'),
+      funcionarioIds: ids,
+      funcionarioMatriculas: Array.from(new Set(ids.map(pessoa => dados.funcionarios.find(item => item.id === pessoa)?.matricula || '').filter(Boolean))),
+      status: equipe?.status || 'ativo',
+      // Equipe nova já nasce com o link de presença, como na aba Presença.
+      token: equipe?.token || generateSecurePublicToken('presenca'),
+      linkAtivo: equipe?.linkAtivo ?? true,
+      createdAt: equipe?.createdAt || agora,
+      updatedAt: agora,
     };
     return { ok: true, registro };
   }

@@ -32,10 +32,10 @@ test('botão principal diz o que será criado, nunca "Novo registro"', () => {
   assert.equal(categoriaCadastro('obras').acaoNovo, 'Novo local');
 });
 
-test('os tipos que a aba grava continuam disponíveis, com as subáreas de fornecedor (Materiais saiu em 10/11/2026)', () => {
+test('os tipos que a aba grava continuam disponíveis, com as subáreas de fornecedor (Materiais saiu em 10/11/2026; Cargos e Equipes entraram em 22/11/2026)', () => {
   assert.deepEqual(
     CADASTRO_CATEGORIAS.map(item => item.id).sort(),
-    ['canteiros', 'comboios', 'combustiveis', 'empresas', 'equipamentos', 'etapas', 'fornecedores', 'fornecedores-locacao', 'frentes', 'funcionarios', 'lubrificantes', 'obras', 'servicos', 'subfornecedores', 'terceiras', 'veiculos'],
+    ['canteiros', 'cargos', 'comboios', 'combustiveis', 'empresas', 'equipamentos', 'equipes', 'etapas', 'fornecedores', 'fornecedores-locacao', 'frentes', 'funcionarios', 'lubrificantes', 'obras', 'servicos', 'subfornecedores', 'terceiras', 'veiculos'],
   );
 });
 
@@ -48,8 +48,8 @@ test('aba Cadastros segue o padrão: cabeçalho, ação principal no topo e GSAP
   assert.match(tabSource, /\[data-cadastros-reveal\]/);
   // Tipos (abas no topo) e filtros vêm antes da lista; a central de planilha mestre saiu da tela
   assert.ok(tabSource.indexOf('label="Filtros de cadastros"') < tabSource.indexOf('<TelaCheia'));
-  assert.ok(tabSource.indexOf('<AbasDaTela id="cadastros"') < tabSource.indexOf('faixa={emSistema ? undefined : emLixeira ? cabecalhoDaLixeira : filtrosDaLista}'));
-  assert.ok(tabSource.indexOf('faixa={emSistema ? undefined : emLixeira ? cabecalhoDaLixeira : filtrosDaLista}') < tabSource.indexOf('id="database-lists-viewport"'));
+  assert.ok(tabSource.indexOf('<AbasDaTela id="cadastros"') < tabSource.indexOf('faixa={emSistema || emEstrutura ? undefined : emLixeira ? cabecalhoDaLixeira : filtrosDaLista}'));
+  assert.ok(tabSource.indexOf('faixa={emSistema || emEstrutura ? undefined : emLixeira ? cabecalhoDaLixeira : filtrosDaLista}') < tabSource.indexOf('id="database-lists-viewport"'));
   assert.doesNotMatch(tabSource, /MasterDataReviewCenter|Baixar base completa/);
 });
 
@@ -59,7 +59,8 @@ test('tipos de cadastro são abas no topo, agrupadas, acessíveis ao toque e ao 
   assert.match(abasSource, /CADASTRO_GRUPOS\.map/);
   assert.match(abasSource, /categoriasDoGrupo\(grupo\.id\)/);
   assert.match(abasSource, /testId: `cadastro-categoria-\$\{categoria\.id\}`/);
-  assert.match(abasSource, /testId: 'cadastro-categoria-lixeira'/);
+  // A Lixeira saiu da primeira linha (no máximo quatro opções) e mora em Mais ações.
+  assert.match(tabSource, /data-testid="cadastro-categoria-lixeira"/);
   assert.doesNotMatch(tabSource, /CadastroTipos|lg:grid-cols-\[14rem/, 'sem menu lateral interno');
   assert.match(estilosSource, /focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-\(--renea-focus\)/);
 });

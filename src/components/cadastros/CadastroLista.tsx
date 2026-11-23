@@ -3,6 +3,7 @@ import { SearchX } from 'lucide-react';
 import type { ColunaCadastro, LinhaCadastro } from '../../utils/cadastrosLista';
 import { EmptyState, TabelaPadrao, type ColunaTabela } from '../../shared/ui';
 import { BOTAO_SECUNDARIO, TOM_SITUACAO } from './estilos';
+import { Avatar, FilaDeRostos, SeloNivel, corDoNivel } from './pessoasVisual';
 
 interface Props {
   /** Nome da lista para leitor de tela (o tipo de cadastro aberto). */
@@ -46,6 +47,34 @@ export default function CadastroLista({ titulo, linhas, colunas, mostrarSituacao
       render: linha => {
         const valor = linha.colunas[coluna.id];
         if (!valor) return <span className="text-slate-500">—</span>;
+        const apoio = linha.apoio || {};
+        if (coluna.formato === 'pessoa') {
+          const principal = indice === 0;
+          const nivel = Number(apoio[`${coluna.id}Nivel`]) || null;
+          return (
+            <span className="flex min-w-0 items-center gap-3">
+              <Avatar nome={valor} nivel={nivel} tamanho={principal ? 'm' : 'p'} />
+              <span className="min-w-0">
+                <span className={`block truncate ${principal ? 'font-bold' : 'font-semibold'} ${linha.ativo ? 'text-slate-900' : 'text-slate-500'}`}>{valor}</span>
+                {apoio[coluna.id] && <span className="block truncate text-xs text-slate-500">{apoio[coluna.id]}</span>}
+              </span>
+            </span>
+          );
+        }
+        if (coluna.formato === 'nivel') {
+          const nivel = Number(apoio[coluna.id]) || null;
+          if (coluna.id === 'nivel') return <SeloNivel nivel={nivel} />;
+          return (
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <span aria-hidden="true" className="size-2.5 shrink-0 rounded-sm" style={{ background: corDoNivel(nivel).fundo }} />
+              <span className="truncate">{valor}</span>
+            </span>
+          );
+        }
+        if (coluna.formato === 'rostos') {
+          const nomes = (apoio.rostos || '').split('|').filter(Boolean);
+          return <FilaDeRostos nomes={nomes} total={Number(valor) || 0} />;
+        }
         if (indice === 0 || coluna.id === 'nome') return <span className={`font-semibold ${linha.ativo ? 'text-slate-900' : 'text-slate-500'}`}>{valor}</span>;
         return coluna.codigo ? <span className="tabular-nums">{valor}</span> : valor;
       },

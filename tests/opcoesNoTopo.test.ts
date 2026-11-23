@@ -13,10 +13,8 @@ const MAXIMO = 4;
 
 test('Estacas e Cadastros têm no máximo quatro opções no topo', () => {
   assert.ok(abasEstacas({ faltam: 3, estacas: 10, notasPendentes: 2, lotes: 1 }).length <= MAXIMO);
-  for (const lixeira of [true, false]) {
-    for (const admin of [true, false]) {
-      assert.ok(abasCadastros(() => 1, lixeira, admin).length <= MAXIMO, `lixeira=${lixeira} admin=${admin}`);
-    }
+  for (const admin of [true, false]) {
+    assert.ok(abasCadastros(() => 1, admin).length <= MAXIMO, `admin=${admin}`);
   }
 });
 

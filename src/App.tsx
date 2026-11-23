@@ -27,6 +27,7 @@ import {
   ApontamentoOperacional,
   RegistroDDS,
   FrenteServico,
+  Cargo,
   DiarioObra,
   ServicoObra,
   RegistroProducao,
@@ -309,6 +310,7 @@ const CLOUD_STORAGE_KEYS: Array<[string, string]> = [
   ['pendenciasRotina', STORAGE_KEYS.pendenciasRotina],
   ['modelosRotina', STORAGE_KEYS.modelosRotina],
   ['frentesServico', STORAGE_KEYS.frentesServico],
+  ['cargos', STORAGE_KEYS.cargos],
   ['diariosObra', STORAGE_KEYS.diariosObra],
   ['solicitacoes', STORAGE_KEYS.solicitacoes],
   ['pessoasSuprimentos', STORAGE_KEYS.pessoasSuprimentos],
@@ -569,6 +571,7 @@ export default function App() {
   const [registrosDds, setRegistrosDds] = useState<RegistroDDS[]>([]);
   const [treinamentos, setTreinamentos] = useState<Treinamento[]>([]);
   const [frentesServico, setFrentesServico] = useState<FrenteServico[]>([]);
+  const [cargos, setCargos] = useState<Cargo[]>([]);
   const [diariosObra, setDiariosObra] = useState<DiarioObra[]>([]);
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [pessoasSuprimentos, setPessoasSuprimentos] = useState<PessoaSuprimentos[]>(PESSOAS_INICIAIS);
@@ -784,6 +787,7 @@ export default function App() {
       setRegistrosDds(parseStoredJson(localStorage.getItem(STORAGE_KEYS.registrosDds), STORAGE_KEYS.registrosDds, [] as RegistroDDS[]));
       setTreinamentos(parseStoredJson(localStorage.getItem(STORAGE_KEYS.treinamentos), STORAGE_KEYS.treinamentos, [] as Treinamento[]));
       setFrentesServico(parseStoredJson(localStorage.getItem(STORAGE_KEYS.frentesServico), STORAGE_KEYS.frentesServico, INITIAL_FRENTES_SERVICO));
+      setCargos(parseStoredJson(localStorage.getItem(STORAGE_KEYS.cargos), STORAGE_KEYS.cargos, [] as Cargo[]));
       setDiariosObra(parseStoredJson(localStorage.getItem(STORAGE_KEYS.diariosObra), STORAGE_KEYS.diariosObra, [] as DiarioObra[]));
       setSolicitacoes(parseStoredJson(localStorage.getItem(STORAGE_KEYS.solicitacoes), STORAGE_KEYS.solicitacoes, [] as Solicitacao[]));
       setPessoasSuprimentos(parseStoredJson(localStorage.getItem(STORAGE_KEYS.pessoasSuprimentos), STORAGE_KEYS.pessoasSuprimentos, PESSOAS_INICIAIS));
@@ -1027,6 +1031,7 @@ export default function App() {
     pendenciasRotina: readTable(STORAGE_KEYS.pendenciasRotina, [] as PendenciaRotina[]),
     modelosRotina: readTable(STORAGE_KEYS.modelosRotina, [] as ModeloRotina[]),
     frentesServico: readTable(STORAGE_KEYS.frentesServico, [] as FrenteServico[]),
+    cargos: readTable(STORAGE_KEYS.cargos, [] as Cargo[]),
     diariosObra: readTable(STORAGE_KEYS.diariosObra, [] as DiarioObra[]),
     solicitacoes: readTable(STORAGE_KEYS.solicitacoes, [] as Solicitacao[]),
     pessoasSuprimentos: readTable(STORAGE_KEYS.pessoasSuprimentos, PESSOAS_INICIAIS),
@@ -1389,6 +1394,9 @@ export default function App() {
         }
         if (Object.hasOwn(data, 'frentesServico')) {
           setFrentesServico(normalizeRuntimeCollection<FrenteServico>(data.frentesServico));
+        }
+        if (Object.hasOwn(data, 'cargos')) {
+          setCargos(normalizeRuntimeCollection<Cargo>(data.cargos));
         }
         if (Object.hasOwn(data, 'diariosObra')) {
           setDiariosObra(normalizeRuntimeCollection<DiarioObra>(data.diariosObra));
@@ -1901,6 +1909,7 @@ export default function App() {
     etapas: { lista: etapas, setLista: setEtapas as (next: never[]) => void, storageKey: 'renea_etapas', tela: 'Etapas de Serviço' },
     frentesServico: { lista: frentesServico, setLista: setFrentesServico as (next: never[]) => void, storageKey: STORAGE_KEYS.frentesServico, tela: 'Frentes de Serviço' },
     servicosObra: { lista: servicosObra, setLista: setServicosObra as (next: never[]) => void, storageKey: STORAGE_KEYS.servicosObra, tela: 'Serviços da obra' },
+    cargos: { lista: cargos, setLista: setCargos as (next: never[]) => void, storageKey: STORAGE_KEYS.cargos, tela: 'Cargos' },
     gruposEquipe: { lista: gruposEquipe as never[], setLista: setGruposEquipe as (next: never[]) => void, storageKey: 'renea_grupos_equipes', tela: 'Grupos / Equipes' },
     // Abastecimento excluído vai para a Lixeira (A17): o Desfazer e a Lixeira devolvem por aqui.
     abastecimentos: { lista: abastecimentos as never[], setLista: setAbastecimentos as (next: never[]) => void, storageKey: 'renea_abastecimentos', tela: 'Abastecimentos' },
@@ -1925,6 +1934,7 @@ export default function App() {
     controleEquipamentosDiario: controleEquipamentosDiario as ReadonlyArray<ControleEquipamentoDiario & { local?: string }>,
     canteiros,
     frentesServico,
+    cargos,
     producao: producaoRegistros,
     planejamento: planejamentoItens,
     colecoesDaObra: {
@@ -3447,6 +3457,24 @@ export default function App() {
     }, undefined, onError);
   };
 
+  const handleSaveCargo = (cargo: Cargo, isNew: boolean, onError?: (error: Error) => void) => {
+    const updated = isNew ? [cargo, ...cargos] : cargos.map(item => item.id === cargo.id ? cargo : item);
+    saveAndLog('Cargos', isNew ? 'Criou' : 'Editou', `${isNew ? 'Cadastrou' : 'Editou'} o cargo ${cargo.nome} (nível ${cargo.nivel}).`, historyLogs, () => {
+      setCargos(updated);
+      writeStorageValue(localStorage, STORAGE_KEYS.cargos, JSON.stringify(updated));
+    }, undefined, onError);
+  };
+
+  /** Cadastra de uma vez os cargos que os colaboradores já usam (aba Cargos). */
+  const handleSaveCargos = (novos: Cargo[]) => {
+    if (novos.length === 0) return;
+    const updated = [...novos, ...cargos];
+    saveAndLog('Cargos', 'Criou', `Cadastrou ${novos.length} cargos usados pelos colaboradores: ${novos.map(item => item.nome).join(', ')}.`, historyLogs, () => {
+      setCargos(updated);
+      writeStorageValue(localStorage, STORAGE_KEYS.cargos, JSON.stringify(updated));
+    });
+  };
+
   const handleSaveServicoObra = (servico: ServicoObra, isNew: boolean, onError?: (error: Error) => void) => {
     const updated = isNew ? [servico, ...servicosObra] : servicosObra.map(item => item.id === servico.id ? servico : item);
     saveAndLog('Produção', isNew ? 'Criou' : 'Editou', `${isNew ? 'Cadastrou' : 'Editou'} o serviço ${servico.descricao}.`, historyLogs, () => {
@@ -4289,6 +4317,9 @@ export default function App() {
                 servicosObra={servicosObra}
                 onSaveFrente={handleSaveFrente}
                 onSaveServico={handleSaveServicoObra}
+                cargos={cargos}
+                onSaveCargo={handleSaveCargo}
+                onSaveCargos={handleSaveCargos}
                 onInativar={(tabela, id) => {
                   if (tabela === 'empresas') handleDeleteEmpresa(id);
                   else if (tabela === 'funcionarios') handleDeleteFuncionario(id);

@@ -280,6 +280,25 @@ export type PresencaStatus =
   | 'Desligado'
   | 'Outro';
 
+/** Degrau do cargo na pirâmide da empresa: 1 é o topo (Diretoria), 6 a base (Apoio). */
+export type NivelCargo = 1 | 2 | 3 | 4 | 5 | 6;
+
+/**
+ * Cargo cadastrado (22/11/2026). O colaborador continua guardando o nome do
+ * cargo em `Funcionario.cargo`; o cadastro dá o nível na pirâmide e evita
+ * que cada um escreva a mesma função de um jeito.
+ */
+export interface Cargo {
+  id: string;
+  nome: string;
+  nivel: NivelCargo;
+  area?: string;
+  descricao?: string;
+  ativo?: boolean;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
 export interface GrupoEquipe {
   id: string;
   nome: string;

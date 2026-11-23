@@ -8,7 +8,7 @@ import { registrosComCanteiroRenomeado } from '../src/utils/frenteServico';
 const dados: DadosCadastros = {
   empresas: [], funcionarios: [], equipamentos: [], obras: [], comboios: [], combustiveis: [],
   lubrificantes: [], canteiros: [{ id: 'cant-1', nome: 'Fábrica' }, { id: 'cant-2', nome: 'Marginal' }],
-  etapas: [], frentesServico: [], servicosObra: [],
+  etapas: [], frentesServico: [], servicosObra: [], cargos: [], gruposEquipe: [],
 };
 
 test('canteiro novo entra com nome preenchido', () => {
