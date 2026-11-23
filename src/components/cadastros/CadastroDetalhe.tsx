@@ -1,7 +1,8 @@
-import { ChevronRight, Network, Pencil, RotateCcw, Trash2, UserMinus } from 'lucide-react';
+import { Network, Pencil, RotateCcw, Trash2, UserMinus } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Cargo, Funcionario, GrupoEquipe, HistoryLog } from '../../types';
-import { equipePorPessoa, linhaDeComando, montarEstrutura, nomeDoNivel } from '../../utils/hierarquia';
+import { chaveDoCargo, equipePorPessoa, linhaDeComando, mapaDeCargos, montarEstrutura, nomeDoNivel } from '../../utils/hierarquia';
+import { Avatar, SeloNivel } from './pessoasVisual';
 import type { CadastroCategoriaId } from '../../utils/cadastrosCategorias';
 import type { DadosCadastros, LinhaCadastro } from '../../utils/cadastrosLista';
 import { temSituacao } from '../../utils/cadastrosLista';
@@ -51,6 +52,8 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
       equipe: equipePorPessoa(dados.gruposEquipe).get(pessoa.id),
     };
   }, [pessoa, dados.funcionarios, dados.cargos, dados.gruposEquipe]);
+  const cadastroDeCargos = useMemo(() => mapaDeCargos(dados.cargos), [dados.cargos]);
+  const nivelDe = (cargo?: string) => cadastroDeCargos.get(chaveDoCargo(cargo))?.nivel ?? null;
   const registro = linha.registro as unknown as Record<string, unknown>;
   const nomes = new Map<string, string>([
     ...dados.empresas.map(item => [item.id, item.nome] as const),
@@ -128,35 +131,54 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
         {foto && <img src={foto} alt={`Foto de ${linha.titulo}`} className="aspect-video w-full rounded-2xl border border-slate-200 object-cover" />}
 
         {lugar && pessoa && (
-          <section aria-labelledby="cadastro-lugar-titulo" className="space-y-2" data-testid="cadastro-lugar">
-            <h3 id="cadastro-lugar-titulo" className="text-xs font-bold text-[#5b6870]">Lugar na empresa</h3>
-            <div className="rounded-xl bg-slate-50 p-3 text-sm">
-              <ol aria-label="Linha de comando" className="flex flex-wrap items-center gap-1.5">
-                {lugar.linha.map((item, indice) => (
-                  <li key={item.id} className="flex items-center gap-1.5">
-                    {indice > 0 && <ChevronRight className="size-4 text-slate-500" aria-hidden="true" />}
-                    <span className={`rounded-lg border px-2 py-1 ${item.id === pessoa.id ? 'border-[#176b4d] bg-white font-bold text-[#0f5a3d]' : 'border-slate-200 bg-white text-slate-700'}`}>
-                      {item.nome.split(' ').slice(0, 2).join(' ')}
-                      {item.cargo && <span className="block text-xs font-normal text-slate-500">{item.cargo}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-2 text-slate-600">
-                {lugar.linha.length === 1 ? 'Não responde a ninguém do cadastro. ' : ''}
-                {lugar.diretos > 0
-                  ? `Lidera ${lugar.diretos} ${lugar.diretos === 1 ? 'pessoa direta' : 'pessoas diretas'}${lugar.abaixo > lugar.diretos ? ` (${lugar.abaixo} no total)` : ''}.`
-                  : 'Não lidera ninguém.'}
-                {` Equipe: ${lugar.equipe ? lugar.equipe.nome : 'nenhuma'}.`}
-              </p>
+          <>
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4" data-testid="cadastro-pessoa-topo">
+              <Avatar nome={pessoa.nome} nivel={nivelDe(pessoa.cargo)} tamanho="g" />
+              <div className="min-w-0 space-y-1.5">
+                <p className="truncate text-base font-bold text-slate-900">{pessoa.cargo || 'Sem cargo'}</p>
+                <SeloNivel nivel={nivelDe(pessoa.cargo)} />
+              </div>
             </div>
-            {onVerNoOrganograma && (
-              <button type="button" onClick={onVerNoOrganograma} className={`${BOTAO_SECUNDARIO} w-full`} data-testid="cadastro-ver-organograma">
-                <Network className="size-5" aria-hidden="true" />
-                Ver no organograma
-              </button>
-            )}
-          </section>
+
+            <dl className="grid grid-cols-3 gap-2 text-center">
+              {[
+                ['Lidera direto', String(lugar.diretos)],
+                ['Total abaixo', String(lugar.abaixo)],
+                ['Equipe', lugar.equipe?.nome || 'Nenhuma'],
+              ].map(([rotulo, valor]) => (
+                <div key={rotulo} className="flex min-w-0 flex-col-reverse rounded-xl bg-slate-50 px-2 py-2.5">
+                  <dt className="text-xs font-semibold text-slate-600">{rotulo}</dt>
+                  <dd className={`line-clamp-2 break-words font-black tabular-nums text-slate-900 ${/^\d+$/.test(valor) ? 'text-lg' : 'text-sm leading-snug'}`} title={valor}>{valor}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <section aria-labelledby="cadastro-lugar-titulo" className="space-y-2" data-testid="cadastro-lugar">
+              <h3 id="cadastro-lugar-titulo" className="text-sm font-bold text-slate-800">Linha de comando</h3>
+              <ol aria-label="Linha de comando" className="relative space-y-2">
+                {lugar.linha.map((item, indice) => {
+                  const eu = item.id === pessoa.id;
+                  return (
+                    <li key={item.id} className="relative flex items-center gap-3">
+                      {indice < lugar.linha.length - 1 && <span aria-hidden="true" className="absolute left-[1.125rem] top-9 h-2 w-0.5 bg-slate-300" />}
+                      <Avatar nome={item.nome} nivel={nivelDe(item.cargo)} />
+                      <span className={`min-w-0 flex-1 rounded-xl border px-3 py-1.5 ${eu ? 'border-[#176b4d] bg-emerald-50/60' : 'border-slate-200 bg-white'}`}>
+                        <span className={`block truncate text-sm ${eu ? 'font-bold text-[#0f5a3d]' : 'font-semibold text-slate-900'}`}>{item.nome}{eu ? ' (esta pessoa)' : ''}</span>
+                        <span className="block truncate text-xs text-slate-500">{item.cargo || 'Sem cargo'}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+              {lugar.linha.length === 1 && <p className="text-sm text-slate-600">Não responde a ninguém do cadastro.</p>}
+              {onVerNoOrganograma && (
+                <button type="button" onClick={onVerNoOrganograma} className={`${BOTAO_SECUNDARIO} w-full`} data-testid="cadastro-ver-organograma">
+                  <Network className="size-5" aria-hidden="true" />
+                  Ver no organograma
+                </button>
+              )}
+            </section>
+          </>
         )}
 
         <dl className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-sm">

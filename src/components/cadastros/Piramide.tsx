@@ -5,6 +5,7 @@ import { isActiveCollaborator } from '../../masterData/centralRegistry';
 import { NIVEIS, montarPiramide, type DegrauPiramide } from '../../utils/hierarquia';
 import { BOTAO_SECUNDARIO, CAMPO, FOCO } from './estilos';
 import { imprimirEmUmaFolha } from '../../utils/imprimirEmUmaFolha';
+import { COR_DO_NIVEL } from './pessoasVisual';
 
 interface Props {
   funcionarios: readonly Funcionario[];
@@ -14,7 +15,6 @@ interface Props {
   onIrParaCargos: () => void;
 }
 
-const COR = ['#022b24', '#063c31', '#0f5a3d', '#176b4d', '#3f8f6e', '#7fb59b'];
 const porcento = (parte: number, total: number) => (total ? `${Math.round((parte / total) * 100)}%` : '0%');
 
 /**
@@ -61,24 +61,27 @@ export default function Piramide({ funcionarios, cargos, empresas, onIrParaCargo
 
       <div ref={folhaRef} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-6">
-          <ol aria-label="Pirâmide de cargos" className="flex flex-col items-center gap-1.5">
+          <ol aria-label="Pirâmide de cargos" className="mx-auto flex max-w-2xl flex-col items-center gap-1">
             {NIVEIS.map((nivel, indice) => {
               const degrau = degraus.find(item => item.nivel === nivel.nivel);
               const pessoasNoNivel = degrau?.pessoas || 0;
               const ativo = aberto?.nivel === nivel.nivel;
-              const claro = indice >= 5;
+              const cor = COR_DO_NIVEL[indice];
+              // Cada degrau é um trapézio: a base de cima tem a largura do degrau anterior.
+              const largura = 46 + indice * 10.8;
+              const recuo = `${((5.4 / largura) * 100).toFixed(2)}%`;
               return (
-                <li key={nivel.nivel} className="flex w-full justify-center">
+                <li key={nivel.nivel} className="flex w-full justify-center" style={{ filter: ativo ? 'drop-shadow(0 0 0.35rem rgba(242,106,46,0.55))' : undefined }}>
                   <button
                     type="button"
                     onClick={() => setEscolhido(nivel.nivel)}
                     aria-pressed={ativo}
                     data-testid="piramide-degrau"
-                    style={{ width: `${40 + indice * 12}%`, background: COR[indice] }}
-                    className={`flex min-h-12 min-w-0 items-center justify-between gap-2 rounded-lg px-3 text-left text-sm font-bold transition-[box-shadow] duration-150 ${FOCO} ${claro ? 'text-[#022b24]' : 'text-white'} ${ativo ? 'ring-4 ring-[#f26a2e]/50' : ''}`}
+                    style={{ width: `${largura}%`, background: cor.fundo, color: cor.letra, clipPath: `polygon(${recuo} 0, calc(100% - ${recuo}) 0, 100% 100%, 0 100%)` }}
+                    className={`flex min-h-14 min-w-0 flex-col items-center justify-center px-6 text-center transition-[filter] duration-150 hover:brightness-110 focus-visible:brightness-125 ${FOCO}`}
                   >
-                    <span className="min-w-0 truncate">{nivel.nivel} · {nivel.nome}</span>
-                    <span className="shrink-0 tabular-nums">{pessoasNoNivel.toLocaleString('pt-BR')}</span>
+                    <span className="text-xl font-black leading-tight tabular-nums">{pessoasNoNivel.toLocaleString('pt-BR')}</span>
+                    <span className="max-w-full truncate text-xs font-bold">{nivel.nivel} · {nivel.nome}</span>
                   </button>
                 </li>
               );
@@ -98,11 +101,16 @@ export default function Piramide({ funcionarios, cargos, empresas, onIrParaCargo
               <h3 className="text-lg font-black text-slate-900">{aberto.nivel} · {aberto.nome}</h3>
               <p className="text-sm text-slate-600">{aberto.pessoas.toLocaleString('pt-BR')} {aberto.pessoas === 1 ? 'pessoa' : 'pessoas'} · {porcento(aberto.pessoas, total)} do efetivo</p>
               {aberto.cargos.length > 0 ? (
-                <ul className="mt-3 divide-y divide-slate-100">
+                <ul className="mt-4 space-y-3">
                   {aberto.cargos.map(item => (
-                    <li key={item.nome} className="flex justify-between gap-2 py-2 text-sm">
-                      <span className="text-slate-700">{item.nome}</span>
-                      <strong className="tabular-nums text-slate-900">{item.pessoas}</strong>
+                    <li key={item.nome} className="text-sm">
+                      <span className="flex justify-between gap-2">
+                        <span className="min-w-0 truncate text-slate-700">{item.nome}</span>
+                        <strong className="shrink-0 tabular-nums text-slate-900">{item.pessoas}</strong>
+                      </span>
+                      <span aria-hidden="true" className="mt-1 block h-2 overflow-hidden rounded-full bg-slate-100">
+                        <span className="block h-full rounded-full" style={{ width: porcento(item.pessoas, aberto.pessoas), background: aberto.nivel ? COR_DO_NIVEL[aberto.nivel - 1].fundo : COR_DO_NIVEL[6].fundo }} />
+                      </span>
                     </li>
                   ))}
                 </ul>

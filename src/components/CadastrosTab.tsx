@@ -50,6 +50,7 @@ import {
 import { abasCadastros, ehVistaEstrutura, ehVistaSistema, type VistaCadastros } from './cadastros/abasCadastros';
 import Organograma from './cadastros/Organograma';
 import Piramide from './cadastros/Piramide';
+import { ResumoColaboradores } from './cadastros/pessoasVisual';
 import { cargosQueFaltam, novosCargos } from '../utils/hierarquia';
 import LinkPresenca from './cadastros/LinkPresenca';
 import UsuariosTab from './UsuariosTab';
@@ -576,6 +577,16 @@ export default function CadastrosTab(props: CadastrosTabProps) {
 
   const filtrosDaLista = (
     <div data-cadastros-reveal className="space-y-2">
+      {categoria === 'funcionarios' && todasAsLinhas.length > 0 && (
+        <ResumoColaboradores
+          linhas={todasAsLinhas}
+          filtros={filtros}
+          onFiltrar={(filtro, valor) => {
+            setSituacao('ativos');
+            setFiltros(filtro ? { [filtro]: valor || '' } : {});
+          }}
+        />
+      )}
       <FilterBar label="Filtros de cadastros" className="rounded-2xl border border-slate-200 bg-white p-3">
         <div className="w-full space-y-2">
           <div className="flex flex-wrap items-center gap-2">

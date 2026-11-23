@@ -16,7 +16,7 @@ import {
   isVehicle,
 } from '../masterData/centralRegistry';
 import type { CadastroCategoriaId } from './cadastrosCategorias';
-import { chaveDoCargo, equipePorPessoa, nomeDoNivel, pessoasPorCargo } from './hierarquia';
+import { chaveDoCargo, equipePorPessoa, mapaDeCargos, nomeDoNivel, pessoasPorCargo } from './hierarquia';
 
 export interface DadosCadastros {
   empresas: readonly Empresa[];
@@ -51,6 +51,12 @@ export interface LinhaCadastro {
   colunas: Record<string, string>;
   /** Valor de cada filtro, pela `id` do filtro. */
   filtros: Record<string, string>;
+  /**
+   * Dado de apoio para desenhar a coluna (Pessoas, 23/11/2026): a matrícula
+   * embaixo do nome, o nível do cargo, as iniciais da equipe. Não entra na
+   * busca nem na ordem.
+   */
+  apoio?: Record<string, string>;
   busca: string;
   registro: RegistroCadastro;
 }
@@ -64,6 +70,11 @@ export interface ColunaCadastro {
   larga?: boolean;
   /** Fica fora do cartão do celular, para o cartão não crescer demais. */
   secundaria?: boolean;
+  /**
+   * Desenho da coluna em Pessoas: `pessoa` (iniciais, nome e uma linha de
+   * apoio), `nivel` (selo colorido do nível), `rostos` (fila de iniciais).
+   */
+  formato?: 'pessoa' | 'nivel' | 'rostos';
 }
 
 export interface FiltroCadastro {
@@ -107,24 +118,23 @@ const COLUNAS_EMPRESA: ColunaCadastro[] = [
 
 export const COLUNAS: Record<CadastroCategoriaId, ColunaCadastro[]> = {
   funcionarios: [
-    { id: 'matricula', label: 'Matrícula', codigo: true },
-    { id: 'nome', label: 'Nome', larga: true },
-    { id: 'cargo', label: 'Cargo' },
-    { id: 'equipe', label: 'Equipe' },
-    { id: 'lider', label: 'Líder', secundaria: true },
+    { id: 'nome', label: 'Colaborador', larga: true, formato: 'pessoa' },
+    { id: 'cargo', label: 'Cargo', formato: 'nivel' },
+    { id: 'equipe', label: 'Equipe', larga: true },
+    { id: 'lider', label: 'Responde a', formato: 'pessoa', secundaria: true },
     { id: 'empresa', label: 'Empresa', secundaria: true },
   ],
   cargos: [
     { id: 'nome', label: 'Cargo', larga: true },
-    { id: 'nivel', label: 'Nível na pirâmide' },
+    { id: 'nivel', label: 'Nível na pirâmide', formato: 'nivel' },
     { id: 'area', label: 'Área' },
     { id: 'pessoas', label: 'Pessoas', codigo: true },
   ],
   equipes: [
     { id: 'nome', label: 'Equipe', larga: true },
-    { id: 'responsavel', label: 'Encarregado' },
+    { id: 'responsavel', label: 'Encarregado', formato: 'pessoa' },
     { id: 'frente', label: 'Frente de serviço' },
-    { id: 'pessoas', label: 'Pessoas', codigo: true },
+    { id: 'pessoas', label: 'Pessoas', formato: 'rostos' },
   ],
   empresas: COLUNAS_EMPRESA,
   terceiras: COLUNAS_EMPRESA,
@@ -288,6 +298,9 @@ export const montarLinhas = (categoria: CadastroCategoriaId, dados: DadosCadastr
 
   if (tabela === 'funcionarios') {
     const equipes = equipePorPessoa(dados.gruposEquipe);
+    const cargos = mapaDeCargos(dados.cargos);
+    const nivelDe = (cargo?: string) => String(cargos.get(chaveDoCargo(cargo))?.nivel ?? '');
+    const porMatricula = new Map(dados.funcionarios.filter(item => item.matricula).map(item => [item.matricula as string, item]));
     return dados.funcionarios.map(item => {
       const situacao = SITUACAO_FUNCIONARIO[item.status || (item.ativo ? 'ATIVO' : 'INATIVO')];
       const empresa = nomeEmpresa.get(item.empresaId) || '';
@@ -301,6 +314,12 @@ export const montarLinhas = (categoria: CadastroCategoriaId, dados: DadosCadastr
         tom: tomFuncionario(item),
         colunas: { matricula: item.matricula || '', nome: item.nome, cargo: item.cargo || '', equipe, empresa, lider: item.liderNome || '' },
         filtros: { empresa: empresa || 'Sem empresa', cargo: item.cargo || 'Sem cargo', equipe: equipe || 'Sem equipe', lider: item.liderNome || 'Sem líder', situacao },
+        apoio: {
+          nome: item.matricula ? `Matrícula ${item.matricula}` : 'Sem matrícula',
+          nomeNivel: nivelDe(item.cargo),
+          cargo: nivelDe(item.cargo),
+          liderNivel: item.liderMatricula ? nivelDe(porMatricula.get(item.liderMatricula)?.cargo) : '',
+        },
         busca: juntar(item.nome, item.matricula, item.cargo, equipe, item.liderNome, item.area, item.responsavelArea, item.telefone, empresa),
         registro: item,
       };
@@ -322,6 +341,7 @@ export const montarLinhas = (categoria: CadastroCategoriaId, dados: DadosCadastr
         tom: ativo ? 'ok' : 'inativo',
         colunas: { nome: item.nome, nivel, area: item.area || '', pessoas: String(total) },
         filtros: { nivel },
+        apoio: { nivel: String(item.nivel || '') },
         busca: juntar(item.nome, item.area, item.descricao, nivel),
         registro: item,
       };
@@ -330,6 +350,8 @@ export const montarLinhas = (categoria: CadastroCategoriaId, dados: DadosCadastr
 
   if (tabela === 'gruposEquipe') {
     const porId = new Map(dados.funcionarios.map(item => [item.id, item]));
+    const porMatricula = new Map(dados.funcionarios.filter(item => item.matricula).map(item => [item.matricula as string, item]));
+    const cargos = mapaDeCargos(dados.cargos);
     return dados.gruposEquipe.map(item => {
       const ativo = item.status !== 'inativo';
       const membros = item.funcionarioIds.filter(id => porId.has(id));
@@ -342,6 +364,11 @@ export const montarLinhas = (categoria: CadastroCategoriaId, dados: DadosCadastr
         tom: ativo ? 'ok' : 'inativo',
         colunas: { nome: item.nome, responsavel: item.responsavel || '', frente: item.frenteServico || '', pessoas: String(membros.length) },
         filtros: { frente: item.frenteServico || 'Sem frente' },
+        apoio: {
+          responsavel: 'Encarregado',
+          responsavelNivel: String(cargos.get(chaveDoCargo(item.liderMatricula ? porMatricula.get(item.liderMatricula)?.cargo : ''))?.nivel ?? ''),
+          rostos: membros.map(id => porId.get(id)?.nome).filter(Boolean).slice(0, 4).join('|'),
+        },
         busca: juntar(item.nome, item.responsavel, item.frenteServico, ...membros.map(id => porId.get(id)?.nome)),
         registro: item,
       };

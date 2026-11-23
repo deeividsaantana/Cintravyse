@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Printer, Search } from 'lucide-react';
+import { ChevronRight, Printer, Search, Users } from 'lucide-react';
 import type { Cargo, Empresa, Funcionario, GrupoEquipe } from '../../types';
 import { isActiveCollaborator } from '../../masterData/centralRegistry';
 import { chaveDoCargo, equipePorPessoa, linhaDeComando, mapaDeCargos, montarEstrutura } from '../../utils/hierarquia';
 import { normalizarBusca } from '../../utils/cadastrosLista';
 import { BOTAO_SECUNDARIO, CAMPO, FOCO } from './estilos';
 import { imprimirEmUmaFolha } from '../../utils/imprimirEmUmaFolha';
+import { Avatar, corDoNivel } from './pessoasVisual';
 
 interface Props {
   funcionarios: readonly Funcionario[];
@@ -16,9 +17,6 @@ interface Props {
   focoId?: string | null;
   onAbrirPessoa: (id: string) => void;
 }
-
-// Cor da borda de cada nível: do verde-escuro do topo ao claro da base.
-const COR_DO_NIVEL = ['#022b24', '#063c31', '#0f5a3d', '#176b4d', '#3f8f6e', '#7fb59b', '#b9c6bf'];
 
 /**
  * Organograma montado na hora a partir de quem lidera quem no cadastro de
@@ -70,7 +68,7 @@ export default function Organograma({ funcionarios, cargos, empresas, gruposEqui
     if (abaixo && abaixo.length > 0) linhas.push(abaixo);
   });
 
-  const nivelDe = (pessoa: Funcionario) => cadastroDeCargos.get(chaveDoCargo(pessoa.cargo))?.nivel ?? 7;
+  const nivelDe = (pessoa: Funcionario) => cadastroDeCargos.get(chaveDoCargo(pessoa.cargo))?.nivel ?? null;
 
   const tocar = (pessoa: Funcionario, linha: number) => {
     if (caminho[linha] === pessoa.id) {
@@ -85,6 +83,7 @@ export default function Organograma({ funcionarios, cargos, empresas, gruposEqui
     const diretos = estrutura.liderados.get(pessoa.id)?.length || 0;
     const total = estrutura.abaixo.get(pessoa.id) || 0;
     const equipe = equipes.get(pessoa.id)?.nome;
+    const nivel = nivelDe(pessoa);
     return (
       <button
         key={pessoa.id}
@@ -93,14 +92,25 @@ export default function Organograma({ funcionarios, cargos, empresas, gruposEqui
         aria-pressed={escolhido}
         title={escolhido ? 'Tocar de novo abre a ficha' : diretos > 0 ? `Ver quem responde a ${pessoa.nome}` : 'Tocar de novo abre a ficha'}
         data-testid="organograma-pessoa"
-        style={{ borderLeftColor: COR_DO_NIVEL[nivelDe(pessoa) - 1] }}
-        className={`w-56 shrink-0 rounded-xl border border-l-4 bg-white p-3 text-left transition-colors duration-150 ${FOCO} ${escolhido ? 'border-[#176b4d] ring-2 ring-[#176b4d]/25' : 'border-slate-200 hover:border-emerald-300'}`}
+        className={`relative flex w-64 shrink-0 flex-col overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-[border-color,box-shadow] duration-150 ${FOCO} ${escolhido ? 'border-[#176b4d] ring-2 ring-[#176b4d]/25' : 'border-slate-200 hover:border-emerald-300'}`}
       >
-        <span className="flex items-start justify-between gap-2">
-          <strong className="min-w-0 truncate text-sm text-slate-900">{pessoa.nome}</strong>
-          {total > 0 && <span className="shrink-0 rounded-full bg-slate-100 px-2 text-xs font-bold tabular-nums text-slate-600" aria-label={`${total} pessoas abaixo`}>{total}</span>}
+        <span aria-hidden="true" className="h-1.5 w-full" style={{ background: corDoNivel(nivel).fundo }} />
+        <span className="flex items-center gap-3 p-3">
+          <Avatar nome={pessoa.nome} nivel={nivel} />
+          <span className="min-w-0 flex-1">
+            <strong className="block truncate text-sm text-slate-900">{pessoa.nome}</strong>
+            <span className="block truncate text-xs text-slate-600">{pessoa.cargo || 'Sem cargo'}</span>
+          </span>
         </span>
-        <span className="block truncate text-xs text-slate-500">{[pessoa.cargo, equipe].filter(Boolean).join(' · ') || 'Sem cargo'}</span>
+        <span className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-xs text-slate-600">
+          <span className="min-w-0 truncate">{equipe || 'Sem equipe'}</span>
+          {total > 0 ? (
+            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-bold tabular-nums ${escolhido ? 'bg-[#176b4d] text-white' : 'bg-emerald-50 text-[#0f5a3d]'}`} aria-label={`${total} pessoas abaixo`}>
+              <Users className="size-3.5" aria-hidden="true" />
+              {total}
+            </span>
+          ) : <span className="shrink-0 text-slate-500">Ninguém abaixo</span>}
+        </span>
       </button>
     );
   };
@@ -143,21 +153,37 @@ export default function Organograma({ funcionarios, cargos, empresas, gruposEqui
         </div>
       ) : (
         <div ref={folhaRef} className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-5">
-          <ol aria-label="Níveis do organograma" className="space-y-5">
+          {caminho.length > 0 && (
+            <nav aria-label="Caminho no organograma" className="mb-4 flex flex-wrap items-center gap-1 text-sm print:hidden">
+              <button type="button" onClick={() => setCaminho([])} className={`min-h-9 rounded-lg px-2 font-semibold text-[#0f5a3d] hover:bg-emerald-50 ${FOCO}`}>Topo</button>
+              {caminho.map((id, indice) => (
+                <span key={id} className="flex items-center gap-1">
+                  <ChevronRight className="size-4 text-slate-500" aria-hidden="true" />
+                  <button type="button" onClick={() => setCaminho(caminho.slice(0, indice + 1))} aria-current={indice === caminho.length - 1 ? 'location' : undefined} className={`min-h-9 rounded-lg px-2 hover:bg-emerald-50 ${FOCO} ${indice === caminho.length - 1 ? 'font-bold text-slate-900' : 'font-semibold text-[#0f5a3d]'}`}>
+                    {porId.get(id)?.nome.split(' ').slice(0, 2).join(' ') || ''}
+                  </button>
+                </span>
+              ))}
+            </nav>
+          )}
+          <ol aria-label="Níveis do organograma" className="space-y-2">
             {linhas.map((linha, indice) => (
               <li key={indice} className="relative">
                 {indice > 0 && (
-                  <p className="mb-2 text-xs font-bold text-[#5b6870]">
-                    Respondem a {porId.get(caminho[indice - 1])?.nome || ''} · {linha.length}
-                  </p>
+                  <div className="flex items-center gap-2 pb-2 pl-6">
+                    <span aria-hidden="true" className="h-6 w-0.5 bg-[#3f8f6e]/50" />
+                    <p className="text-xs font-bold text-[#5b6870]">
+                      {linha.length} {linha.length === 1 ? 'pessoa responde' : 'pessoas respondem'} a {porId.get(caminho[indice - 1])?.nome || ''}
+                    </p>
+                  </div>
                 )}
-                <div className="flex gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+                <div className={`flex gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible ${indice > 0 ? 'rounded-2xl bg-slate-50 p-3' : ''}`}>
                   {linha.map(pessoa => cartao(pessoa, indice))}
                 </div>
               </li>
             ))}
           </ol>
-          <p className="mt-4 text-xs text-slate-500 print:hidden">Toque numa pessoa para ver quem responde a ela. Toque de novo para abrir a ficha.</p>
+          <p className="mt-4 text-sm text-slate-600 print:hidden">Toque numa pessoa para ver quem responde a ela. Toque de novo para abrir a ficha.</p>
         </div>
       )}
 
