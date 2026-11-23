@@ -530,7 +530,7 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
                 return (
                   <ColunaCanteiro key={grupo.canteiro} canteiro={grupo.canteiro} className={`mb-3 break-inside-avoid overflow-hidden rounded-2xl border bg-white ${semCanteiro ? 'border-dashed border-slate-300' : 'border-slate-200'}`}>
                     <section aria-label={`Canteiro ${grupo.canteiro}`} data-testid="quadro-coluna">
-                      <header className="flex items-center gap-2.5 bg-slate-50 px-3.5 py-2.5">
+                      <header className="flex items-center gap-2.5 border-b border-slate-100 px-3.5 py-2.5">
                         <MapPin className={`size-4 shrink-0 ${semCanteiro ? 'text-slate-500' : 'text-[#176b4d]'}`} aria-hidden="true" />
                         <h2 className={`min-w-0 truncate text-[0.95rem] font-bold ${semCanteiro ? 'text-slate-500' : 'text-slate-900'}`}>{grupo.canteiro}</h2>
                         <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold tabular-nums text-slate-600">{grupo.cartoes.length}</span>
@@ -543,10 +543,7 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
                           ))}
                         </span>
                       </header>
-                      <div className="flex h-1 bg-slate-100" aria-hidden="true">
-                        {contagem.map(([situacao, total]) => <span key={situacao} className={TOM[situacao].ponto} style={{ width: `${(total / grupo.cartoes.length) * 100}%` }} />)}
-                      </div>
-                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr))]">
+                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(8.5rem,1fr))] sm:[grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr))]">
                         {lista.map(cartao => (
                           <CartaoArrastavel
                             key={cartao.equipamentoId}
