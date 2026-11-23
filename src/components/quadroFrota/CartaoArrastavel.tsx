@@ -69,7 +69,7 @@ export function CartaoArrastavel({ cartao, podeArrastar, onAbrir, modoSelecao, s
           aria-label={`Arrastar ${cartao.prefixo} para outro canteiro`}
           title="Segure e arraste para outro canteiro"
           data-testid={`quadro-alca-${cartao.prefixo}`}
-          className={`absolute inset-y-0 right-0 grid w-7 cursor-grab touch-none place-items-center rounded-r-lg text-slate-500 transition hover:bg-emerald-50 hover:text-[#176b4d] active:cursor-grabbing ${FOCO}`}
+          className={`absolute inset-y-0 right-0 grid w-6 cursor-grab sm:w-7 touch-none place-items-center rounded-r-lg text-slate-500 transition hover:bg-emerald-50 hover:text-[#176b4d] active:cursor-grabbing ${FOCO}`}
         >
           <GripVertical className="size-4" aria-hidden="true" />
         </button>

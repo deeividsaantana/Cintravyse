@@ -543,7 +543,7 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
                           ))}
                         </span>
                       </header>
-                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(8.75rem,1fr))]">
+                      <div className="grid gap-2 p-2.5 [grid-template-columns:repeat(auto-fill,minmax(8.5rem,1fr))] sm:[grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr))]">
                         {lista.map(cartao => (
                           <CartaoArrastavel
                             key={cartao.equipamentoId}
