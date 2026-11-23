@@ -55,6 +55,7 @@ import { cargosQueFaltam, novosCargos } from '../utils/hierarquia';
 import LinkPresenca from './cadastros/LinkPresenca';
 import UsuariosTab from './UsuariosTab';
 import CadastroLista from './cadastros/CadastroLista';
+import EquipesCartoes from './cadastros/EquipesCartoes';
 import CadastroDetalhe, { type UsoCadastro } from './cadastros/CadastroDetalhe';
 import CadastroFormulario from './cadastros/CadastroFormulario';
 import CadastroConfirmacao, { type AcaoConfirmacao } from './cadastros/CadastroConfirmacao';
@@ -577,6 +578,26 @@ export default function CadastrosTab(props: CadastrosTabProps) {
 
   const filtrosDaLista = (
     <div data-cadastros-reveal className="space-y-2">
+      {categoria === 'equipes' && todasAsLinhas.length > 0 && (() => {
+        const ativas = (props.gruposEquipe ?? []).filter(item => item.status !== 'inativo');
+        const emEquipe = new Set(ativas.flatMap(item => item.funcionarioIds));
+        const ativos = funcionarios.filter(item => item.ativo !== false);
+        const quadros = [
+          ['Equipes ativas', ativas.length],
+          ['Pessoas em equipe', ativos.filter(item => emEquipe.has(item.id)).length],
+          ['Sem equipe', ativos.filter(item => !emEquipe.has(item.id)).length],
+        ] as const;
+        return (
+          <dl aria-label="Resumo das equipes" data-testid="resumo-equipes" className="grid grid-cols-3 gap-2">
+            {quadros.map(([rotulo, total]) => (
+              <div key={rotulo} className="flex min-h-16 flex-col-reverse justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:px-4">
+                <dt className={`text-sm font-semibold ${rotulo === 'Sem equipe' && total > 0 ? 'text-[#c2410c]' : 'text-slate-600'}`}>{rotulo}</dt>
+                <dd className="text-2xl font-black tabular-nums text-slate-900">{total.toLocaleString('pt-BR')}</dd>
+              </div>
+            ))}
+          </dl>
+        );
+      })()}
       {categoria === 'funcionarios' && todasAsLinhas.length > 0 && (
         <ResumoColaboradores
           linhas={todasAsLinhas}
@@ -800,6 +821,20 @@ export default function CadastrosTab(props: CadastrosTabProps) {
         <CadastroLixeira exclusoes={lixeira} podeRestaurar={podeExcluir} restaurandoId={restaurandoId} onRestaurar={restaurar} onExcluirDeVez={item => setApagando([item])} />
       ) : (
         <section id="database-lists-viewport" aria-label={`Lista de ${categoriaAtual.label.toLowerCase()}`} className="flex min-h-0 flex-1 flex-col">
+          {categoria === 'equipes' ? (
+            <EquipesCartoes
+              linhas={linhasFiltradas}
+              dados={dados}
+              selecionadoId={detalheId}
+              onAbrir={linha => setDetalheId(linha.id)}
+              vazio={(
+                <div data-testid="cadastro-lista-vazia" className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+                  <strong className="block text-slate-900">{todasAsLinhas.length === 0 ? 'Nenhuma equipe ainda' : 'Nenhuma equipe encontrada'}</strong>
+                  <p className="mt-1 text-sm text-slate-600">{todasAsLinhas.length === 0 ? 'Crie a primeira pelo botão verde Nova equipe.' : 'Mude a busca ou os filtros.'}</p>
+                </div>
+              )}
+            />
+          ) : (
           <CadastroLista
             titulo={categoriaAtual.label}
             linhas={linhasFiltradas}
@@ -824,6 +859,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
                   acao: { label: 'Limpar filtros', onClick: limparFiltros },
                 }}
           />
+          )}
         </section>
       )}
 

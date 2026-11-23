@@ -44,8 +44,21 @@ export const validateCentralRecord = ({
     if (!record.matricula?.trim()) errors.push('Matrícula é obrigatória.');
     if (!record.nome.trim()) errors.push('Nome completo é obrigatório.');
     if (!record.cargo.trim()) errors.push('Função é obrigatória.');
-    if (duplicateRecordId(funcionarios, record.matricula, item => item.matricula, record.id)) {
-      errors.push('Já existe um colaborador com esta matrícula.');
+    // Colaborador repetido não entra (pedido de 23/11/2026): mesma matrícula,
+    // sem contar zeros à esquerda, ou mesmo nome completo. Quem já está
+    // repetido no cadastro continua podendo ser editado sem trocar o campo.
+    const anterior = funcionarios.find(item => item.id === record.id);
+    const matricula = (valor: unknown) => normalizeRegistryKey(valor).replace(/^0+(?=.)/, '');
+    const mesmaMatricula = record.matricula?.trim() && matricula(anterior?.matricula) !== matricula(record.matricula)
+      ? funcionarios.find(item => item.id !== record.id && matricula(item.matricula) === matricula(record.matricula))
+      : undefined;
+    const mesmoNome = record.nome.trim() && normalizeRegistryKey(anterior?.nome) !== normalizeRegistryKey(record.nome)
+      ? funcionarios.find(item => item.id !== record.id && normalizeRegistryKey(item.nome) === normalizeRegistryKey(record.nome))
+      : undefined;
+    if (mesmaMatricula) {
+      errors.push(`Já existe um colaborador com esta matrícula: ${mesmaMatricula.nome}.`);
+    } else if (mesmoNome) {
+      errors.push(`Já existe um colaborador com este nome${mesmoNome.matricula ? ` (matrícula ${mesmoNome.matricula})` : ''}. Abra o cadastro dele em vez de criar outro.`);
     }
   } else if ('prefixo' in record) {
     if (!record.prefixo.trim()) errors.push('Prefixo/código do equipamento é obrigatório.');

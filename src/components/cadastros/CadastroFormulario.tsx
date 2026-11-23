@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent } from 'react';
 import { normalizarBusca } from '../../utils/cadastrosLista';
 import { AlertTriangle, Camera, ChevronDown, Search, X } from 'lucide-react';
 import type { CadastroCategoriaId } from '../../utils/cadastrosCategorias';
@@ -6,6 +6,9 @@ import type { DadosCadastros } from '../../utils/cadastrosLista';
 import { CAMPOS, CLASSES_DA_TELA, camposFaltando, type CampoCadastro, type ValoresCadastro } from './camposCadastro';
 import CadastroPainel from './CadastroPainel';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, FOCO, ROTULO } from './estilos';
+import { chaveDoCargo, mapaDeCargos } from '../../utils/hierarquia';
+import { Avatar } from './pessoasVisual';
+import { normalizeRegistryKey } from '../../masterData/centralRegistry';
 
 interface Props {
   categoria: CadastroCategoriaId;
@@ -28,6 +31,19 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
   const base = useId();
   const [valores, setValores] = useState<ValoresCadastro>(valoresIniciais);
   const [tentou, setTentou] = useState(false);
+  const porId = useMemo(() => new Map(dados.funcionarios.map(item => [item.id, item])), [dados.funcionarios]);
+  const cadastroDeCargos = useMemo(() => mapaDeCargos(dados.cargos), [dados.cargos]);
+  const nivelDe = (cargo?: string) => cadastroDeCargos.get(chaveDoCargo(cargo))?.nivel ?? null;
+  // Colaborador repetido (mesma matrícula ou mesmo nome) avisa enquanto digita.
+  const repetidoEm = (campoId: string) => {
+    if (categoria !== 'funcionarios' || !['matricula', 'nome'].includes(campoId)) return undefined;
+    const chave = (valor: unknown) => normalizeRegistryKey(valor).replace(campoId === 'matricula' ? /^0+(?=.)/ : /$^/, '');
+    const digitado = chave(valores[campoId]);
+    if (!digitado) return undefined;
+    const anterior = editandoId ? porId.get(editandoId) : undefined;
+    if (anterior && chave(anterior[campoId as 'nome' | 'matricula']) === digitado) return undefined;
+    return dados.funcionarios.find(item => item.id !== editandoId && chave(item[campoId as 'nome' | 'matricula']) === digitado);
+  };
   const campos = CAMPOS[categoria].filter(campo => !campo.quando || campo.quando(valores));
   const principais = campos.filter(campo => !campo.extra);
   const extras = campos.filter(campo => campo.extra);
@@ -66,11 +82,13 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
         {item.obrigatorio && <span className="ml-1 text-xs font-bold text-[#c2410c]">obrigatório</span>}
       </label>
     );
+    const repetido = repetidoEm(item.id);
     const ajuda = invalido
       ? <p id={`${id}-erro`} className="text-sm font-semibold text-rose-700">Preencha este campo.</p>
+      : repetido ? <p id={`${id}-erro`} role="alert" className="text-sm font-semibold text-rose-700" data-testid="cadastro-repetido">Já cadastrado: {repetido.nome}{repetido.matricula ? ` (matrícula ${repetido.matricula})` : ''}. Repetido não entra.</p>
       : item.ajuda ? <p className="text-xs text-slate-500">{item.ajuda}</p> : null;
-    const classeCampo = `${CAMPO} ${invalido ? 'border-rose-400 bg-rose-50/40' : ''}`;
-    const aria = { 'aria-invalid': invalido || undefined, 'aria-describedby': invalido ? `${id}-erro` : undefined };
+    const classeCampo = `${CAMPO} ${invalido || repetido ? 'border-rose-400 bg-rose-50/40' : ''}`;
+    const aria = { 'aria-invalid': invalido || Boolean(repetido) || undefined, 'aria-describedby': invalido || repetido ? `${id}-erro` : undefined };
 
     if (item.tipo === 'classes') {
       const marcadas = Array.isArray(valores[item.id]) ? valores[item.id] as string[] : [];
@@ -105,37 +123,63 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
     if (item.tipo === 'pessoas') {
       const marcadas = Array.isArray(valores[item.id]) ? valores[item.id] as string[] : [];
       const termo = normalizarBusca(buscaPessoas);
-      const opcoes = (item.opcoes?.(dados, editandoId) ?? [])
-        .filter(opcao => !termo || normalizarBusca(opcao.label).includes(termo))
-        // Quem já está na equipe aparece primeiro, para conferir de cara.
-        .sort((a, b) => Number(marcadas.includes(b.valor)) - Number(marcadas.includes(a.valor)));
+      const todas = item.opcoes?.(dados, editandoId) ?? [];
+      const opcoes = todas.filter(opcao => !termo || normalizarBusca(opcao.label).includes(termo));
+      const nomeDe = (valor: string) => porId.get(valor)?.nome || todas.find(opcao => opcao.valor === valor)?.label || valor;
+      const tirar = (valor: string) => mudar(item.id, marcadas.filter(atual => atual !== valor));
       return (
-        <fieldset key={item.id} className="space-y-2 sm:col-span-2" data-testid="cadastro-campo-pessoas">
+        <fieldset key={item.id} className="space-y-3 sm:col-span-2" data-testid="cadastro-campo-pessoas">
           <legend className={ROTULO}>
             {item.label}
             {item.obrigatorio && <span className="ml-1 text-xs font-bold text-[#c2410c]">obrigatório</span>}
-            <span className="ml-2 text-xs font-semibold text-slate-500">{marcadas.length} {marcadas.length === 1 ? 'escolhida' : 'escolhidas'}</span>
           </legend>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-            <input type="search" aria-label="Buscar pessoa" placeholder="Buscar pessoa" value={buscaPessoas} onChange={event => setBuscaPessoas(event.target.value)} className={`${CAMPO} pl-11`} />
-          </div>
-          <div className={`max-h-72 overflow-y-auto rounded-xl border ${invalido ? 'border-rose-400' : 'border-slate-200'}`}>
-            {opcoes.length === 0 && <p className="p-3 text-sm text-slate-500">Ninguém com esse nome.</p>}
-            {opcoes.map(opcao => {
-              const marcado = marcadas.includes(opcao.valor);
-              return (
-                <label key={opcao.valor} className={`flex min-h-11 cursor-pointer items-center gap-3 border-b border-slate-100 px-3 text-sm last:border-0 ${marcado ? 'bg-emerald-50 font-semibold text-[#0f5a3d]' : 'text-slate-700 hover:bg-slate-50'}`}>
-                  <input
-                    type="checkbox"
-                    className="size-5 accent-[#176b4d]"
-                    checked={marcado}
-                    onChange={event => mudar(item.id, event.target.checked ? [...marcadas, opcao.valor] : marcadas.filter(valor => valor !== opcao.valor))}
-                  />
-                  {opcao.label}
-                </label>
-              );
-            })}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+                <input type="search" aria-label="Buscar pessoa" placeholder="Buscar pessoa para pôr na equipe" value={buscaPessoas} onChange={event => setBuscaPessoas(event.target.value)} className={`${CAMPO} pl-11`} />
+              </div>
+              <div className={`max-h-80 overflow-y-auto rounded-xl border ${invalido ? 'border-rose-400' : 'border-slate-200'}`}>
+                {opcoes.length === 0 && <p className="p-3 text-sm text-slate-500">Ninguém com esse nome.</p>}
+                {opcoes.map(opcao => {
+                  const marcado = marcadas.includes(opcao.valor);
+                  const pessoa = porId.get(opcao.valor);
+                  return (
+                    <label key={opcao.valor} className={`flex min-h-12 cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-1.5 text-sm last:border-0 ${marcado ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}>
+                      <input
+                        type="checkbox"
+                        className="size-5 shrink-0 accent-[#176b4d]"
+                        checked={marcado}
+                        onChange={event => mudar(item.id, event.target.checked ? [...marcadas, opcao.valor] : marcadas.filter(valor => valor !== opcao.valor))}
+                      />
+                      <Avatar nome={pessoa?.nome || opcao.label} nivel={nivelDe(pessoa?.cargo)} tamanho="p" />
+                      <span className="min-w-0">
+                        <span className={`block truncate ${marcado ? 'font-bold text-[#0f5a3d]' : 'font-semibold text-slate-800'}`}>{pessoa?.nome || opcao.label}</span>
+                        <span className="block truncate text-xs text-slate-500">{[pessoa?.cargo, pessoa?.matricula && `Matrícula ${pessoa.matricula}`].filter(Boolean).join(' · ')}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3" data-testid="cadastro-pessoas-escolhidas">
+              <p className="mb-2 text-sm font-bold text-slate-800">Na equipe: {marcadas.length} {marcadas.length === 1 ? 'pessoa' : 'pessoas'}</p>
+              {marcadas.length === 0 ? (
+                <p className="text-sm text-slate-600">Marque as pessoas na lista ao lado.</p>
+              ) : (
+                <ul className="flex flex-wrap gap-2">
+                  {marcadas.map(valor => (
+                    <li key={valor} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-1 text-sm font-semibold text-slate-800">
+                      <Avatar nome={nomeDe(valor)} nivel={nivelDe(porId.get(valor)?.cargo)} tamanho="p" />
+                      <span className="max-w-40 truncate">{nomeDe(valor)}</span>
+                      <button type="button" aria-label={`Tirar ${nomeDe(valor)} da equipe`} onClick={() => tirar(valor)} className={`inline-flex size-8 items-center justify-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-700 ${FOCO}`}>
+                        <X className="size-4" aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
           {invalido && <p className="text-sm font-semibold text-rose-700">Escolha pelo menos uma pessoa.</p>}
         </fieldset>
@@ -225,22 +269,26 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
   };
 
   const formId = `${base}-form`;
+  // Pessoas (colaborador, cargo, equipe) abrem em tela cheia, como a ficha.
+  const telaCheia = ['funcionarios', 'cargos', 'equipes'].includes(categoria);
+  const cartao = telaCheia ? 'rounded-2xl border border-slate-200 bg-white p-4 sm:p-5' : '';
   return (
     <CadastroPainel
+      telaCheia={telaCheia}
       titulo={titulo}
       topo={<span className="text-xs font-bold text-[#5b6870]">{editandoId ? 'Editar cadastro' : 'Novo cadastro'}</span>}
       onFechar={onFechar}
       testId="cadastro-formulario"
       rodape={(
-        <div className="flex gap-2">
-          <button type="button" onClick={onFechar} className={`${BOTAO_SECUNDARIO} flex-1`}>Cancelar</button>
-          <button type="submit" form={formId} disabled={salvando} className={`${BOTAO_PRIMARIO} flex-[2]`} data-testid="cadastro-salvar">
+        <div className={`flex gap-2 ${telaCheia ? 'sm:justify-end' : ''}`}>
+          <button type="button" onClick={onFechar} className={`${BOTAO_SECUNDARIO} flex-1 ${telaCheia ? 'sm:flex-none sm:px-6' : ''}`}>Cancelar</button>
+          <button type="submit" form={formId} disabled={salvando} className={`${BOTAO_PRIMARIO} flex-[2] ${telaCheia ? 'sm:flex-none sm:px-8' : ''}`} data-testid="cadastro-salvar">
             {salvando ? 'Salvando…' : editandoId ? 'Salvar alterações' : 'Cadastrar'}
           </button>
         </div>
       )}
     >
-      <form id={formId} onSubmit={enviar} noValidate className="space-y-5">
+      <form id={formId} onSubmit={enviar} noValidate className={telaCheia ? 'mx-auto max-w-4xl space-y-4' : 'space-y-5'}>
         {(erro || faltando.length > 0) && (
           <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">
             <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -248,15 +296,15 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
           </div>
         )}
         {secoes.map(secao => (secao.titulo ? (
-          <section key={secao.titulo} aria-label={secao.titulo} className="space-y-3 border-t border-slate-100 pt-4 first:border-0 first:pt-0">
-            <h3 className="text-sm font-bold text-slate-800">{secao.titulo}</h3>
-            <div className="grid gap-4 sm:grid-cols-2">{secao.campos.map(campo)}</div>
+          <section key={secao.titulo} aria-label={secao.titulo} className={telaCheia ? `space-y-3 ${cartao}` : 'space-y-3 border-t border-slate-100 pt-4 first:border-0 first:pt-0'}>
+            <h3 className={telaCheia ? 'text-base font-bold text-slate-900' : 'text-sm font-bold text-slate-800'}>{secao.titulo}</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{secao.campos.map(campo)}</div>
           </section>
         ) : (
-          <div key="geral" className="grid gap-4 sm:grid-cols-2">{secao.campos.map(campo)}</div>
+          <div key="geral" className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${cartao}`}>{secao.campos.map(campo)}</div>
         )))}
         {extras.length > 0 && (
-          <div className="rounded-2xl border border-slate-200">
+          <div className={`rounded-2xl border border-slate-200 ${telaCheia ? 'bg-white' : ''}`}>
             <button
               type="button"
               aria-expanded={mostrarExtras}
