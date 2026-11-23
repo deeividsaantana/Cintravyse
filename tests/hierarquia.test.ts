@@ -15,6 +15,7 @@ import { montarLinhas, type DadosCadastros } from '../src/utils/cadastrosLista';
 import { usosDoCadastro, type CadastroUsage } from '../src/masterData/registryDependencies';
 import { abasCadastros } from '../src/components/cadastros/abasCadastros';
 import { validateCentralRecord } from '../src/masterData/centralRegistry';
+import { nomeDeArquivo } from '../src/utils/exportarPessoas';
 
 /**
  * Pessoas em Cadastros (22/11/2026): cargos com nível, equipes, organograma
@@ -179,4 +180,9 @@ test('colaborador repetido não entra: matrícula (sem zeros à esquerda) ou nom
   const gemeo = pessoa('p99', 'José', 'Operador', '3', { matricula: '' });
   const comGemeo = { ...base, funcionarios: [...todos, gemeo] };
   assert.deepEqual(validateCentralRecord({ ...comGemeo, record: { ...gemeo, telefone: '79' } }).filter(erro => /Já existe/.test(erro)), []);
+});
+
+test('arquivo da equipe sai sem acento nem espaço', () => {
+  assert.equal(nomeDeArquivo('Equipe da Fábrica'), 'EQUIPE_DA_FABRICA');
+  assert.equal(nomeDeArquivo('  '), 'PESSOAS');
 });
