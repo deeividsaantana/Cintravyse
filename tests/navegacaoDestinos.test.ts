@@ -40,8 +40,11 @@ test('A10: todo cartão do Painel leva a uma tela que existe', () => {
 
 test('M7: atalho para Cadastros e Manutenção só para quem abre a aba', () => {
   assert.match(app, /\{allowedTabs\.includes\('cadastros'\) && \(\s*<button[\s\S]{0,120}navigateTo\('cadastros', true\)/);
-  assert.match(app, /onOpenMaintenance=\{podeAbrir\('manutencao'\) \? /);
-  assert.match(app, /onOpenEquipmentRegistration=\{podeAbrir\('cadastros'\) \? /);
+  // Frotas e Manutenção numa aba só (23/11/2026): a parte da manutenção só
+  // existe para quem abre a Manutenção, e o atalho do lançamento depende dela.
+  assert.match(app, /manutencao=\{podeAbrir\('manutencao'\) \? \{/);
+  assert.match(ler('src/components/FrotaManutencao.tsx'), /onOpenMaintenance=\{manutencao \? /);
+  assert.match(app, /onOpenEquipmentRegistration: podeAbrir\('cadastros'\) \? /);
   assert.match(ler('src/components/quadroFrota/QuadroFrota.tsx'), /podeAbrir\('cadastros'\) \? \(/);
   assert.match(ler('src/components/ColaboradoresTab.tsx'), /actions=\{podeAbrir\('cadastros'\) && /);
   assert.match(ler('src/components/ControleEquipamentosDiarioTab.tsx'), /onOpenEquipmentRegistry=\{onOpenEquipmentRegistration \? /);

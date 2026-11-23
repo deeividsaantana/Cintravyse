@@ -222,7 +222,8 @@ test('a tela de manutenção está ligada aos handlers do App', () => {
   // código morto e ninguém conseguia abrir uma ordem pelo sistema.
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   assert.match(app, /activeTab === 'manutencao'/);
-  assert.match(app, /onSave=\{handleSaveOrdemServico\}/);
-  assert.match(app, /onDelete=\{podeExcluirLancamento \? handleDeleteOrdemServico : undefined\}/);
+  // Frotas e Manutenção numa aba só (23/11/2026): as props da manutenção vão num objeto.
+  assert.match(app, /onSave: handleSaveOrdemServico,/);
+  assert.match(app, /onDelete: podeExcluirLancamento \? handleDeleteOrdemServico : undefined,/);
   assert.match(app, /setOrdensServico\(updated\)/);
 });

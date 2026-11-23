@@ -26,9 +26,10 @@ test('A7: só o administrador exclui lançamento, e a recusa fica dentro de cada
 
 test('A7: quem não pode excluir não recebe o botão de excluir', () => {
   for (const prop of ['onDeleteAbastecimento', 'onDeleteAbastecimentos', 'onDeleteLubrificacao', 'onDeleteGrupoEquipe', 'onDeleteOperationalDriver']) {
-    assert.match(app, new RegExp(`${prop}=\\{podeExcluir(Lancamento|Cadastro) \\?`), `${prop} só vai para quem pode`);
+    // Atributo JSX (prop={...}) ou campo do objeto de props da aba única (prop: ...).
+    assert.match(app, new RegExp(`${prop}(=\\{|: )podeExcluir(Lancamento|Cadastro) \\?`), `${prop} só vai para quem pode`);
   }
-  assert.equal((app.match(/onDeleteMany=\{podeExcluirLancamento \?/g) || []).length, 2);
+  assert.equal((app.match(/onDeleteMany(=\{|: )podeExcluirLancamento \?/g) || []).length, 2);
 });
 
 test('M1: zerar o dia e pegar o endereço dos links é de gestor ou administrador', () => {

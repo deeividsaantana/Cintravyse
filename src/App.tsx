@@ -107,9 +107,10 @@ const CadastrosTab = lazy(() => import('./components/CadastrosTab'));
 const LancamentosTab = lazy(() => import('./components/LancamentosTab'));
 const ControlePresencaTab = lazy(() => import('./components/ControlePresencaTab'));
 const PresencaTempoRealPublica = lazy(() => import('./components/PresencaTempoRealPublica'));
-const ControleEquipamentosDiarioTab = lazy(() => import('./components/ControleEquipamentosDiarioTab'));
+// Frotas e Manutenção numa aba só (23/11/2026): Controle de Frotas e
+// Manutenção abrem a mesma moldura.
+const FrotaManutencao = lazy(() => import('./components/FrotaManutencao'));
 const QuadroFrota = lazy(() => import('./components/quadroFrota/QuadroFrota'));
-const ManutencaoTab = lazy(() => import('./components/ManutencaoTab'));
 const ColaboradoresTab = lazy(() => import('./components/ColaboradoresTab'));
 const DevTab = lazy(() => import('./components/DevTab'));
 const SolicitacoesTab = lazy(() => import('./components/SolicitacoesTab'));
@@ -202,6 +203,7 @@ import {
   roleFromMembership,
   type UserRole,
 } from './app/navigation/navigation';
+import type { VistaFrotaManutencao } from './components/frotaManutencao/abasFrotaManutencao';
 import { navigationSyncTrigger } from './app/navigation/navigationSyncPolicy';
 import { NavigationMenu } from './app/shell/NavigationMenu';
 import { DesktopTopBar } from './app/shell/DesktopTopBar';
@@ -478,8 +480,8 @@ export default function App() {
     }
   }, [activeTab]);
   // Quadro e Manutenção se abrem um no outro já filtrados pelo prefixo da máquina.
-  const [pedidoFrota, setPedidoFrota] = useState<{ prefixo: string; vez: number }>({ prefixo: '', vez: 0 });
-  const [pedidoManutencao, setPedidoManutencao] = useState<{ prefixo: string; vez: number }>({ prefixo: '', vez: 0 });
+  // Quem chega pela Manutenção (Painel, link antigo) abre a aba única já na parte da oficina.
+  const [pedidoFrota, setPedidoFrota] = useState<{ vista?: VistaFrotaManutencao; vez: number }>({ vez: 0 });
   const [pedidoNovoColaborador, setPedidoNovoColaborador] = useState(0);
   /** Aba aberta pela aba Relatórios: ela já entra na parte de relatório. */
   // Recorte de datas do painel. Fica aqui, e não dentro do Dashboard, porque
@@ -643,6 +645,14 @@ export default function App() {
   }, [activeTab, isLoggedIn, currentUser, externalPresenceToken]);
 
   useEffect(() => {
+    // Manutenção mora dentro de Frotas e Manutenção: o endereço antigo abre a
+    // aba única nas ordens de serviço (o Painel chega por "OS abertas"). Quem
+    // só tem a Manutenção fica nela.
+    if (isLoggedIn && activeTab === 'manutencao' && allowedTabs.includes('controle-equipamentos')) {
+      setPedidoFrota(atual => ({ vista: 'ordens', vez: atual.vez + 1 }));
+      setActiveTab('controle-equipamentos');
+      return;
+    }
     // Endereço antigo guardado (F5, favorito) abre a tela onde o dado mora hoje.
     if (isLoggedIn && !allowedTabs.includes(activeTab)) {
       setActiveTab(destinoDaAba(activeTab, allowedTabs) || 'dashboard');
@@ -4055,7 +4065,12 @@ export default function App() {
   const filteredNavigationGroups = SIDEBAR_NAVIGATION_GROUPS
     .map(group => ({
       ...group,
-      items: group.items.filter(item => allowedTabs.includes(item.id)
+      items: group.items
+        // Quem só tem a Manutenção entra na aba única pela permissão dela.
+        .map(item => (item.id === 'controle-equipamentos' && !allowedTabs.includes(item.id) && allowedTabs.includes('manutencao')
+          ? { ...item, id: 'manutencao' }
+          : item))
+        .filter(item => allowedTabs.includes(item.id)
         && (!normalizedMenuSearch || item.label.toLocaleLowerCase('pt-BR').includes(normalizedMenuSearch))),
     }))
     .filter(group => group.items.length > 0);
@@ -4063,12 +4078,8 @@ export default function App() {
   // Função comum: um hook aqui, depois dos retornos antecipados, derrubava o app ao entrar.
   const podeAbrir = (tab: string) => destinoDaAba(tab, allowedTabs) !== null;
 
-  const verOrdensDaMaquina = (prefixo: string) => { navigateTo('manutencao'); setPedidoManutencao(atual => ({ prefixo, vez: atual.vez + 1 })); };
-  const verMaquinaNoQuadro = (prefixo: string) => { navigateTo('controle-equipamentos'); setPedidoFrota(atual => ({ prefixo, vez: atual.vez + 1 })); };
-
   const navigateTo = (tab: string, closeMobile = false, options: { explicitRefresh?: boolean } = {}) => {
-    setPedidoFrota(atual => (atual.prefixo ? { ...atual, prefixo: '' } : atual));
-    setPedidoManutencao(atual => (atual.prefixo ? { ...atual, prefixo: '' } : atual));
+    setPedidoFrota(atual => (atual.vista ? { vez: atual.vez } : atual));
     setPedidoNovoColaborador(0);
     // A busca do menu não fica filtrada depois de escolher a tela (B6).
     setMenuSearch('');
@@ -4421,52 +4432,45 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'manutencao' && (
-              <ManutencaoTab
-                key={`manutencao-${pedidoManutencao.vez}`}
-                buscaInicial={pedidoManutencao.prefixo}
-                onVerNoQuadro={podeAbrir('controle-equipamentos') ? verMaquinaNoQuadro : undefined}
-                ordensServico={ordensServico}
-                equipamentos={equipamentos}
-                controlesEquipamentos={controleEquipamentosDiario}
-                motoristas={motoristasOperacionais}
-                responsavel={activeUserName}
-                podeEditar={podeEditarManutencao}
-                podeReabrirConferencia={currentUserRole === 'admin'}
-                historyLogs={historyLogs}
-                onSave={handleSaveOrdemServico}
-                onSaveControle={registro => handleSaveControleEquipamentoDiario(registro, !controleEquipamentosDiario.some(item => item.id === registro.id))}
-                onSalvarConferencia={handleSalvarConferenciaManutencao}
-                onDelete={podeExcluirLancamento ? handleDeleteOrdemServico : undefined}
-              />
-            )}
-
-
-            {activeTab === 'controle-equipamentos' && (
-              <ControleEquipamentosDiarioTab
+            {(activeTab === 'controle-equipamentos' || activeTab === 'manutencao') && (
+              <FrotaManutencao
                 key={`frota-${pedidoFrota.vez}`}
-                abrirNoQuadro={pedidoFrota.prefixo !== ''}
-                quadroBusca={pedidoFrota.prefixo}
-                registros={controleEquipamentosDiario}
-                equipamentos={equipamentos}
-                empresas={empresas}
-                funcionarios={funcionarios}
-                operationalDrivers={motoristasOperacionais}
-                gruposEquipe={gruposEquipe}
-                ordensServico={ordensServico}
-                onSave={handleSaveControleEquipamentoDiario}
-                onImport={handleImportControleEquipamentosDiario}
-                onApplyCadastroSge={handleAplicarCadastroSge}
-                onDeleteMany={podeExcluirLancamento ? ids => handleDeleteControleEquipamentosDiario(ids, true) : undefined}
-                onOpenMaintenance={podeAbrir('manutencao') ? () => navigateTo('manutencao') : undefined}
-                onOpenEquipmentRegistration={podeAbrir('cadastros') ? () => navigateTo('cadastros') : undefined}
-                onSaveOperationalDriver={handleSaveOperationalDriver}
-                onAddOperationalDrivers={handleAddOperationalDrivers}
-                onDeleteOperationalDriver={podeExcluirCadastro ? handleDeleteOperationalDriver : undefined}
-                canApproveFleet={['admin', 'gestor'].includes(currentUserRole)}
-                registeredBy={activeUserName}
-                onApproveFleetRecord={handleApproveControleEquipamentoDiario}
-                quadro={(dia, verSituacao, busca) => (
+                vistaInicial={activeTab === 'manutencao' ? 'ordens' : pedidoFrota.vista}
+                manutencao={podeAbrir('manutencao') ? {
+                  ordensServico,
+                  equipamentos,
+                  controlesEquipamentos: controleEquipamentosDiario,
+                  motoristas: motoristasOperacionais,
+                  responsavel: activeUserName,
+                  podeEditar: podeEditarManutencao,
+                  podeReabrirConferencia: currentUserRole === 'admin',
+                  historyLogs,
+                  onSave: handleSaveOrdemServico,
+                  onSaveControle: registro => handleSaveControleEquipamentoDiario(registro, !controleEquipamentosDiario.some(item => item.id === registro.id)),
+                  onSalvarConferencia: handleSalvarConferenciaManutencao,
+                  onDelete: podeExcluirLancamento ? handleDeleteOrdemServico : undefined,
+                } : undefined}
+                frota={allowedTabs.includes('controle-equipamentos') ? {
+                  registros: controleEquipamentosDiario,
+                  equipamentos,
+                  empresas,
+                  funcionarios,
+                  operationalDrivers: motoristasOperacionais,
+                  gruposEquipe,
+                  ordensServico,
+                  onSave: handleSaveControleEquipamentoDiario,
+                  onImport: handleImportControleEquipamentosDiario,
+                  onApplyCadastroSge: handleAplicarCadastroSge,
+                  onDeleteMany: podeExcluirLancamento ? ids => handleDeleteControleEquipamentosDiario(ids, true) : undefined,
+                  onOpenEquipmentRegistration: podeAbrir('cadastros') ? () => navigateTo('cadastros') : undefined,
+                  onSaveOperationalDriver: handleSaveOperationalDriver,
+                  onAddOperationalDrivers: handleAddOperationalDrivers,
+                  onDeleteOperationalDriver: podeExcluirCadastro ? handleDeleteOperationalDriver : undefined,
+                  canApproveFleet: ['admin', 'gestor'].includes(currentUserRole),
+                  registeredBy: activeUserName,
+                  onApproveFleetRecord: handleApproveControleEquipamentoDiario,
+                } : undefined}
+                quadro={(dia, verSituacao, busca, verOrdens) => (
                   <QuadroFrota
                     equipamentos={equipamentos}
                     registros={controleEquipamentosDiario}
@@ -4488,7 +4492,7 @@ export default function App() {
                     dia={dia}
                     onAbrirSituacao={verSituacao}
                     buscaInicial={busca}
-                    onVerOrdens={podeAbrir('manutencao') ? verOrdensDaMaquina : undefined}
+                    onVerOrdens={verOrdens}
                   />
                 )}
               />

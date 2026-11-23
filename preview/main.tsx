@@ -11,9 +11,9 @@ import EstacasTab from '../src/components/EstacasTab';
 import CadastrosTab from '../src/components/CadastrosTab';
 import ControlePresencaTab from '../src/components/ControlePresencaTab';
 import { inativar, reativar, somenteAtivos } from '../src/utils/inativacao';
-import ControleEquipamentosDiarioTab from '../src/components/ControleEquipamentosDiarioTab';
+import FrotaManutencao from '../src/components/FrotaManutencao';
+import type { VistaFrotaManutencao } from '../src/components/frotaManutencao/abasFrotaManutencao';
 import QuadroFrota from '../src/components/quadroFrota/QuadroFrota';
-import ManutencaoTab from '../src/components/ManutencaoTab';
 import ColaboradoresTab from '../src/components/ColaboradoresTab';
 import PluviometroTab from '../src/components/PluviometroTab';
 import DiarioObraTab from '../src/components/DiarioObraTab';
@@ -70,30 +70,55 @@ const noopImportAbastecimentos = (items: unknown[] = []) => ({
   totalAfter: 0,
 });
 
-/** Manutenção com estado: liberar, entrar e conferir voltam para a tela, como no app. */
-function ManutencaoPreview() {
-  const [registros, setRegistros] = React.useState(fx.controlesManutencao);
-  const [ordens, setOrdens] = React.useState(fx.ordensManutencao);
+/**
+ * Frotas e Manutenção com estado (aba única, 23/11/2026): liberar, entrar,
+ * conferir e abrir OS voltam para a tela, como no app.
+ */
+function FrotaManutencaoPreview({ vistaInicial, soManutencao = false }: { vistaInicial?: VistaFrotaManutencao; soManutencao?: boolean }) {
+  const [registros, setRegistros] = React.useState(() => [...fx.controlesEquipamentos, ...fx.controlesBasculantes, ...fx.controlesManutencao]);
+  const [ordens, setOrdens] = React.useState(() => [...fx.ordensManutencao, ...fx.ordensServico]);
   const [logs, setLogs] = React.useState<HistoryLog[]>([]);
+  const equipamentos = React.useMemo(() => {
+    const vistos = new Set<string>();
+    return [...fx.equipamentos, ...fx.equipamentosQuadro, ...fx.equipamentosManutencao].filter(item => !vistos.has(item.id) && vistos.add(item.id));
+  }, []);
   const salvar = (registro: (typeof registros)[number], descricao = `Editou o controle de ${registro.prefixo}.`) => {
     setRegistros(atual => atual.some(item => item.id === registro.id) ? atual.map(item => item.id === registro.id ? registro : item) : [registro, ...atual]);
     setLogs(atual => [{ id: `log-${Date.now()}`, timestamp: new Date().toLocaleString('pt-BR'), usuario: 'Deivid Santana', acao: 'Editou', tela: 'Manutenção', descricao }, ...atual]);
   };
   return (
-    <ManutencaoTab
-      buscaInicial={buscaDaUrl}
-      onVerNoQuadro={prefixo => location.assign(`/?screen=frotas&shell=1&busca=${encodeURIComponent(prefixo)}`)}
-      ordensServico={ordens}
-      equipamentos={fx.equipamentosManutencao}
-      controlesEquipamentos={registros}
-      responsavel="Deivid Santana"
-      podeEditar
-      podeReabrirConferencia
-      historyLogs={logs}
-      onSave={(ordem, novo) => setOrdens(atual => novo ? [ordem, ...atual] : atual.map(item => item.id === ordem.id ? ordem : item))}
-      onSaveControle={registro => salvar(registro)}
-      onSalvarConferencia={salvar}
-      onDelete={noop}
+    <FrotaManutencao
+      vistaInicial={vistaInicial ?? (buscaDaUrl ? 'quadro' : undefined)}
+      manutencao={{
+        ordensServico: ordens,
+        equipamentos,
+        controlesEquipamentos: registros,
+        responsavel: 'Deivid Santana',
+        podeEditar: true,
+        podeReabrirConferencia: true,
+        historyLogs: logs,
+        onSave: (ordem, novo) => setOrdens(atual => novo ? [ordem, ...atual] : atual.map(item => item.id === ordem.id ? ordem : item)),
+        onSaveControle: registro => salvar(registro),
+        onSalvarConferencia: salvar,
+        onDelete: noop,
+      }}
+      frota={soManutencao ? undefined : {
+        registros,
+        equipamentos,
+        empresas: fx.empresas,
+        funcionarios: fx.funcionarios,
+        gruposEquipe: [fx.grupo],
+        ordensServico: ordens,
+        registeredBy: 'Deivid Santana',
+        onSave: (registro, novo) => setRegistros(atual => (novo ? [registro, ...atual] : atual.map(item => (item.id === registro.id ? registro : item)))),
+        onImport: noop,
+        onApplyCadastroSge: noop,
+        onDeleteMany: noop,
+        onOpenEquipmentRegistration: noop,
+        onAddOperationalDrivers: noop,
+        canApproveFleet: true,
+      }}
+      quadro={(dia, verSituacao, busca, verOrdens) => <QuadroFrotaPreview dia={dia} onAbrirSituacao={verSituacao} busca={busca || buscaDaUrl} onVerOrdens={verOrdens} />}
     />
   );
 }
@@ -102,13 +127,13 @@ function ManutencaoPreview() {
 /** Prefixo vindo da outra tela (Quadro <-> Manutenção), como no app. */
 const buscaDaUrl = new URLSearchParams(location.search).get('busca') || '';
 
-function QuadroFrotaPreview({ dia, onAbrirSituacao, busca }: { dia: string; onAbrirSituacao: () => void; busca: string }) {
+function QuadroFrotaPreview({ dia, onAbrirSituacao, busca, onVerOrdens }: { dia: string; onAbrirSituacao: () => void; busca: string; onVerOrdens?: (prefixo: string) => void }) {
   const [registros, setRegistros] = React.useState(fx.controlesQuadro);
   const [equipamentos, setEquipamentos] = React.useState(fx.equipamentosQuadro);
   return (
     <QuadroFrota
       buscaInicial={busca}
-      onVerOrdens={prefixo => location.assign(`/?screen=manutencao&shell=1&busca=${encodeURIComponent(prefixo)}`)}
+      onVerOrdens={onVerOrdens}
       equipamentos={equipamentos}
       registros={registros}
       gruposEquipe={[fx.grupo]}
@@ -557,27 +582,7 @@ const screens: Record<string, React.ReactNode> = {
   cadastros: <CadastrosPreview />,
   'cadastro-novo-colaborador': <CadastrosPreview pedidoNovoColaborador={1} />,
   estacas: <EstacasPreview />,
-  frotas: (
-    <ControleEquipamentosDiarioTab
-      registros={[...fx.controlesEquipamentos, ...fx.controlesQuadro, ...fx.controlesBasculantes]}
-      equipamentos={[...fx.equipamentos, ...fx.equipamentosQuadro]}
-      empresas={fx.empresas}
-      funcionarios={fx.funcionarios}
-      gruposEquipe={[fx.grupo]}
-      ordensServico={fx.ordensServico}
-      registeredBy="Deivid Santana"
-      onSave={noop}
-      onImport={noop}
-      onApplyCadastroSge={noop}
-      onDeleteMany={noop}
-      onOpenEquipmentRegistration={noop}
-      onAddOperationalDrivers={noop}
-      canApproveFleet
-      abrirNoQuadro={Boolean(buscaDaUrl)}
-      quadroBusca={buscaDaUrl}
-      quadro={(dia, verSituacao, busca) => <QuadroFrotaPreview dia={dia} onAbrirSituacao={verSituacao} busca={busca} />}
-    />
-  ),
+  frotas: <FrotaManutencaoPreview />,
   combustivel: <CombustivelVivo />,
   // Operador: o App não manda os de excluir, então a tela não mostra Excluir (A7).
   'combustivel-operador': (
@@ -665,7 +670,8 @@ const screens: Record<string, React.ReactNode> = {
       onNavigate={noop}
     />
   ),
-  manutencao: <ManutencaoPreview />,
+  manutencao: <FrotaManutencaoPreview vistaInicial={buscaDaUrl ? 'ordens' : 'parados'} />,
+  'manutencao-so': <FrotaManutencaoPreview vistaInicial="parados" soManutencao />,
   painel: (
     <Dashboard
       empresas={fx.empresas}

@@ -4,10 +4,10 @@
  * de serviço. As horas do dia saem dos eventos do controle diário da frota
  * (horasParadasDoDia); a OS guarda o atendimento.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { BarChart3, CheckCircle2, ClipboardCheck, ClipboardList, FileSpreadsheet, History, Plus, Search, Timer, Wrench, X } from 'lucide-react';
+import { CheckCircle2, FileSpreadsheet, History, Plus, Search, Wrench, X } from 'lucide-react';
 import type { ControleEquipamentoDiario, Equipamento, Funcionario, HistoryLog, OrdemServico } from '../types';
 import { historicoDaManutencao } from '../utils/manutencaoHistorico';
 import {
@@ -43,7 +43,6 @@ import {
   type ColunaTabela,
   type PeriodValue,
 } from '../shared/ui';
-import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO } from './cadastros/estilos';
@@ -52,7 +51,7 @@ import { ManutencaoHoje } from './manutencao/ManutencaoHoje';
 import { ConferenciaManutencao } from './manutencao/ConferenciaManutencao';
 import { RelatorioManutencaoDia } from './manutencao/RelatorioManutencaoDia';
 
-interface ManutencaoTabProps {
+export interface ManutencaoTabProps {
   ordensServico: OrdemServico[];
   equipamentos: Equipamento[];
   /** Controle diário da frota: os eventos de entrada e liberação são a fonte das horas do dia. */
@@ -77,12 +76,20 @@ interface ManutencaoTabProps {
   buscaInicial?: string;
   /** Abre a máquina no Quadro de frotas. */
   onVerNoQuadro?: (prefixo: string) => void;
+  /**
+   * Aba única Frotas e Manutenção (23/11/2026): a moldura
+   * (frotaManutencao/FrotaManutencao.tsx) monta as subtelas e guarda a escolhida.
+   */
+  subtela: Subtela;
+  onSubtela: (subtela: Subtela) => void;
+  abas: ReactNode;
+  idAbaAtiva: string;
 }
 
 const TIPOS: OrdemServico['tipo'][] = ['Corretiva', 'Preventiva', 'Preditiva', 'Revisão'];
 const PRIORIDADES: OrdemServico['prioridade'][] = ['Baixa', 'Média', 'Alta', 'Urgente'];
 const STATUS_FILTRO = ['Todas', 'Em aberto', ...FLUXO_MANUTENCAO, 'Cancelada'] as const;
-type Subtela = 'hoje' | 'conferencia' | 'relatorio' | 'ordens' | 'historico';
+export type Subtela = 'hoje' | 'conferencia' | 'relatorio' | 'ordens' | 'historico';
 
 const prioridadeTone = (prioridade: OrdemServico['prioridade']) => {
   if (prioridade === 'Urgente') return 'danger' as const;
@@ -123,10 +130,12 @@ export default function ManutencaoTab({
   onDelete,
   buscaInicial = '',
   onVerNoQuadro,
+  subtela,
+  onSubtela: setSubtela,
+  abas,
+  idAbaAtiva,
 }: ManutencaoTabProps) {
   const escopo = useRef<HTMLElement>(null);
-  // Quem chega do Quadro com um prefixo vai direto às ordens, onde fica a busca.
-  const [subtela, setSubtela] = useState<Subtela>(buscaInicial ? 'ordens' : 'hoje');
   // As horas do dia correm com o relógio: refaz a conta a cada minuto.
   const [agora, setAgora] = useState(() => new Date());
   useEffect(() => {
@@ -444,29 +453,17 @@ export default function ManutencaoTab({
     gsap.fromTo(raiz.querySelectorAll('[data-manutencao-reveal]'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity' });
   }, { scope: escopo, dependencies: [subtela] });
 
-  const subtelas = [
-    { id: 'hoje' as const, rotulo: 'Hoje', curto: 'Hoje', icone: Timer, contador: relatorioHoje.linhas.filter(linha => linha.parada.periodos.some(periodo => periodo.fim === null)).length, contadorRotulo: 'parados agora', tom: 'neutro' as const },
-    { id: 'conferencia' as const, rotulo: 'Conferência', curto: 'Conferir', icone: ClipboardCheck, contador: paraConferir, contadorRotulo: 'para conferir' },
-    { id: 'ordens' as const, rotulo: 'Ordens de serviço', curto: 'OS', icone: ClipboardList },
-    // Relatório do dia e Histórico dividem uma aba só: no máximo quatro no topo.
-    {
-      grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-        { id: 'relatorio' as const, rotulo: 'Relatório do dia', curto: 'Do dia', icone: BarChart3 },
-        { id: 'historico' as const, rotulo: 'Histórico', icone: History },
-      ],
-    },
-  ];
   const exportaExcel = subtela === 'ordens' || subtela === 'relatorio';
   const semNadaParaExportar = subtela === 'relatorio' ? relatorioDoDia.linhas.length === 0 : lista.length === 0;
 
   return (
-    <TelaCheia ref={escopo} id="manutencao-tab" rotulo="Manutenção"
-      longa={subtela !== 'ordens'} idAbaAtiva={idDaAba('manutencao', subtela)} idDados="manutencao-dados" chaveRolagem={subtela}
+    <TelaCheia ref={escopo} id="manutencao-tab" rotulo="Frotas e Manutenção"
+      longa={subtela !== 'ordens'} idAbaAtiva={idAbaAtiva} idDados="manutencao-dados" chaveRolagem={subtela}
       cabecalho={<PageHeader
        
         eyebrow="Frota"
-        title="Manutenção"
-        abas={<AbasDaTela<Subtela> id="manutencao" rotulo="Subtelas da manutenção" abas={subtelas} ativa={subtela} onTrocar={setSubtela} idPainel="manutencao-dados" testId="manutencao-aba" />}
+        title="Frotas e Manutenção"
+        abas={abas}
         actions={<>
           {exportaExcel && (
             <button type="button" onClick={() => void exportarExcel()} disabled={exportando || semNadaParaExportar} className={BOTAO_SECUNDARIO}>

@@ -23,7 +23,9 @@ test('as demais telas usam a TelaCheia com PageHeader, sem teto de largura', () 
     assert.match(fonte, /<PageHeader/, arquivo);
     assert.doesNotMatch(fonte, /max-w-\[1[0-9]{3}px\]|<main\b/, arquivo);
     if (abas) {
-      assert.match(fonte, /<AbasDaTela/, `${arquivo} deve ter as subtelas no AbasDaTela`);
+      // Manutenção recebe as abas prontas da aba única Frotas e Manutenção (23/11/2026).
+      assert.match(fonte, /abas=\{abas\}/, `${arquivo} deve receber as subtelas da aba única`);
+      assert.match(ler('src/components/FrotaManutencao.tsx'), /<AbasDaTela/, 'a aba única monta as subtelas no AbasDaTela');
       assert.doesNotMatch(fonte, /aria-current=\{[^}]*'page'/, `${arquivo} voltou a usar botão solto como aba`);
     }
   }

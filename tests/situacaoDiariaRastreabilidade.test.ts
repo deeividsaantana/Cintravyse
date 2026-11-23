@@ -13,7 +13,7 @@ test('lançamento diário guarda quem informou', () => {
   assert.match(form, /responsavel: registeredBy/);
   assert.match(form, /atualizadoPor: registeredBy/);
   assert.match(form, /criadoPor: existing\?\.criadoPor \|\| registeredBy/);
-  assert.match(app, /registeredBy=\{activeUserName\}/);
+  assert.match(app, /registeredBy: activeUserName/);
 });
 
 test('frente de serviço fica gravada junto do lançamento', () => {

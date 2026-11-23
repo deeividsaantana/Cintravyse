@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { abasEstacas } from '../src/components/estacas/abasEstacas';
 import { abasCadastros } from '../src/components/cadastros/abasCadastros';
+import { abasFrotaManutencao } from '../src/components/frotaManutencao/abasFrotaManutencao';
 
 /**
  * Pedido do usuário em 10/11/2026: cada aba com só o essencial no topo. A
@@ -18,11 +19,20 @@ test('Estacas e Cadastros têm no máximo quatro opções no topo', () => {
   }
 });
 
+test('Frotas e Manutenção tem no máximo quatro opções no topo, com qualquer acesso', () => {
+  const contadores = { equipamentosAConfirmar: 2, operadoresAConfirmar: 1, paradosAgora: 3, paraConferir10h: 1 };
+  for (const frota of [true, false]) {
+    for (const manutencao of [true, false]) {
+      if (!frota && !manutencao) continue;
+      const total = abasFrotaManutencao({ frota, manutencao }, contadores).length;
+      assert.ok(total > 0 && total <= MAXIMO, `frota=${frota} manutencao=${manutencao}: ${total} opções no topo`);
+    }
+  }
+});
+
 // As abas que montam a lista dentro do componente: conta as entradas de
 // primeiro nível (aba solta ou grupo) da lista entregue ao AbasDaTela.
 const TELAS: Array<[arquivo: string, inicio: string]> = [
-  ['ControleEquipamentosDiarioTab.tsx', 'const vistas: ReadonlyArray<ItemDasAbas<FleetView>> = ['],
-  ['ManutencaoTab.tsx', 'const subtelas = ['],
   ['ControlePresencaTab.tsx', 'const navItems: ReadonlyArray<ItemDasAbas<View>> = ['],
   ['CombustivelOperacionalTab.tsx', 'const vistas'],
   ['SolicitacoesTab.tsx', 'const subtelas: ItemDasAbas<Subtela>[] = ['],

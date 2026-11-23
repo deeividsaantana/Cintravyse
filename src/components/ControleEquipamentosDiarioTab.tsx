@@ -4,16 +4,13 @@ import { gsap } from 'gsap';
 import {
   AlertTriangle,
   CalendarDays,
-  ClipboardCheck,
   Database,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
-  History,
   Keyboard,
-  LayoutGrid,
   Pencil,
   Plus,
   Printer,
@@ -21,9 +18,7 @@ import {
   Search,
   Trash2,
   Upload,
-  Users,
   X,
-  BarChart3,
 } from 'lucide-react';
 import type {
   ControleEquipamentoDiario,
@@ -66,7 +61,6 @@ import FleetReportLayout from './fleet/FleetReportLayout';
 import FleetImportPreviewModal, { type FleetImportPreviewRow } from './fleet/FleetImportPreviewModal';
 import ImportacaoSge from './fleet/ImportacaoSge';
 import { ConfirmDialog, CountUp, Modal, PageHeader } from '../shared/ui';
-import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
 import { useEntradaDeLista } from '../shared/hooks/useEntradaDeLista';
@@ -77,7 +71,7 @@ import { montarConferenciaDoDia } from '../fleet/conferenciaDoDia';
 import { gerarPdfFaltantes, montarListaFaltantes } from '../fleet/faltantesPdf';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CARTAO, FOCO, ROTULO, TOM_SITUACAO } from './cadastros/estilos';
 
-interface Props {
+export interface ControleFrotaProps {
   registros: ControleEquipamentoDiario[];
   equipamentos: Equipamento[];
   empresas: Empresa[];
@@ -92,10 +86,21 @@ interface Props {
   /** Sem ele, a tela não mostra Excluir: só o administrador exclui (A7). */
   onDeleteMany?: (ids: string[]) => void;
   onOpenMaintenance?: () => void;
-  /** Abre já no Quadro (vindo da Manutenção). */
-  abrirNoQuadro?: boolean;
   /** Busca do Quadro vinda de outra tela; vale só até sair do Quadro. */
   quadroBusca?: string;
+  /**
+   * Aba única Frotas e Manutenção (23/11/2026): quem monta as subtelas e
+   * guarda a escolhida é a moldura (frotaManutencao/FrotaManutencao.tsx).
+   */
+  vista: FleetView;
+  onVista: (vista: FleetView) => void;
+  abas: React.ReactNode;
+  idAbaAtiva: string;
+  /** Dia aberto na moldura: volta o mesmo dia ao trocar de Manutenção para Frotas. */
+  diaInicial?: string;
+  onDia?: (dia: string) => void;
+  /** A relação da conferência (guardada no aparelho) mudou: a moldura reconta os selos. */
+  onRelacaoMudou?: () => void;
   onOpenEquipmentRegistration?: () => void;
   onSaveOperationalDriver?: (driver: Funcionario, isNew: boolean) => void;
   onDeleteOperationalDriver?: (id: string) => void;
@@ -113,19 +118,7 @@ type ConfirmationState =
   | { kind: 'delete'; ids: string[] }
   | { kind: 'status'; ids: string[]; status: FleetOperationalStatus };
 
-type FleetView = 'today' | 'quadro' | 'equipamentos' | 'operadores' | 'relatorio' | 'history' | 'registry';
-
-const VISTAS_GUARDAVEIS: readonly FleetView[] = ['quadro', 'equipamentos', 'operadores', 'relatorio', 'history', 'registry'];
-
-const CHAVE_VISTA = 'renea_frota_vista';
-const vistaGuardada = (): FleetView => {
-  try {
-    const salva = window.localStorage.getItem(CHAVE_VISTA) as FleetView | null;
-    return salva && VISTAS_GUARDAVEIS.includes(salva) ? salva : 'today';
-  } catch {
-    return 'today';
-  }
-};
+export type FleetView = 'today' | 'quadro' | 'equipamentos' | 'operadores' | 'relatorio' | 'history' | 'registry';
 
 const ATALHOS: ReadonlyArray<{ teclas: string; oQueFaz: string }> = [
   { teclas: 'N', oQueFaz: 'Novo lançamento' },
@@ -236,8 +229,14 @@ export default function ControleEquipamentosDiarioTab({
   onApplyCadastroSge,
   onDeleteMany,
   onOpenMaintenance,
-  abrirNoQuadro,
   quadroBusca = '',
+  vista: activeView,
+  onVista,
+  abas,
+  idAbaAtiva,
+  diaInicial,
+  onDia,
+  onRelacaoMudou,
   onOpenEquipmentRegistration,
   operationalDrivers: operationalDriversProp,
   onSaveOperationalDriver,
@@ -247,7 +246,7 @@ export default function ControleEquipamentosDiarioTab({
   registeredBy = 'Operação',
   onApproveFleetRecord,
   quadro,
-}: Props) {
+}: ControleFrotaProps) {
   const pageRef = useRef<HTMLElement>(null);
   const operationalDrivers = useMemo(() => [...(operationalDriversProp || OPERATIONAL_DRIVERS)], [operationalDriversProp]);
   const context = useMemo(() => ({
@@ -271,7 +270,8 @@ export default function ControleEquipamentosDiarioTab({
     clearFilters,
     activeFilterCount,
     viewModel,
-  } = useFleetReport(context);
+  } = useFleetReport(context, diaInicial);
+  useEffect(() => { onDia?.(filters.date); }, [filters.date, onDia]);
   const hoje = getOperationalToday();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingRecord, setEditingRecord] = useState<FleetPersistedRecord>();
@@ -285,21 +285,14 @@ export default function ControleEquipamentosDiarioTab({
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<'success' | 'error' | 'info'>('info');
   const [exporting, setExporting] = useState<'pdf' | 'excel' | 'weekly-pdf' | 'weekly-excel' | ''>('');
-  const [activeView, setActiveViewState] = useState<FleetView>(abrirNoQuadro && quadro ? 'quadro' : vistaGuardada);
-  const [buscaDoQuadro, setBuscaDoQuadro] = useState(quadroBusca);
-  const setActiveView = (view: FleetView) => {
-    if (view !== 'quadro') setBuscaDoQuadro('');
-    setActiveViewState(view);
-    try {
-      window.localStorage.setItem(CHAVE_VISTA, view);
-    } catch {
-      // Sem memória do aparelho a escolha vale só nesta visita.
-    }
-  };
+  const setActiveView = onVista;
   // As relações da conferência ficam no aparelho; quando alguém edita uma
   // delas, o número de "A confirmar" nas abas precisa ser recontado.
   const [versaoRelacao, setVersaoRelacao] = useState(0);
-  const relacaoMudou = useCallback(() => setVersaoRelacao(versao => versao + 1), []);
+  const relacaoMudou = useCallback(() => {
+    setVersaoRelacao(versao => versao + 1);
+    onRelacaoMudou?.();
+  }, [onRelacaoMudou]);
   const [atalhosAberto, setAtalhosAberto] = useState(false);
   const [driverSearch, setDriverSearch] = useState('');
   const [driverEditor, setDriverEditor] = useState<Partial<Funcionario> | null>(null);
@@ -680,26 +673,6 @@ export default function ControleEquipamentosDiarioTab({
     // versaoRelacao: a relação vem do aparelho e muda sem passar pelos registros.
     [registros, filters.date, versaoRelacao],
   );
-  // No máximo quatro opções no topo: as duas conferências e os dois
-  // registros viram grupos que abrem a segunda linha.
-  const vistas: ReadonlyArray<ItemDasAbas<FleetView>> = [
-    { id: 'today', rotulo: 'Dia', curto: 'Dia', icone: CalendarDays },
-    ...(quadro ? [{ id: 'quadro' as const, rotulo: 'Quadro', icone: LayoutGrid }] : []),
-    {
-      grupo: 'conferencia', rotulo: 'Conferência', curto: 'Conferir', icone: ClipboardCheck, abas: [
-        { id: 'equipamentos', rotulo: 'Por equipamento', icone: ClipboardCheck, contador: conferenciaDoDia.equipamentos.missing, contadorRotulo: 'a confirmar' },
-        { id: 'operadores', rotulo: 'Por operador', icone: Users, contador: conferenciaDoDia.operadores.missing, contadorRotulo: 'a confirmar' },
-        { id: 'registry', rotulo: 'Cadastro de motoristas', curto: 'Motoristas', icone: Database },
-      ],
-    },
-    // Relatórios no mesmo padrão das outras abas que lançam (15/11/2026).
-    {
-      grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-        { id: 'relatorio', rotulo: 'Relatório do dia', curto: 'Do dia', icone: BarChart3 },
-        { id: 'history', rotulo: 'Fechamento por dia', curto: 'Por dia', icone: History },
-      ],
-    },
-  ];
   const ITEM_MENU = `flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-[#176b4d] disabled:opacity-50 ${FOCO}`;
   const ROTULO_GRUPO_MENU = 'px-3 pt-2 text-xs font-bold text-slate-500';
   const aviso = message && (
@@ -710,14 +683,14 @@ export default function ControleEquipamentosDiarioTab({
     </p>
   );
   return (
-    <TelaCheia ref={pageRef} id="controle-equipamentos-tab" rotulo="Controle de Frotas" className="text-slate-800"
-      idAbaAtiva={idDaAba('frota', activeView)} idDados="frota-dados" chaveRolagem={activeView} longa={activeView === 'quadro'}
+    <TelaCheia ref={pageRef} id="controle-equipamentos-tab" rotulo="Frotas e Manutenção" className="text-slate-800"
+      idAbaAtiva={idAbaAtiva} idDados="frota-dados" chaveRolagem={activeView} longa={activeView === 'quadro'}
       cabecalho={<div data-fleet-enter>
         <PageHeader
          
           eyebrow="Frota"
-          title="Controle de Frotas"
-          abas={<AbasDaTela id="frota" rotulo="Subtelas do controle de frotas" abas={vistas} ativa={activeView} onTrocar={setActiveView} idPainel="frota-dados" testId="frota-aba" />}
+          title="Frotas e Manutenção"
+          abas={abas}
           actions={<>
             {/* Dia consultado: vale para Situação do dia, Quadro, Equipamentos e Operadores. */}
             {/* Setas trocam de dia sem abrir o calendário; "Hoje" só aparece
@@ -787,7 +760,7 @@ export default function ControleEquipamentosDiarioTab({
         <FleetDataTable rows={viewModel.allRows} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onEdit={openEdit} onDetails={setDetailState} onDelete={onDeleteMany ? state => setConfirmation({ kind: 'delete', ids: [state.recordId] }) : undefined} canApprove={canApproveFleet} onApprove={(state, status) => onApproveFleetRecord?.(state.recordId, status)}/>
       </div>}
       {activeView === 'quadro' && quadro && <div data-fleet-view>
-        <React.Suspense fallback={<p className="p-8 text-center text-sm text-slate-500">Abrindo o quadro…</p>}>{quadro(filters.date, () => setActiveView('today'), buscaDoQuadro)}</React.Suspense>
+        <React.Suspense fallback={<p className="p-8 text-center text-sm text-slate-500">Abrindo o quadro…</p>}>{quadro(filters.date, () => setActiveView('today'), quadroBusca)}</React.Suspense>
       </div>}
       {activeView === 'equipamentos' && <div data-fleet-view className="flex min-h-0 flex-1 flex-col">
         <FleetDailyReference records={registros} date={filters.date} onLancar={openNewRecord} onRelacaoChange={relacaoMudou}/>
