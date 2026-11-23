@@ -259,6 +259,7 @@ function CadastrosPreview({ pedidoNovoColaborador = 0 }: { pedidoNovoColaborador
       pedidoNovoColaborador={pedidoNovoColaborador}
       gruposEquipe={listas.gruposEquipe as never}
       onSaveGrupoEquipe={salvar('gruposEquipe')}
+      onSyncEquipesPlanilha={async () => ({ success: true, message: 'ok' })}
       cargos={listas.cargos as never}
       onSaveCargo={salvar('cargos')}
       onSaveCargos={novos => setListas(atual => ({ ...atual, cargos: [...novos, ...atual.cargos] as never }))}
@@ -411,7 +412,7 @@ const historicoPresencasPreview = fx.presencasHistorico.slice(0, 4).map((registr
 // Presença do painel com estado, para inativar, desfazer e reativar no preview.
 function PresencaAdminViva() {
   const [lista, setLista] = React.useState(() => [...fx.presencasHistorico]);
-  const [equipes, setEquipes] = React.useState(() => [...fx.equipesPresenca]);
+  const [equipes] = React.useState(() => [...fx.equipesPresenca]);
   const trocar = (ids: string[], ativar: boolean) => setLista(atual => (ativar ? reativar(atual, ids) : inativar(atual, ids, 'Deivid')));
   return (
     <ControlePresencaTab
@@ -422,8 +423,7 @@ function PresencaAdminViva() {
       presencasLink={somenteAtivos(lista)}
       presencasInativas={lista.filter(item => item.inativoEm)}
       historicoPresencas={historicoPresencasPreview}
-      onSaveGrupoEquipe={noop}
-      onDeleteGrupoEquipe={id => setEquipes(atual => atual.filter(item => item.id !== id))}
+      onGerenciarEquipes={noop}
       onUpdatePresencaLink={noop}
       onLancarPresencaManual={noop}
       onInativarPresencaLink={ids => trocar(ids, false)}

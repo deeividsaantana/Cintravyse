@@ -572,9 +572,9 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   /* Passo 1: some o nome de quem entrou (a foto continua e abre o perfil). */
   :root[data-topo-apertado] .erp-topbar__user strong { display: none; }
   /* Passo 2: abas sem ícone; botões secundários só com o ícone (o nome
-     segue para o leitor de tela). */
+     segue para o leitor de tela). Itens de menu aberto ficam com o nome. */
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-abas svg { display: none; }
-  .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-page-actions :is(button, summary):not([class*="bg-[#176b4d]"]):has(svg) { gap: .25rem; padding-inline: .6rem; font-size: 0; }
+  .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-page-actions :is(button, summary):not([class*="bg-[#176b4d]"], [role="menuitem"]):has(svg) { gap: .25rem; padding-inline: .6rem; font-size: 0; }
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-page-actions kbd { display: none; }
   /* Passo 3: nome curto das abas e dos botões que têm um ("Novo"). */
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-abas [class~="sm:hidden"] { display: inline; }

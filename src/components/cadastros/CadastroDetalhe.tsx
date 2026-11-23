@@ -173,11 +173,11 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
               </div>
             </div>
             <dl className="grid grid-cols-2 gap-2 sm:w-64">
-              <div className="flex flex-col-reverse rounded-xl bg-slate-50 p-3 text-center">
+              <div className="flex flex-col-reverse rounded-2xl border border-slate-200 bg-white p-3 text-center">
                 <dt className="text-sm text-slate-600">Pessoas</dt>
                 <dd className="text-2xl font-black tabular-nums text-slate-900">{membros.length}</dd>
               </div>
-              <div className="flex flex-col-reverse rounded-xl bg-slate-50 p-3 text-center">
+              <div className="flex flex-col-reverse rounded-2xl border border-slate-200 bg-white p-3 text-center">
                 <dt className="text-sm text-slate-600">Link de presença</dt>
                 <dd className={`text-base font-black ${equipe.linkAtivo ? 'text-[#0f5a3d]' : 'text-slate-600'}`}>{equipe.linkAtivo ? 'Ligado' : 'Desligado'}</dd>
               </div>
@@ -213,7 +213,7 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
                 {membros.length === 0 ? <p className="text-sm text-slate-600">Ninguém na equipe ainda. Toque em Editar para escolher as pessoas.</p> : (
                   <ul className="grid gap-2 sm:grid-cols-2">
                     {membros.map(item => (
-                      <li key={item.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                      <li key={item.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2">
                         <Avatar nome={item.nome} nivel={nivelDe(item.cargo)} />
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold text-slate-900">{item.nome}</span>
@@ -267,11 +267,11 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
               <dl className="grid grid-cols-2 gap-3">
                 <div className="col-span-2"><Dado rotulo="Cargo" valor={pessoa.cargo || 'Sem cargo'} /></div>
                 <div className="col-span-2"><Dado rotulo="Equipe" valor={lugar.equipe?.nome || 'Nenhuma'} /></div>
-                <div className="flex flex-col-reverse rounded-xl bg-slate-50 p-3">
+                <div className="flex flex-col-reverse rounded-2xl border border-slate-200 bg-white p-3">
                   <dt className="text-sm text-slate-600">Lidera direto</dt>
                   <dd className="text-2xl font-black tabular-nums text-slate-900">{lugar.diretos}</dd>
                 </div>
-                <div className="flex flex-col-reverse rounded-xl bg-slate-50 p-3">
+                <div className="flex flex-col-reverse rounded-2xl border border-slate-200 bg-white p-3">
                   <dt className="text-sm text-slate-600">Total abaixo</dt>
                   <dd className="text-2xl font-black tabular-nums text-slate-900">{lugar.abaixo}</dd>
                 </div>
@@ -309,7 +309,7 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
               {usado ? (
                 <ul className="space-y-1.5">
                   {usos.map(uso => (
-                    <li key={uso.collection} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-sm">
+                    <li key={uso.collection} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">
                       <span className="text-slate-700">{uso.collection}</span>
                       <strong className="tabular-nums text-slate-900">{uso.count.toLocaleString('pt-BR')}</strong>
                     </li>
@@ -387,14 +387,14 @@ export default function CadastroDetalhe({ categoria, linha, dados, usos, histori
           {usado ? (
             <ul className="space-y-1.5">
               {usos.map(uso => (
-                <li key={uso.collection} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-sm">
+                <li key={uso.collection} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">
                   <span className="text-slate-700">{uso.collection}</span>
                   <strong className="tabular-nums text-slate-900">{uso.count.toLocaleString('pt-BR')}</strong>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-600">Não aparece em nenhum lançamento.</p>
+            <p className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600">Não aparece em nenhum lançamento.</p>
           )}
         </section>
 

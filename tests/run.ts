@@ -146,7 +146,6 @@ import './initialSeedCleanup.test';
 import './reservaArmazenamento.test';
 import './copiaSoDoQueMudou.test';
 import './publicPresenceTeamNames.test';
-import './editarEquipeFiltro.test';
 import './avancoEstacas.test';
 import './quadroFrota.test';
 import './lancarFrotaAtalho.test';

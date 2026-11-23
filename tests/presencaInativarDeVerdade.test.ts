@@ -32,8 +32,10 @@ test('C8: o painel não apaga presença na origem do link; apagar fica só no Ze
   assert.doesNotMatch(tela, /exclusão permanente/);
 });
 
-test('A29: excluir equipe pede confirmação antes', () => {
+test('A29: equipe não se cria nem se exclui na Presença; só em Cadastros, que pede confirmação', () => {
   const tela = ler('src/components/ControlePresencaTab.tsx');
-  assert.doesNotMatch(tela, /onClick=\{\(\) => onDeleteGrupoEquipe\(/);
-  assert.match(tela, /onConfirm=\{\(\) => \{ if \(equipeExcluindo\) onDeleteGrupoEquipe\?\.\(equipeExcluindo\.id\)/);
+  assert.doesNotMatch(tela, /onDeleteGrupoEquipe|onSaveGrupoEquipe|view === 'equipes'/);
+  assert.match(tela, /data-testid="presenca-gerenciar-equipes"/);
+  const cadastros = ler('src/components/CadastrosTab.tsx');
+  assert.match(cadastros, /CadastroConfirmacao/);
 });

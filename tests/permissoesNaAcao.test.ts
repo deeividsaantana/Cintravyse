@@ -14,7 +14,6 @@ test('A7: só o administrador exclui lançamento, e a recusa fica dentro de cada
     ['handleDeleteLubrificacao', 'podeExcluirLancamento'],
     ['handleDeleteOrdemServico', 'podeExcluirLancamento'],
     ['handleDeleteControleEquipamentosDiario', 'podeExcluirLancamento'],
-    ['handleDeleteGrupoEquipe', 'podeExcluirCadastro'],
     ['handleDeleteOperationalDriver', 'podeExcluirCadastro'],
   ];
   for (const [acao, permissao] of acoes) {
@@ -25,7 +24,7 @@ test('A7: só o administrador exclui lançamento, e a recusa fica dentro de cada
 });
 
 test('A7: quem não pode excluir não recebe o botão de excluir', () => {
-  for (const prop of ['onDeleteAbastecimento', 'onDeleteAbastecimentos', 'onDeleteLubrificacao', 'onDeleteGrupoEquipe', 'onDeleteOperationalDriver']) {
+  for (const prop of ['onDeleteAbastecimento', 'onDeleteAbastecimentos', 'onDeleteLubrificacao', 'onDeleteOperationalDriver']) {
     assert.match(app, new RegExp(`${prop}=\\{podeExcluir(Lancamento|Cadastro) \\?`), `${prop} só vai para quem pode`);
   }
   assert.equal((app.match(/onDeleteMany=\{podeExcluirLancamento \?/g) || []).length, 2);
