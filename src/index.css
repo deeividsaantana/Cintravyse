@@ -581,6 +581,7 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-abas [class~="sm:inline"] { display: none; }
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-page-actions [class~="max-sm:hidden"] { display: none; }
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-page-actions [class~="sm:hidden"] { display: inline; }
+  .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-page-actions [class~="sm:inline"] { display: none; }
   /* Passo 4 (último recurso): as abas rolam de lado na própria faixa. */
   .erp-workspace:has(> .erp-topbar) #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header[data-aperto="4"] > .renea-page-header__abas { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: thin; mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent); }
 }

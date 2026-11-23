@@ -64,7 +64,7 @@ const exemplo = (): Solicitacao[] => {
 export function SolicitacoesPreview() {
   const como = new URLSearchParams(location.search).get('como') || 'Cássia';
   const [lista, setLista] = useState(exemplo);
-  const [equipe] = useState(pessoas);
+  const [equipe, setEquipe] = useState(pessoas);
   return (
     <SolicitacoesTab
       solicitacoes={lista}
@@ -74,6 +74,7 @@ export function SolicitacoesPreview() {
       podeEditar
       // ?dev=0 mostra a tela de quem não é o dono (sem Apagar de vez).
       podeApagar={new URLSearchParams(location.search).get('dev') !== '0'}
+      onSalvarPessoas={setEquipe}
       onExcluir={id => setLista(atual => atual.filter(sol => sol.id !== id))}
       onSalvar={registros => setLista(atual => [...registros.filter(r => !atual.some(a => a.id === r.id)), ...atual.map(a => registros.find(r => r.id === a.id) ?? a)])}
     />
