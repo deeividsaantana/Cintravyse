@@ -1,32 +1,6 @@
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { BOTAO_SECUNDARIO, CAMPO_SELECT, FOCO } from '../cadastros/estilos';
-import type { OpcaoDaSecao, VistaFrotaManutencao } from './abasFrotaManutencao';
-
-/**
- * Escolha da tela dentro de uma seção (Paradas de hoje / Ordens de serviço /
- * Conferir 10 h, os relatórios). Pedido do Deivid em 23/11/2026: "várias abas
- * iguais". Por isso não é mais uma fileira de botões embaixo das abas do
- * topo: é uma caixinha de escolha "Ver", que não se confunde com aba.
- */
-export function SeletorDaSecao({ opcoes, ativa, onTrocar, rotulo }: {
-  opcoes: readonly OpcaoDaSecao[];
-  ativa: VistaFrotaManutencao;
-  onTrocar: (vista: VistaFrotaManutencao) => void;
-  rotulo: string;
-}) {
-  if (opcoes.length < 2) return null;
-  return (
-    <label className="flex w-full items-center gap-2 text-sm font-bold text-[#5b6870] sm:w-fit" data-testid="frota-seletor">
-      Ver
-      <select aria-label={rotulo} value={ativa} onChange={event => onTrocar(event.target.value as VistaFrotaManutencao)}
-        className={`${CAMPO_SELECT.replace('w-full', 'flex-1 sm:w-64 sm:flex-none')} font-bold`}>
-        {opcoes.map(opcao => (
-          <option key={opcao.id} value={opcao.id}>{opcao.rotulo}{opcao.contador ? ` (${opcao.contador})` : ''}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
+import { BOTAO_SECUNDARIO, FOCO } from '../cadastros/estilos';
+import type { VistaFrotaManutencao } from './abasFrotaManutencao';
 
 /**
  * Lançamentos não tem escolha de tela: a lista do dia é a tela, e quem falta

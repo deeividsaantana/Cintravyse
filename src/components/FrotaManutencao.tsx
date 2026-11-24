@@ -19,15 +19,13 @@ import {
   VISTA_DA_MANUTENCAO,
   VISTA_DE_FROTA,
   VISTA_DE_MANUTENCAO,
-  SECAO_DA_VISTA,
+  abaMarcada,
   abasFrotaManutencao,
-  opcoesDaSecao,
   vistaPadrao,
   vistaPermitida,
-  type SecaoFrotaManutencao,
   type VistaFrotaManutencao,
 } from './frotaManutencao/abasFrotaManutencao';
-import { AtalhoFaltando, SeletorDaSecao } from './frotaManutencao/SeletorDaSecao';
+import { AtalhoFaltando } from './frotaManutencao/AtalhoFaltando';
 
 type FixasDaFrota = 'vista' | 'onVista' | 'abas' | 'idAbaAtiva' | 'diaInicial' | 'onDia' | 'onRelacaoMudou' | 'quadro' | 'quadroBusca' | 'onOpenMaintenance';
 type FixasDaManutencao = 'subtela' | 'onSubtela' | 'abas' | 'idAbaAtiva' | 'buscaInicial' | 'onVerNoQuadro';
@@ -104,41 +102,31 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
   }, [manutencao, registros, agora]);
 
   const contadores = { faltando: conferencia?.equipamentos.missing ?? 0, ...contadoresManutencao };
-  const secao = SECAO_DA_VISTA[vista];
-  // Voltar a uma seção abre a última tela usada nela.
-  const [ultimaDaSecao, setUltimaDaSecao] = useState<Partial<Record<SecaoFrotaManutencao, VistaFrotaManutencao>>>({});
-  useEffect(() => { setUltimaDaSecao(atual => (atual[secao] === vista ? atual : { ...atual, [secao]: vista })); }, [secao, vista]);
-  const abrirSecao = (proxima: SecaoFrotaManutencao) => {
-    const opcoes = opcoesDaSecao(proxima, acesso, contadores);
-    const lembrada = ultimaDaSecao[proxima];
-    trocar(lembrada && opcoes.some(opcao => opcao.id === lembrada) ? lembrada : opcoes[0].id);
-  };
+  // Topo no padrão do site: Manutenção e Relatórios escolhem a tela na
+  // caixinha "Ver" do próprio AbasDaTela, na mesma linha, e voltar a um grupo
+  // abre a última tela usada nele.
+  const itensDoTopo = abasFrotaManutencao(acesso, contadores);
   const abas = (
-    <AbasDaTela<SecaoFrotaManutencao>
+    <AbasDaTela<VistaFrotaManutencao>
       id={ID_ABAS}
       rotulo="Subtelas de frotas e manutenção"
-      abas={abasFrotaManutencao(acesso, contadores)}
-      ativa={secao}
-      onTrocar={abrirSecao}
+      abas={itensDoTopo}
+      ativa={abaMarcada(vista)}
+      onTrocar={trocar}
       idPainel={VISTA_DA_FROTA[vista] ? 'frota-dados' : 'manutencao-dados'}
       testId="frota-aba"
     />
   );
-  const idAbaAtiva = idDaAba(ID_ABAS, secao);
-  // Sem fileira de botões embaixo das abas (pedido de 23/11/2026: "várias abas iguais").
-  const seletor = secao === 'lancamentos' ? (
+  // O botão marcado no topo: a própria aba, ou o do grupo quando ele tem mais de uma tela.
+  const grupoDaVista = itensDoTopo.find(item => 'grupo' in item && item.abas.length > 1 && item.abas.some(aba => aba.id === vista));
+  const idAbaAtiva = grupoDaVista && 'grupo' in grupoDaVista ? `${ID_ABAS}-grupo-${grupoDaVista.grupo}` : idDaAba(ID_ABAS, abaMarcada(vista));
+  // Lançamentos: quem falta aparece numa faixa, sem segunda fileira de botões.
+  const seletor = (
     <AtalhoFaltando
       vista={vista}
       maquinas={conferencia?.equipamentos.missing ?? 0}
       operadores={conferencia?.operadores.missing ?? 0}
       onTrocar={trocar}
-    />
-  ) : (
-    <SeletorDaSecao
-      opcoes={opcoesDaSecao(secao, acesso, contadores)}
-      ativa={vista}
-      onTrocar={trocar}
-      rotulo={`Tela de ${secao === 'manutencao' ? 'manutenção' : 'relatórios'}`}
     />
   );
 

@@ -5,7 +5,7 @@ import {
   VISTA_DA_FROTA,
   VISTA_DA_MANUTENCAO,
   abasFrotaManutencao,
-  opcoesDaSecao,
+  telasDoTopo,
   vistaPadrao,
 } from '../src/components/frotaManutencao/abasFrotaManutencao';
 
@@ -15,7 +15,7 @@ const moldura = ler('src/components/FrotaManutencao.tsx');
 
 const CONTADORES = { faltando: 0, paradosAgora: 0, paraConferir10h: 0 };
 const idsDasTelas = (acesso: { frota: boolean; manutencao: boolean }) =>
-  abasFrotaManutencao(acesso, CONTADORES).flatMap(aba => opcoesDaSecao(aba.id, acesso, CONTADORES).map(opcao => opcao.id));
+  telasDoTopo(abasFrotaManutencao(acesso, CONTADORES));
 
 test('Frotas e Manutenção é uma aba só: Controle de Frotas e Manutenção abrem a mesma moldura (23/11/2026)', () => {
   assert.match(app, /\(activeTab === 'controle-equipamentos' \|\| activeTab === 'manutencao'\) && \(\s*<FrotaManutencao/);
@@ -34,29 +34,28 @@ test('nenhuma função antiga se perdeu na junção (23/11/2026)', () => {
   assert.match(frota, /<FleetDailyReference[\s\S]{0,400}<FleetDriverReference/, 'máquinas e operadores faltando na mesma tela');
   // O antigo Relatório do dia da frota virou botões de baixar em Mais ações.
   for (const id of ['frota-relatorio-pdf', 'frota-relatorio-excel', 'frota-faltantes-pdf', 'frota-abrir-motoristas']) assert.match(frota, new RegExp(`data-testid="${id}"`));
-  // Motoristas abre por Mais ações e não ocupa lugar na escolha de telas.
+  // Motoristas abre por Mais ações e Faltando pela faixa de Lançamentos: nenhuma ocupa lugar no topo.
   const todas = idsDasTelas({ frota: true, manutencao: true });
-  assert.ok(!todas.includes('motoristas'));
-  assert.equal(todas.length, Object.keys(VISTA_DA_FROTA).length + Object.keys(VISTA_DA_MANUTENCAO).length - 1);
+  assert.ok(!todas.includes('motoristas') && !todas.includes('faltando'));
+  assert.equal(todas.length, Object.keys(VISTA_DA_FROTA).length + Object.keys(VISTA_DA_MANUTENCAO).length - 2);
 });
 
-test('sem segunda linha de abas: o topo tem só as seções, e a escolha da tela fica dentro dela', () => {
-  for (const aba of abasFrotaManutencao({ frota: true, manutencao: true }, CONTADORES)) assert.ok(!('grupo' in aba));
-  assert.match(moldura, /<SeletorDaSecao/);
-});
-
-test('sem fileiras de botões iguais às abas ("várias abas iguais", 23/11/2026)', () => {
-  const seletor = readFileSync('src/components/frotaManutencao/SeletorDaSecao.tsx', 'utf8');
-  // A escolha da tela é uma caixinha "Ver", não outra fileira de botões.
-  assert.match(seletor, /<select aria-label=\{rotulo\}/);
-  assert.doesNotMatch(seletor, /aria-pressed/);
+test('padrão do site: sem segunda fileira, a escolha da tela é a caixinha Ver do AbasDaTela', () => {
+  const itens = abasFrotaManutencao({ frota: true, manutencao: true }, CONTADORES);
+  assert.deepEqual(itens.map(item => item.rotulo), ['Quadro', 'Lançamentos', 'Manutenção', 'Relatórios']);
+  // Manutenção e Relatórios são grupos do componente comum, que mostra o "Ver" na mesma linha.
+  assert.deepEqual(itens.filter(item => 'grupo' in item).map(item => item.rotulo), ['Manutenção', 'Relatórios']);
+  assert.match(moldura, /<AbasDaTela<VistaFrotaManutencao>/);
+  assert.doesNotMatch(moldura, /SeletorDaSecao/);
   // Lançamentos: a lista do dia é a tela; quem falta abre pela faixa e volta por um botão.
-  assert.match(moldura, /secao === 'lancamentos' \? \(\s*<AtalhoFaltando/);
-  assert.match(seletor, /data-testid="frota-ver-faltando"/);
-  assert.match(seletor, /data-testid="frota-voltar-lancados"/);
+  const atalho = ler('src/components/frotaManutencao/AtalhoFaltando.tsx');
+  assert.match(moldura, /<AtalhoFaltando/);
+  assert.match(atalho, /data-testid="frota-ver-faltando"/);
+  assert.match(atalho, /data-testid="frota-voltar-lancados"/);
+  assert.doesNotMatch(atalho, /aria-pressed/);
   // Faltando mostra só quem falta, sem o filtro Faltam / Todas.
   for (const arquivo of ['FleetDailyReference', 'FleetDriverReference']) {
-    assert.doesNotMatch(readFileSync(`src/components/fleet/${arquivo}.tsx`, 'utf8'), /opcoesFiltro|visibility/);
+    assert.doesNotMatch(ler(`src/components/fleet/${arquivo}.tsx`), /opcoesFiltro|visibility/);
   }
 });
 
