@@ -3,7 +3,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './preview.css';
-import UsuariosTab from '../src/components/UsuariosTab';
 import PresencaTempoRealPublica from '../src/components/PresencaTempoRealPublica';
 import Dashboard from '../src/components/Dashboard';
 import LancamentosTab from '../src/components/LancamentosTab';
@@ -283,10 +282,10 @@ function CadastrosPreview({ pedidoNovoColaborador = 0 }: { pedidoNovoColaborador
   };
   return (
     <CadastrosTab
-      ehAdmin
       pedidoNovoColaborador={pedidoNovoColaborador}
       gruposEquipe={listas.gruposEquipe as never}
       onSaveGrupoEquipe={salvar('gruposEquipe')}
+      onSyncEquipesPlanilha={async () => ({ success: true, message: 'ok' })}
       cargos={listas.cargos as never}
       onSaveCargo={salvar('cargos')}
       onSaveCargos={novos => setListas(atual => ({ ...atual, cargos: [...novos, ...atual.cargos] as never }))}
@@ -439,7 +438,7 @@ const historicoPresencasPreview = fx.presencasHistorico.slice(0, 4).map((registr
 // Presença do painel com estado, para inativar, desfazer e reativar no preview.
 function PresencaAdminViva() {
   const [lista, setLista] = React.useState(() => [...fx.presencasHistorico]);
-  const [equipes, setEquipes] = React.useState(() => [...fx.equipesPresenca]);
+  const [equipes] = React.useState(() => [...fx.equipesPresenca]);
   const trocar = (ids: string[], ativar: boolean) => setLista(atual => (ativar ? reativar(atual, ids) : inativar(atual, ids, 'Deivid')));
   return (
     <ControlePresencaTab
@@ -447,11 +446,11 @@ function PresencaAdminViva() {
       funcionarios={fx.efetivoPresenca}
       obras={fx.obras}
       gruposEquipe={equipes}
+      ehAdmin
       presencasLink={somenteAtivos(lista)}
       presencasInativas={lista.filter(item => item.inativoEm)}
       historicoPresencas={historicoPresencasPreview}
-      onSaveGrupoEquipe={noop}
-      onDeleteGrupoEquipe={id => setEquipes(atual => atual.filter(item => item.id !== id))}
+      onGerenciarEquipes={noop}
       onUpdatePresencaLink={noop}
       onLancarPresencaManual={noop}
       onInativarPresencaLink={ids => trocar(ids, false)}
@@ -571,7 +570,6 @@ const screens: Record<string, React.ReactNode> = {
       </main>
     </div>
   ),
-  usuarios: <UsuariosTab />,
   // Pesquisa aberta como o operador vê: o colaborador aparece, Cadastros não.
   pesquisa: (
     <PesquisaGlobal
@@ -738,7 +736,7 @@ const screens: Record<string, React.ReactNode> = {
 // Mesma guarda global de movimento reduzido do app (src/main.tsx).
 instalarGuardaDeMovimento();
 
-const key = new URLSearchParams(location.search).get('screen') || 'usuarios';
+const key = new URLSearchParams(location.search).get('screen') || 'painel';
 // Com ?shell=1 a tela abre dentro do menu lateral e da barra do topo, com as
 // mesmas medidas do App.tsx, para conferir a página inteira em cada largura.
 const estadoSalvamentoPreview = new URLSearchParams(location.search).get('salvamento') || '';

@@ -8,14 +8,24 @@ import { abasFrotaManutencao } from '../src/components/frotaManutencao/abasFrota
 /**
  * Pedido do usuário em 10/11/2026: cada aba com só o essencial no topo. A
  * primeira linha de subtelas tem no máximo quatro opções; o resto fica num
- * grupo, que abre a segunda linha. Esta trava não pode ser afrouxada.
+ * grupo, escolhido na caixinha "Ver" (padrão de 23/11/2026, guia em
+ * docs/PADRAO_DO_SITE.md). Esta trava não pode ser afrouxada.
  */
 const MAXIMO = 4;
 
 test('Estacas e Cadastros têm no máximo quatro opções no topo', () => {
   assert.ok(abasEstacas({ faltam: 3, estacas: 10, notasPendentes: 2, lotes: 1 }).length <= MAXIMO);
-  for (const admin of [true, false]) {
-    assert.ok(abasCadastros(() => 1, admin).length <= MAXIMO, `admin=${admin}`);
+  assert.ok(abasCadastros(() => 1).length <= MAXIMO);
+});
+
+// Padrão do site (23/11/2026): Lançar é o botão principal (tecla N), nunca
+// uma aba, e Relatórios é sempre a última opção do topo.
+test('Lançar nunca é aba e Relatórios vem por último', () => {
+  const estacas = abasEstacas({ faltam: 3, estacas: 10, notasPendentes: 2, lotes: 1 });
+  assert.equal(estacas.at(-1)?.rotulo, 'Relatórios');
+  for (const arquivo of ['CombustivelOperacionalTab.tsx', 'PluviometroTab.tsx', 'EstacasTab.tsx', 'ProgramacaoTab.tsx', 'ContratacaoTab.tsx', 'SolicitacoesTab.tsx']) {
+    const fonte = readFileSync(new URL(`../src/components/${arquivo}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(fonte, /rotulo: ['"]Lançar['"]/, `${arquivo}: Lançar virou aba`);
   }
 });
 
@@ -36,6 +46,8 @@ const TELAS: Array<[arquivo: string, inicio: string]> = [
   ['ControlePresencaTab.tsx', 'const navItems: ReadonlyArray<ItemDasAbas<View>> = ['],
   ['CombustivelOperacionalTab.tsx', 'const vistas'],
   ['SolicitacoesTab.tsx', 'const subtelas: ItemDasAbas<Subtela>[] = ['],
+  ['ContratacaoTab.tsx', 'const subtelas: ReadonlyArray<ItemDasAbas<Subtela>> = ['],
+  ['DevTab.tsx', 'const subtelas: AbaDaTela<Subtela>[] = ['],
 ];
 
 const entradasDePrimeiroNivel = (fonte: string, inicio: string) => {

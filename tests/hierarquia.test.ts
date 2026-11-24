@@ -162,12 +162,11 @@ test('cargo em uso e equipe com presença não são excluídos de verdade', () =
 });
 
 test('Pessoas reúne colaboradores, cargos, equipes, organograma e pirâmide', () => {
-  const [pessoas] = abasCadastros(() => 1, false);
+  const [pessoas] = abasCadastros(() => 1);
   assert.ok('grupo' in pessoas);
   if (!('grupo' in pessoas)) return;
+  // Acessos mora só no Dev e o Link de presença na Presença (23/11/2026).
   assert.deepEqual(pessoas.abas.map(aba => aba.id), ['funcionarios', 'cargos', 'equipes', 'organograma', 'piramide']);
-  const [comAdmin] = abasCadastros(() => 1, true);
-  assert.ok('grupo' in comAdmin && comAdmin.abas.some(aba => aba.id === 'acessos'));
 });
 
 test('colaborador repetido não entra: matrícula (sem zeros à esquerda) ou nome igual', () => {
@@ -185,4 +184,14 @@ test('colaborador repetido não entra: matrícula (sem zeros à esquerda) ou nom
 test('arquivo da equipe sai sem acento nem espaço', () => {
   assert.equal(nomeDeArquivo('Equipe da Fábrica'), 'EQUIPE_DA_FABRICA');
   assert.equal(nomeDeArquivo('  '), 'PESSOAS');
+});
+
+test('equipes têm uma tela só: Cadastros > Equipes (a Presença só leva para lá)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const presenca = readFileSync('src/components/ControlePresencaTab.tsx', 'utf8');
+  assert.doesNotMatch(presenca, /rotulo: 'Equipes'/);
+  assert.match(presenca, /onGerenciarEquipes/);
+  const cadastros = readFileSync('src/components/CadastrosTab.tsx', 'utf8');
+  assert.match(cadastros, /data-testid="equipes-sincronizar"/);
+  assert.match(cadastros, /pedidoEquipes/);
 });

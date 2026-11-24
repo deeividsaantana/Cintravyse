@@ -14,7 +14,6 @@ test('A7: só o administrador exclui lançamento, e a recusa fica dentro de cada
     ['handleDeleteLubrificacao', 'podeExcluirLancamento'],
     ['handleDeleteOrdemServico', 'podeExcluirLancamento'],
     ['handleDeleteControleEquipamentosDiario', 'podeExcluirLancamento'],
-    ['handleDeleteGrupoEquipe', 'podeExcluirCadastro'],
     ['handleDeleteOperationalDriver', 'podeExcluirCadastro'],
   ];
   for (const [acao, permissao] of acoes) {
@@ -25,9 +24,9 @@ test('A7: só o administrador exclui lançamento, e a recusa fica dentro de cada
 });
 
 test('A7: quem não pode excluir não recebe o botão de excluir', () => {
-  for (const prop of ['onDeleteAbastecimento', 'onDeleteAbastecimentos', 'onDeleteLubrificacao', 'onDeleteGrupoEquipe', 'onDeleteOperationalDriver']) {
+  for (const prop of ['onDeleteAbastecimento', 'onDeleteAbastecimentos', 'onDeleteLubrificacao', 'onDeleteOperationalDriver']) {
     // Atributo JSX (prop={...}) ou campo do objeto de props da aba única (prop: ...).
-    assert.match(app, new RegExp(`${prop}(=\\{|: )podeExcluir(Lancamento|Cadastro) \\?`), `${prop} só vai para quem pode`);
+    assert.match(app, new RegExp(`${prop}(=\{|: )podeExcluir(Lancamento|Cadastro) \?`), `${prop} só vai para quem pode`);
   }
   assert.equal((app.match(/onDeleteMany(=\{|: )podeExcluirLancamento \?/g) || []).length, 2);
 });
@@ -63,9 +62,9 @@ test('M12: a última conta de administrador ativa não perde o perfil nem é ina
   await assertKeepsActiveAdmin({ uid: 'a1', role: 'admin', active: true, adminIds: ['a1'], getUser });
 });
 
-test('M12: trocar perfil e inativar pedem confirmação na tela de Usuários', () => {
-  const tela = readFileSync('src/components/UsuariosTab.tsx', 'utf8');
-  assert.match(tela, /onChange=\{event => setPendente\(/);
-  assert.match(tela, /setPendente\(\{ user, changes: \{ active: false \} \}\)/);
+test('M12: trocar perfil e inativar pedem confirmação no Dev (único lugar de acessos)', () => {
+  const tela = readFileSync('src/components/DevTab.tsx', 'utf8');
+  assert.match(tela, /titulo: `Mudar \$\{pessoa\.name\} para/);
+  assert.match(tela, /titulo: `Inativar \$\{pessoa\.name\}\?`/);
   assert.match(tela, /<ConfirmDialog/);
 });

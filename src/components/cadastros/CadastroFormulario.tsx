@@ -145,7 +145,7 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
                   const marcado = marcadas.includes(opcao.valor);
                   const pessoa = porId.get(opcao.valor);
                   return (
-                    <label key={opcao.valor} className={`flex min-h-12 cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-1.5 text-sm last:border-0 ${marcado ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}>
+                    <label key={opcao.valor} className={`flex min-h-12 cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-1.5 text-sm last:border-0 ${marcado ? 'bg-emerald-50' : 'hover:bg-white'}`}>
                       <input
                         type="checkbox"
                         className="size-5 shrink-0 accent-[#176b4d]"
@@ -162,7 +162,7 @@ export default function CadastroFormulario({ categoria, titulo, editandoId, valo
                 })}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3" data-testid="cadastro-pessoas-escolhidas">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3" data-testid="cadastro-pessoas-escolhidas">
               <p className="mb-2 text-sm font-bold text-slate-800">Na equipe: {marcadas.length} {marcadas.length === 1 ? 'pessoa' : 'pessoas'}</p>
               {marcadas.length === 0 ? (
                 <p className="text-sm text-slate-600">Marque as pessoas na lista ao lado.</p>
