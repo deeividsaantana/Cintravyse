@@ -73,6 +73,11 @@ let pessoas: PessoaContratacao[] = Object.values(PESSOAS).map(p => ({ user_id: p
 export const carregarContratacoes = async (): Promise<DadosContratacao> => ({
   me: eu, requests: pedidos.filter(p => pedidoVisivel(p, eu)), people: eu.admin ? pessoas : undefined,
 });
+export const carregarPedido = async (id: string): Promise<PedidoContratacao> => {
+  const pedido = pedidos.find(p => p.id === id);
+  if (!pedido) throw new Error('Pedido não encontrado.');
+  return pedido;
+};
 /** No preview, ?link=<n> abre o pedido pN como se fosse pelo link individual. */
 export const carregarPeloLink = async (token: string): Promise<DadosDoLink> => {
   const pedido = pedidos.find(p => p.id === `p${token}`);

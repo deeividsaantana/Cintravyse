@@ -280,3 +280,12 @@ test('API: assinatura salva vem do banco (nunca da tela) e "guardar" grava depoi
     substituirClienteSupabase(null);
   }
 });
+
+test('lista leve (24/11/2026): sem o desenho das assinaturas; ao abrir o pedido ele vem inteiro', () => {
+  const api = fs.readFileSync('api/contratacao.js', 'utf8');
+  const listar = api.slice(api.indexOf('const listar'), api.indexOf('const listar') + 900);
+  assert.match(listar, /select\(COLUNAS_ASSINATURA_LISTA\)/);
+  assert.match(api, /queryStringParameters\?\.pedido/);
+  const aba = fs.readFileSync('src/components/ContratacaoTab.tsx', 'utf8');
+  assert.match(aba, /carregarPedido\(daLista\.id\)/);
+});

@@ -155,6 +155,8 @@ const chamar = async <T>(init: RequestInit = {}, busca = ''): Promise<T> => {
 
 export const carregarContratacoes = () => chamar<DadosContratacao>({ method: 'GET' });
 
+/** Um pedido com o desenho das assinaturas (a lista vem sem ele, para ficar leve). */
+export const carregarPedido = (id: string) => chamar<PedidoContratacao>({ method: 'GET' }, `?pedido=${encodeURIComponent(id)}`);
 export const carregarPeloLink = (token: string) => chamar<DadosDoLink>({ method: 'GET' }, `?token=${encodeURIComponent(token)}`);
 
 export const criarContratacao = (form: FormularioContratacao, clientKey: string) =>

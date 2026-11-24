@@ -91,6 +91,9 @@ export const leitorDaSessao = async (client, staff) => {
 };
 
 const COLUNAS_ASSINATURA = 'id, request_id, stage, signer_user_id, signer_name, signer_cargo, method, image_data, form_hash, signed_at, hash_validacao';
+// A lista vai sem o desenho das assinaturas (cada um tem até 200 KB e a lista
+// se recarrega a cada minuto); o desenho vem só ao abrir o pedido (?pedido=id).
+const COLUNAS_ASSINATURA_LISTA = COLUNAS_ASSINATURA.replace(', image_data', '');
 const COLUNAS_AUDITORIA = 'request_id, actor_name, action, from_status, to_status, details, created_at';
 
 /** O link só sai enquanto o pedido corre; encerrado, o token nem vai para a tela. */
@@ -133,6 +136,24 @@ const abrirPeloLink = async (client, staff, leitor, token) => {
   } });
 };
 
+const ID_VALIDO = /^[0-9a-f-]{36}$/i;
+
+/** Um pedido só, com o desenho das assinaturas (ao abrir a folha na aba). */
+const abrirPorId = async (client, staff, leitor, id) => {
+  if (!ID_VALIDO.test(id)) throw httpError('Pedido não encontrado.', 404);
+  const { data: pedido, error } = await client.from('erp_hiring_requests').select('*')
+    .eq('organization_id', staff.organizationId).eq('id', id).maybeSingle();
+  if (error) throw error;
+  if (!pedido || !pedidoVisivel(pedido, leitor)) throw httpError('Pedido não encontrado.', 404);
+  const [respAssinaturas, respAuditoria] = await Promise.all([
+    client.from('erp_hiring_signatures').select(COLUNAS_ASSINATURA).eq('request_id', pedido.id),
+    client.from('erp_hiring_audit').select(COLUNAS_AUDITORIA).eq('request_id', pedido.id).order('created_at', { ascending: true }),
+  ]);
+  if (respAssinaturas.error) throw respAssinaturas.error;
+  if (respAuditoria.error) throw respAuditoria.error;
+  return jsonResponse(200, { success: true, data: montarPedido(pedido, respAssinaturas.data || [], respAuditoria.data || []) });
+};
+
 const listar = async (client, staff, leitor) => {
   const { data: pedidos, error } = await client.from('erp_hiring_requests').select('*')
     .eq('organization_id', staff.organizationId).order('created_at', { ascending: false }).limit(500);
@@ -143,7 +164,7 @@ const listar = async (client, staff, leitor) => {
   let auditoria = [];
   if (ids.length) {
     const [respAssinaturas, respAuditoria] = await Promise.all([
-      client.from('erp_hiring_signatures').select(COLUNAS_ASSINATURA).in('request_id', ids),
+      client.from('erp_hiring_signatures').select(COLUNAS_ASSINATURA_LISTA).in('request_id', ids),
       client.from('erp_hiring_audit').select(COLUNAS_AUDITORIA).in('request_id', ids).order('created_at', { ascending: true }),
     ]);
     if (respAssinaturas.error) throw respAssinaturas.error;
@@ -285,6 +306,8 @@ export const handler = async event => {
       const leitor = await leitorDaSessao(client, staff);
       const token = event.queryStringParameters?.token;
       if (token !== undefined) return await abrirPeloLink(client, staff, leitor, String(token));
+      const pedidoId = event.queryStringParameters?.pedido;
+      if (pedidoId !== undefined) return await abrirPorId(client, staff, leitor, String(pedidoId));
       return await listar(client, staff, leitor);
     }
     const corpo = parseJsonBody(event, 400_000);
