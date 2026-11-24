@@ -32,8 +32,8 @@ export function AtalhoFaltando({ vista, maquinas, operadores, onTrocar }: {
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="frota-faltando-resumo">
-      <span className="flex-1"><strong>Falta lançar:</strong> {partes.join(' e ')}</span>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700" data-testid="frota-faltando-resumo">
+      <span className="flex flex-1 items-center gap-2"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-[#f26a2e]" /><span><strong className="text-slate-900">Falta lançar:</strong> {partes.join(' e ')}</span></span>
       <button type="button" onClick={() => onTrocar('faltando')} data-testid="frota-ver-faltando"
         className={`inline-flex min-h-11 items-center rounded-lg bg-[#176b4d] px-3 font-bold text-white hover:brightness-95 lg:min-h-9 ${FOCO}`}>
         Ver quem falta

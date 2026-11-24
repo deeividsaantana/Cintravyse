@@ -7,8 +7,8 @@ import type { Subtela as SubtelaManutencao } from '../ManutencaoTab';
  * Aba única Frotas e Manutenção (pedido do Deivid em 23/11/2026): quatro
  * opções no topo e nenhuma segunda linha de abas.
  * O que repetia saiu: "Conferir equipamentos" e "Conferir operadores" viraram
- * "Faltando"; o "Relatório do dia" da frota virou botão de baixar nos
- * Lançamentos; Motoristas foi para "Mais ações".
+ * "Faltando"; o que se imprime da frota fica nos cartões de "Relatórios da
+ * frota" (24/11/2026); Motoristas foi para "Mais ações".
  */
 export type VistaFrotaManutencao =
   | 'quadro'
@@ -81,7 +81,7 @@ export const abasFrotaManutencao = (
       { id: 'conferir-10h', rotulo: 'Conferir 10 h', contador: contadores.paraConferir10h, contadorRotulo: 'para conferir' },
     ] }),
     grupo({ grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-      { id: 'fechamento', rotulo: 'Frota por dia' },
+      { id: 'fechamento', rotulo: 'Relatórios da frota' },
       { id: 'manutencao-dia', rotulo: 'Manutenção do dia' },
       { id: 'historico-os', rotulo: 'Histórico das OS' },
     ] }),
