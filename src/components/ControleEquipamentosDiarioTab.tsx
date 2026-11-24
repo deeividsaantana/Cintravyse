@@ -4,26 +4,22 @@ import { gsap } from 'gsap';
 import {
   AlertTriangle,
   CalendarDays,
-  ClipboardCheck,
   Database,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
-  History,
   Keyboard,
-  LayoutGrid,
   Pencil,
   Plus,
   Printer,
+  Users,
   RefreshCw,
   Search,
   Trash2,
   Upload,
-  Users,
   X,
-  BarChart3,
 } from 'lucide-react';
 import type {
   ControleEquipamentoDiario,
@@ -66,7 +62,6 @@ import FleetReportLayout from './fleet/FleetReportLayout';
 import FleetImportPreviewModal, { type FleetImportPreviewRow } from './fleet/FleetImportPreviewModal';
 import ImportacaoSge from './fleet/ImportacaoSge';
 import { ConfirmDialog, CountUp, Modal, PageHeader } from '../shared/ui';
-import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
 import { useEntradaDeLista } from '../shared/hooks/useEntradaDeLista';
@@ -77,7 +72,7 @@ import { montarConferenciaDoDia } from '../fleet/conferenciaDoDia';
 import { gerarPdfFaltantes, montarListaFaltantes } from '../fleet/faltantesPdf';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CARTAO, FOCO, ROTULO, TOM_SITUACAO } from './cadastros/estilos';
 
-interface Props {
+export interface ControleFrotaProps {
   registros: ControleEquipamentoDiario[];
   equipamentos: Equipamento[];
   empresas: Empresa[];
@@ -92,10 +87,23 @@ interface Props {
   /** Sem ele, a tela não mostra Excluir: só o administrador exclui (A7). */
   onDeleteMany?: (ids: string[]) => void;
   onOpenMaintenance?: () => void;
-  /** Abre já no Quadro (vindo da Manutenção). */
-  abrirNoQuadro?: boolean;
   /** Busca do Quadro vinda de outra tela; vale só até sair do Quadro. */
   quadroBusca?: string;
+  /**
+   * Aba única Frotas e Manutenção (23/11/2026): quem monta as subtelas e
+   * guarda a escolhida é a moldura (frotaManutencao/FrotaManutencao.tsx).
+   */
+  vista: FleetView;
+  onVista: (vista: FleetView) => void;
+  abas: React.ReactNode;
+  /** Escolha da tela dentro da seção (Lançados / Faltando...), no começo da tela. */
+  seletor?: React.ReactNode;
+  idAbaAtiva: string;
+  /** Dia aberto na moldura: volta o mesmo dia ao trocar de Manutenção para Frotas. */
+  diaInicial?: string;
+  onDia?: (dia: string) => void;
+  /** A relação da conferência (guardada no aparelho) mudou: a moldura reconta os selos. */
+  onRelacaoMudou?: () => void;
   onOpenEquipmentRegistration?: () => void;
   onSaveOperationalDriver?: (driver: Funcionario, isNew: boolean) => void;
   onDeleteOperationalDriver?: (id: string) => void;
@@ -113,19 +121,7 @@ type ConfirmationState =
   | { kind: 'delete'; ids: string[] }
   | { kind: 'status'; ids: string[]; status: FleetOperationalStatus };
 
-type FleetView = 'today' | 'quadro' | 'equipamentos' | 'operadores' | 'relatorio' | 'history' | 'registry';
-
-const VISTAS_GUARDAVEIS: readonly FleetView[] = ['quadro', 'equipamentos', 'operadores', 'relatorio', 'history', 'registry'];
-
-const CHAVE_VISTA = 'renea_frota_vista';
-const vistaGuardada = (): FleetView => {
-  try {
-    const salva = window.localStorage.getItem(CHAVE_VISTA) as FleetView | null;
-    return salva && VISTAS_GUARDAVEIS.includes(salva) ? salva : 'today';
-  } catch {
-    return 'today';
-  }
-};
+export type FleetView = 'today' | 'quadro' | 'faltando' | 'history' | 'registry';
 
 const ATALHOS: ReadonlyArray<{ teclas: string; oQueFaz: string }> = [
   { teclas: 'N', oQueFaz: 'Novo lançamento' },
@@ -236,8 +232,15 @@ export default function ControleEquipamentosDiarioTab({
   onApplyCadastroSge,
   onDeleteMany,
   onOpenMaintenance,
-  abrirNoQuadro,
   quadroBusca = '',
+  vista: activeView,
+  onVista,
+  abas,
+  seletor,
+  idAbaAtiva,
+  diaInicial,
+  onDia,
+  onRelacaoMudou,
   onOpenEquipmentRegistration,
   operationalDrivers: operationalDriversProp,
   onSaveOperationalDriver,
@@ -247,7 +250,7 @@ export default function ControleEquipamentosDiarioTab({
   registeredBy = 'Operação',
   onApproveFleetRecord,
   quadro,
-}: Props) {
+}: ControleFrotaProps) {
   const pageRef = useRef<HTMLElement>(null);
   const operationalDrivers = useMemo(() => [...(operationalDriversProp || OPERATIONAL_DRIVERS)], [operationalDriversProp]);
   const context = useMemo(() => ({
@@ -271,7 +274,8 @@ export default function ControleEquipamentosDiarioTab({
     clearFilters,
     activeFilterCount,
     viewModel,
-  } = useFleetReport(context);
+  } = useFleetReport(context, diaInicial);
+  useEffect(() => { onDia?.(filters.date); }, [filters.date, onDia]);
   const hoje = getOperationalToday();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingRecord, setEditingRecord] = useState<FleetPersistedRecord>();
@@ -285,21 +289,9 @@ export default function ControleEquipamentosDiarioTab({
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<'success' | 'error' | 'info'>('info');
   const [exporting, setExporting] = useState<'pdf' | 'excel' | 'weekly-pdf' | 'weekly-excel' | ''>('');
-  const [activeView, setActiveViewState] = useState<FleetView>(abrirNoQuadro && quadro ? 'quadro' : vistaGuardada);
-  const [buscaDoQuadro, setBuscaDoQuadro] = useState(quadroBusca);
-  const setActiveView = (view: FleetView) => {
-    if (view !== 'quadro') setBuscaDoQuadro('');
-    setActiveViewState(view);
-    try {
-      window.localStorage.setItem(CHAVE_VISTA, view);
-    } catch {
-      // Sem memória do aparelho a escolha vale só nesta visita.
-    }
-  };
-  // As relações da conferência ficam no aparelho; quando alguém edita uma
-  // delas, o número de "A confirmar" nas abas precisa ser recontado.
-  const [versaoRelacao, setVersaoRelacao] = useState(0);
-  const relacaoMudou = useCallback(() => setVersaoRelacao(versao => versao + 1), []);
+  const setActiveView = onVista;
+  // A relação da conferência fica no aparelho: a moldura reconta os selos quando ela muda.
+  const relacaoMudou = onRelacaoMudou;
   const [atalhosAberto, setAtalhosAberto] = useState(false);
   const [driverSearch, setDriverSearch] = useState('');
   const [driverEditor, setDriverEditor] = useState<Partial<Funcionario> | null>(null);
@@ -537,16 +529,7 @@ export default function ControleEquipamentosDiarioTab({
     }
   };
   const weeklyReport = useMemo(() => buildWeeklyFleetReport(registros), [registros]);
-  const resumoDoDia = useMemo(() => {
-    const doDia = registros.filter(registro => registro.data === filters.date);
-    return {
-      total: doDia.length,
-      operando: doDia.filter(registro => registro.status === 'Em operação').length,
-      manutencao: doDia.filter(registro => registro.status === 'Em manutenção' || registro.status === 'Aguardando manutenção').length,
-      disponivel: doDia.filter(registro => registro.status === 'Disponível').length,
-      aConfirmar: doDia.filter(registro => registro.status === 'A confirmar').length,
-    };
-  }, [registros, filters.date]);
+  const temLancamentoNoDia = useMemo(() => registros.some(registro => registro.data === filters.date), [registros, filters.date]);
   const handleWeeklyPdf = async () => {
     if (exporting) return;
     setExporting('weekly-pdf');
@@ -675,31 +658,6 @@ export default function ControleEquipamentosDiarioTab({
       setConfirmationBusy(false);
     }
   };
-  const conferenciaDoDia = useMemo(
-    () => montarConferenciaDoDia(registros, filters.date),
-    // versaoRelacao: a relação vem do aparelho e muda sem passar pelos registros.
-    [registros, filters.date, versaoRelacao],
-  );
-  // No máximo quatro opções no topo: as duas conferências e os dois
-  // registros viram grupos que abrem a segunda linha.
-  const vistas: ReadonlyArray<ItemDasAbas<FleetView>> = [
-    { id: 'today', rotulo: 'Dia', curto: 'Dia', icone: CalendarDays },
-    ...(quadro ? [{ id: 'quadro' as const, rotulo: 'Quadro', icone: LayoutGrid }] : []),
-    {
-      grupo: 'conferencia', rotulo: 'Conferência', curto: 'Conferir', icone: ClipboardCheck, abas: [
-        { id: 'equipamentos', rotulo: 'Por equipamento', icone: ClipboardCheck, contador: conferenciaDoDia.equipamentos.missing, contadorRotulo: 'a confirmar' },
-        { id: 'operadores', rotulo: 'Por operador', icone: Users, contador: conferenciaDoDia.operadores.missing, contadorRotulo: 'a confirmar' },
-        { id: 'registry', rotulo: 'Cadastro de motoristas', curto: 'Motoristas', icone: Database },
-      ],
-    },
-    // Relatórios no mesmo padrão das outras abas que lançam (15/11/2026).
-    {
-      grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-        { id: 'relatorio', rotulo: 'Relatório do dia', curto: 'Do dia', icone: BarChart3 },
-        { id: 'history', rotulo: 'Fechamento por dia', curto: 'Por dia', icone: History },
-      ],
-    },
-  ];
   const ITEM_MENU = `flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-[#176b4d] disabled:opacity-50 ${FOCO}`;
   const ROTULO_GRUPO_MENU = 'px-3 pt-2 text-xs font-bold text-slate-500';
   const aviso = message && (
@@ -710,14 +668,14 @@ export default function ControleEquipamentosDiarioTab({
     </p>
   );
   return (
-    <TelaCheia ref={pageRef} id="controle-equipamentos-tab" rotulo="Controle de Frotas" className="text-slate-800"
-      idAbaAtiva={idDaAba('frota', activeView)} idDados="frota-dados" chaveRolagem={activeView} longa={activeView === 'quadro'}
+    <TelaCheia ref={pageRef} id="controle-equipamentos-tab" rotulo="Frotas e Manutenção" className="text-slate-800"
+      idAbaAtiva={idAbaAtiva} idDados="frota-dados" chaveRolagem={activeView} longa={activeView === 'quadro' || activeView === 'faltando'}
       cabecalho={<div data-fleet-enter>
         <PageHeader
          
           eyebrow="Frota"
-          title="Controle de Frotas"
-          abas={<AbasDaTela id="frota" rotulo="Subtelas do controle de frotas" abas={vistas} ativa={activeView} onTrocar={setActiveView} idPainel="frota-dados" testId="frota-aba" />}
+          title="Frotas e Manutenção"
+          abas={abas}
           actions={<>
             {/* Dia consultado: vale para Situação do dia, Quadro, Equipamentos e Operadores. */}
             {/* Setas trocam de dia sem abrir o calendário; "Hoje" só aparece
@@ -732,10 +690,6 @@ export default function ControleEquipamentosDiarioTab({
               <button type="button" onClick={() => updateFilter('date', shiftIsoDate(filters.date, 1))} aria-label="Próximo dia" title="Próximo dia" className={`${BOTAO_SECUNDARIO} shrink-0 px-0 min-w-11 lg:min-w-10`} data-testid="frota-dia-seguinte"><ChevronRight className="size-5" aria-hidden="true" /></button>
               {filters.date !== hoje && <button type="button" onClick={() => updateFilter('date', hoje)} className={`${BOTAO_SECUNDARIO} shrink-0 px-3`} data-testid="frota-hoje">Hoje</button>}
             </div>
-            {activeView !== 'quadro' && <button type="button" onClick={() => setAtalhosAberto(true)} className={`${BOTAO_SECUNDARIO} max-lg:hidden`} aria-label="Atalhos do teclado" data-testid="frota-atalhos">
-              <Keyboard className="size-4" aria-hidden="true" />
-              <kbd className="text-xs">?</kbd>
-            </button>}
             <input ref={inputRef} type="file" accept=".xlsx,.xlsm,.xls" className="hidden" onChange={readImport}/>
             <details className="erp-fleet-menu group relative max-sm:flex-1" data-testid="frota-relatorios">
               <summary className={`${BOTAO_SECUNDARIO} cursor-pointer px-3 max-sm:w-full list-none [&::-webkit-details-marker]:hidden`}>
@@ -758,7 +712,14 @@ export default function ControleEquipamentosDiarioTab({
                   gatilho={abrir => <button type="button" onClick={abrir} className={ITEM_MENU}><Database className="size-4" aria-hidden="true" />Importar apontamento do SGE</button>}
                 />
                 <hr className="my-1 border-slate-100" />
+                {/* O antigo "Relatório do dia" da frota virou estes botões (23/11/2026). */}
+                <p className={ROTULO_GRUPO_MENU}>Baixar o dia</p>
+                <button type="button" disabled={Boolean(exporting) || !temLancamentoNoDia} onClick={() => void handlePdf()} className={ITEM_MENU} data-testid="frota-relatorio-pdf"><Printer className="size-4" aria-hidden="true" />{exporting === 'pdf' ? 'Gerando…' : 'Dia em PDF'}</button>
+                <button type="button" disabled={Boolean(exporting) || !temLancamentoNoDia} onClick={() => void handleExcel()} className={ITEM_MENU} data-testid="frota-relatorio-excel"><FileSpreadsheet className="size-4" aria-hidden="true" />{exporting === 'excel' ? 'Gerando…' : 'Dia em Excel'}</button>
+                <button type="button" disabled={Boolean(exporting)} onClick={() => void handleFaltantesPdf()} className={ITEM_MENU} data-testid="frota-faltantes-pdf"><Printer className="size-4" aria-hidden="true" />Faltantes em PDF</button>
+                <hr className="my-1 border-slate-100" />
                 <p className={ROTULO_GRUPO_MENU}>Cadastro e tela</p>
+                <button type="button" onClick={() => setActiveView('registry')} className={ITEM_MENU} data-testid="frota-abrir-motoristas"><Users className="size-4" aria-hidden="true" />Motoristas</button>
                 <button type="button" onClick={handleRefresh} className={ITEM_MENU}><RefreshCw className="size-4" aria-hidden="true" />Limpar filtros e seleção</button>
                 {onOpenEquipmentRegistration && <button type="button" onClick={onOpenEquipmentRegistration} className={ITEM_MENU}><Plus className="size-4" aria-hidden="true" />Cadastrar equipamento</button>}
               </div>
@@ -771,7 +732,7 @@ export default function ControleEquipamentosDiarioTab({
           </>}
         />
       </div>}
-      faixa={aviso || undefined}
+      faixa={(seletor || aviso) ? <div className="flex flex-col gap-2">{seletor}{aviso}</div> : undefined}
     >
       {activeView === 'today' && <div data-fleet-view className="flex min-h-0 flex-1 flex-col gap-3">
         {canteirosDoDia.length > 0 && <nav aria-label="Canteiros do dia" className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2" data-testid="frota-faixa-canteiros">
@@ -783,51 +744,17 @@ export default function ControleEquipamentosDiarioTab({
             </button>
           ))}
         </nav>}
-        <FleetFilterBar filters={filters} companies={empresas} groups={groups} equipmentTypes={equipmentTypes} activeFilterCount={activeFilterCount} onChange={updateFilter} onClear={clearFilters} avisos={viewModel.integrityWarnings} resumo={`Equipamentos ${conferenciaDoDia.equipamentos.informed}/${conferenciaDoDia.equipamentos.total} · Operadores ${conferenciaDoDia.operadores.informed}/${conferenciaDoDia.operadores.total}`}/>
+        <FleetFilterBar filters={filters} companies={empresas} groups={groups} equipmentTypes={equipmentTypes} activeFilterCount={activeFilterCount} onChange={updateFilter} onClear={clearFilters} avisos={viewModel.integrityWarnings}/>
         <FleetDataTable rows={viewModel.allRows} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onEdit={openEdit} onDetails={setDetailState} onDelete={onDeleteMany ? state => setConfirmation({ kind: 'delete', ids: [state.recordId] }) : undefined} canApprove={canApproveFleet} onApprove={(state, status) => onApproveFleetRecord?.(state.recordId, status)}/>
       </div>}
       {activeView === 'quadro' && quadro && <div data-fleet-view>
-        <React.Suspense fallback={<p className="p-8 text-center text-sm text-slate-500">Abrindo o quadro…</p>}>{quadro(filters.date, () => setActiveView('today'), buscaDoQuadro)}</React.Suspense>
+        <React.Suspense fallback={<p className="p-8 text-center text-sm text-slate-500">Abrindo o quadro…</p>}>{quadro(filters.date, () => setActiveView('today'), quadroBusca)}</React.Suspense>
       </div>}
-      {activeView === 'equipamentos' && <div data-fleet-view className="flex min-h-0 flex-1 flex-col">
+      {/* Faltando (23/11/2026): máquinas e operadores que ainda não foram lançados no dia, numa tela só. */}
+      {activeView === 'faltando' && <div data-fleet-view className="flex flex-col gap-6 [&>section]:flex-none">
         <FleetDailyReference records={registros} date={filters.date} onLancar={openNewRecord} onRelacaoChange={relacaoMudou}/>
-      </div>}
-      {activeView === 'operadores' && <div data-fleet-view className="flex min-h-0 flex-1 flex-col">
         <FleetDriverReference records={registros} date={filters.date} drivers={operationalDrivers} onAddDrivers={onAddOperationalDrivers} onLancar={openNewRecord} onRelacaoChange={relacaoMudou}/>
       </div>}
-      {activeView === 'relatorio' && (
-        <section data-fleet-view className="flex min-h-0 flex-1 flex-col gap-3" aria-labelledby="frota-relatorio-titulo" data-testid="frota-relatorio">
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-            <div className="min-w-0">
-              <h2 id="frota-relatorio-titulo" className="text-base font-black text-slate-900">Relatório do dia {new Date(`${filters.date}T12:00:00`).toLocaleDateString('pt-BR')}</h2>
-              <p className="text-sm text-[#5b6870]">O dia vem do calendário do topo. Gere o arquivo para mandar ou imprimir.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <button type="button" disabled={Boolean(exporting) || !resumoDoDia.total} onClick={() => void handlePdf()} className={BOTAO_SECUNDARIO} data-testid="frota-relatorio-pdf"><Printer className="size-4" aria-hidden="true" />{exporting === 'pdf' ? 'Gerando…' : 'PDF'}</button>
-              <button type="button" disabled={Boolean(exporting) || !resumoDoDia.total} onClick={() => void handleExcel()} className={BOTAO_SECUNDARIO} data-testid="frota-relatorio-excel"><FileSpreadsheet className="size-4" aria-hidden="true" />{exporting === 'excel' ? 'Gerando…' : 'Excel'}</button>
-              <button type="button" disabled={Boolean(exporting)} onClick={() => void handleFaltantesPdf()} className={`${BOTAO_SECUNDARIO} col-span-2`} data-testid="frota-faltantes-pdf"><Printer className="size-4" aria-hidden="true" />Faltantes em PDF</button>
-            </div>
-          </div>
-          {resumoDoDia.total ? (
-            <dl className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-              {[
-                { rotulo: 'Lançadas', valor: resumoDoDia.total },
-                { rotulo: 'Em operação', valor: resumoDoDia.operando },
-                { rotulo: 'Em manutenção', valor: resumoDoDia.manutencao },
-                { rotulo: 'Disponíveis', valor: resumoDoDia.disponivel },
-                { rotulo: 'A confirmar', valor: resumoDoDia.aConfirmar },
-              ].map(item => (
-                <div key={item.rotulo} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <dt className="text-sm font-semibold text-[#5b6870]">{item.rotulo}</dt>
-                  <dd className="text-2xl font-black tabular-nums text-slate-900">{item.valor.toLocaleString('pt-BR')}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            <p className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-[#5b6870]">Nenhum lançamento neste dia. Troque o dia no calendário do topo ou aperte N para lançar.</p>
-          )}
-        </section>
-      )}
       {activeView === 'history' && (
         <section data-fleet-view className="flex min-h-0 flex-1 flex-col gap-3" aria-labelledby="frota-historico-titulo">
           <p className="sr-only" id="frota-historico-titulo">Fechamento por dia</p>

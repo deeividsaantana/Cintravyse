@@ -33,24 +33,8 @@ const colunas: ColunaTabela<LinhaRelatorioManutencao>[] = [
       ? linha.parada.periodos.map((periodo, indice) => <span key={indice} className="block whitespace-nowrap tabular-nums">{periodo.inicio} → {periodo.fim ?? 'em aberto'}</span>)
       : <span className="text-amber-900">{linha.parada.motivoInconsistencia || 'Horas não fecham'}</span>),
   },
-  {
-    chave: 'descontos',
-    titulo: 'Pausas',
-    alinhamento: 'direita',
-    valorOrdenacao: linha => linha.parada.periodos.reduce((total, periodo) => total + periodo.descontoMin, 0),
-    render: linha => {
-      const desconto = linha.parada.periodos.reduce((total, periodo) => total + periodo.descontoMin, 0);
-      return desconto ? `−${formatarMinutos(desconto)}` : '—';
-    },
-  },
   { chave: 'horas', titulo: 'Horas do dia', alinhamento: 'direita', valorOrdenacao: linha => linha.parada.totalMin, render: linha => <strong>{formatarMinutos(linha.parada.totalMin)}</strong> },
   { chave: 'situacao', titulo: 'Situação', valorOrdenacao: linha => linha.grupo, render: linha => <SeloSituacao parada={linha.parada} grupo={linha.grupo} /> },
-  {
-    chave: 'conferido',
-    titulo: 'Conferido',
-    valorOrdenacao: linha => (linha.conferido ? 1 : 0),
-    render: linha => (linha.grupo === 'OK' ? 'Não precisa' : linha.conferido ? 'Sim' : <strong className="text-amber-900">Falta</strong>),
-  },
 ];
 
 interface Props {

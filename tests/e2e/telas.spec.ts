@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
  */
 const TELAS: Array<{ screen: string; titulo: string | RegExp }> = [
   { screen: 'painel', titulo: 'Visão geral' },
-  { screen: 'manutencao', titulo: 'Manutenção' },
+  { screen: 'manutencao', titulo: 'Frotas e Manutenção' },
   { screen: 'colaboradores', titulo: 'Colaboradores' },
   { screen: 'diario-obra', titulo: 'Diário de Obra' },
   { screen: 'cadastros', titulo: /.+/ },
@@ -144,9 +144,9 @@ test('painel mostra cada indicador executivo uma única vez', async ({ page }) =
 test('manutenção apresenta central operacional e fluxo das OS', async ({ page }) => {
   await page.goto('/?screen=manutencao');
 
-  await expect(page.getByRole('heading', { name: 'Manutenção', level: 1 })).toBeVisible();
-  // A aba Hoje abre primeiro, com os números do dia e as máquinas paradas.
-  await expect(page.getByRole('region', { name: 'Números de hoje' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Frotas e Manutenção', level: 1 })).toBeVisible();
+  // Paradas de hoje abre primeiro, com uma linha de números e as máquinas paradas.
+  await expect(page.getByTestId('manutencao-resumo-hoje')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Equipamentos que pararam hoje', level: 2 })).toBeVisible();
 });
 
@@ -168,10 +168,12 @@ test('controle de frotas remove o lançamento rápido e leva as visões ao topo'
   await page.goto('/?screen=frotas');
 
   await expect(page.getByText('Lançamento rápido')).toHaveCount(0);
-  const topViews = page.locator('.renea-page-header').getByRole('tablist', { name: 'Subtelas do controle de frotas' });
+  const topViews = page.locator('.renea-page-header').getByRole('tablist', { name: 'Subtelas de frotas e manutenção', exact: true });
   await expect(topViews).toBeVisible();
-  // No celular a aba mostra o nome curto ("Dia").
-  await expect(topViews.getByRole('tab', { name: /^(Situação do dia|Dia)$/ })).toHaveAttribute('aria-selected', 'true');
+  // Frotas e Manutenção numa aba só (23/11/2026): o Quadro abre primeiro, e
+  // lançamentos, manutenção e relatórios ficam a um toque.
+  await expect(topViews.getByRole('tab', { name: 'Quadro' })).toHaveAttribute('aria-selected', 'true');
+  for (const nome of [/^Lançamentos/, /^Manutenção/, /^Relatórios/]) await expect(topViews.getByRole('tab', { name: nome })).toBeVisible();
 });
 
 // Molde de página (auditoria de 21/10/2026): a aba ocupa a tela abaixo da
@@ -196,6 +198,7 @@ test('molde: a aba nasce em tela cheia dentro da casca, sem botão e sem rolar a
   }
   await expect(page.getByTestId('combustivel-tela-cheia')).toHaveCount(0);
   await page.goto('/?screen=frotas&shell=1');
+  await page.getByRole('tab', { name: /^Lançamentos/ }).click();
   const primeiraLinha = page.locator('#controle-equipamentos-tab table tbody tr').first();
   const topo = await primeiraLinha.evaluate(linha => linha.getBoundingClientRect().bottom);
   expect(topo, 'a primeira linha da frota aparece sem rolar').toBeLessThan(768);
@@ -417,14 +420,14 @@ test('painel de presença: quem falta sempre leva aos registros da pessoa', asyn
   await expect(cartao.getByRole('combobox')).toBeVisible();
 });
 
-test('Quadro e Manutenção se abrem um no outro já buscando o prefixo da máquina', async ({ page }) => {
-  // Os cartões de máquina parada ficam na subtela Hoje, que abre primeiro.
+test('Quadro e Manutenção se abrem um no outro dentro da mesma aba, já buscando o prefixo', async ({ page }) => {
+  // Os cartões de máquina parada ficam em Manutenção > Parados agora.
   await page.goto('/?screen=manutencao&shell=1');
-  await page.getByRole('button', { name: /^Ver .+ no quadro$/ }).first().click();
-  await expect(page).toHaveURL(/screen=frotas.*busca=/);
+  const cartao = page.getByTestId('cartao-parada').first();
+  const prefixo = (await cartao.locator('header h3, header h2').first().textContent() || '').trim();
+  await cartao.getByRole('button', { name: /^Ver .+ no quadro$/ }).click();
   // O Quadro carrega sob demanda: na primeira abertura do servidor pode passar de 5 s.
   await expect(page.getByRole('tab', { name: /^Quadro/, selected: true }).first()).toBeVisible({ timeout: 20_000 });
-  const prefixo = new URL(page.url()).searchParams.get('busca') || '';
   await expect(page.getByTestId('quadro-busca')).toHaveValue(prefixo);
 
   await page.goto('/?screen=frotas&shell=1');
@@ -432,8 +435,7 @@ test('Quadro e Manutenção se abrem um no outro já buscando o prefixo da máqu
   await page.getByTestId('quadro-situacao-manutencao').click();
   await page.getByTestId('quadro-arrastar-CB1012').getByRole('button').first().click();
   await page.getByTestId('quadro-ver-ordens').click();
-  await expect(page).toHaveURL(/screen=manutencao.*busca=CB1012/);
-  await expect(page.getByRole('tab', { name: /^(Ordens de serviço|OS)/, selected: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('frota-aba-grupo')).toHaveValue('ordens', { timeout: 20_000 });
   await expect(page.getByPlaceholder('Número, prefixo, problema, responsável...')).toHaveValue('CB1012');
 });
 

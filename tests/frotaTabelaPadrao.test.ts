@@ -26,8 +26,8 @@ test('as subtelas do Controle de Frotas usam a TabelaPadrao, sem <table> à mão
   assert.equal(existsSync('src/components/fleet/FleetMobileCard.tsx'), false, 'o cartão do celular vem da TabelaPadrao');
 });
 
-test('só o Quadro é aba longa: as outras subtelas deixam a tabela rolar por dentro', () => {
-  assert.match(aba, /longa=\{activeView === 'quadro'\}/);
+test('só o Quadro e o Faltando (duas listas empilhadas) são abas longas: as outras deixam a tabela rolar por dentro', () => {
+  assert.match(aba, /longa=\{activeView === 'quadro' \|\| activeView === 'faltando'\}/);
 });
 
 test('o relatório impresso não soma h1 na tela', () => {

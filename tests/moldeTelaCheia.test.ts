@@ -37,7 +37,13 @@ test('Combustível, Frotas e Presença nascem cheias, sem botão de tela cheia',
   for (const [arquivo, id] of Object.entries(NO_MOLDE)) {
     const fonte = ler(arquivo);
     assert.match(fonte, new RegExp(`<TelaCheia[^>]*id="${id}"`), arquivo);
-    assert.match(fonte, /<AbasDaTela/, arquivo);
+    // Frotas recebe as abas prontas da aba única Frotas e Manutenção (23/11/2026).
+    if (arquivo.endsWith('ControleEquipamentosDiarioTab.tsx')) {
+      assert.match(fonte, /abas=\{abas\}/, arquivo);
+      assert.match(ler('src/components/FrotaManutencao.tsx'), /<AbasDaTela/);
+    } else {
+      assert.match(fonte, /<AbasDaTela/, arquivo);
+    }
     assert.doesNotMatch(fonte, /telaCheia|CHAVE_TELA_CHEIA|Maximize2|<main\b/, arquivo);
   }
 });

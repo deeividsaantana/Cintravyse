@@ -21,8 +21,10 @@ const ABAS_COM_LANCAMENTO: Record<string, readonly string[]> = {
   programacao: ['ProgramacaoTab.tsx', 'programacao/AtividadeForm.tsx'],
   solicitacoes: ['SolicitacoesTab.tsx', 'solicitacoes/NovaSolicitacao.tsx'],
   estacas: ['EstacasTab.tsx', 'estacas/FormCravacao.tsx', 'estacas/abasEstacas.ts'],
-  manutencao: ['ManutencaoTab.tsx'],
-  frotas: ['ControleEquipamentosDiarioTab.tsx', 'fleet/DailyRecordForm.tsx'],
+  // Frotas e Manutenção numa aba só (23/11/2026): as subtelas (e o grupo
+  // Relatórios) moram em frotaManutencao/abasFrotaManutencao.ts.
+  manutencao: ['ManutencaoTab.tsx', 'frotaManutencao/abasFrotaManutencao.ts'],
+  frotas: ['ControleEquipamentosDiarioTab.tsx', 'fleet/DailyRecordForm.tsx', 'frotaManutencao/abasFrotaManutencao.ts'],
   pluviometro: ['PluviometroTab.tsx'],
   presenca: ['ControlePresencaTab.tsx'],
   contratacao: ['ContratacaoTab.tsx', 'contratacao/FolhaContratacao.tsx'],

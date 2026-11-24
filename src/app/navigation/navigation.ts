@@ -6,7 +6,7 @@ import {
   Hammer,
   LayoutDashboard,
   Truck,
-  Activity,
+  Wrench,
   Users,
   ShoppingCart,
   FileSignature,
@@ -46,8 +46,9 @@ export const NAVIGATION_GROUPS = [
   {
     label: 'Equipamentos',
     items: [
-      { id: 'controle-equipamentos', label: 'Controle Operacional de Frotas', icon: Activity },
-      { id: 'manutencao', label: 'Manutenção', icon: Truck },
+      // Frotas e Manutenção numa aba só (23/11/2026): a Manutenção continua
+      // como permissão e endereço, mas abre dentro desta aba.
+      { id: 'controle-equipamentos', label: 'Controle de Frotas e Manutenção', icon: Truck },
       { id: 'lancamentos', label: 'Combustível', icon: ClipboardList },
     ],
   },
@@ -142,7 +143,7 @@ const SIDEBAR_GROUP_LABELS: Record<string, string> = {
 // app. Sem isso "Controle Operacional de Frotas" cortava no meio da palavra
 // com o menu mais estreito.
 const SIDEBAR_ITEM_LABELS: Record<string, string> = {
-  'controle-equipamentos': 'Controle de Frotas',
+  'controle-equipamentos': 'Frotas e Manutenção',
   contratacao: 'Contratação',
 };
 
@@ -163,7 +164,10 @@ export const ALL_NAVIGATION_ITEMS = SIDEBAR_NAVIGATION_GROUPS
   .reduce<NavigationItem[]>((items, groupItems) => items.concat(groupItems), [])
   // Colaboradores é uma vista de Cadastros: continua sendo um módulo válido
   // para permissões e links antigos, mas não ganha um segundo botão na sidebar.
-  .concat({ id: 'colaboradores', label: 'Colaboradores', icon: Users });
+  .concat({ id: 'colaboradores', label: 'Colaboradores', icon: Users })
+  // Manutenção abre dentro de Frotas e Manutenção; o nome segue valendo para
+  // permissões, histórico de uso e links antigos.
+  .concat({ id: 'manutencao', label: 'Manutenção', icon: Wrench });
 
 // Task 8: presenca-publica é acessível a todos os perfis (rota pública)
 const PRESENCA_PUBLICA = 'presenca-publica';

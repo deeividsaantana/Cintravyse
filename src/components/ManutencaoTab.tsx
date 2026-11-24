@@ -4,10 +4,10 @@
  * de serviço. As horas do dia saem dos eventos do controle diário da frota
  * (horasParadasDoDia); a OS guarda o atendimento.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { BarChart3, CheckCircle2, ClipboardCheck, ClipboardList, FileSpreadsheet, History, Plus, Search, Timer, Wrench, X } from 'lucide-react';
+import { CheckCircle2, FileSpreadsheet, History, Plus, Search, SlidersHorizontal, Wrench, X } from 'lucide-react';
 import type { ControleEquipamentoDiario, Equipamento, Funcionario, HistoryLog, OrdemServico } from '../types';
 import { historicoDaManutencao } from '../utils/manutencaoHistorico';
 import {
@@ -21,7 +21,6 @@ import {
   EQUIPMENT_FAMILIES,
   EQUIPMENT_FAMILY_LABELS,
   classifyEquipment,
-  equipmentFamilyIcon,
   presentEquipment,
   type EquipmentFamily,
 } from '../utils/equipmentPresentation';
@@ -43,7 +42,6 @@ import {
   type ColunaTabela,
   type PeriodValue,
 } from '../shared/ui';
-import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO } from './cadastros/estilos';
@@ -52,7 +50,7 @@ import { ManutencaoHoje } from './manutencao/ManutencaoHoje';
 import { ConferenciaManutencao } from './manutencao/ConferenciaManutencao';
 import { RelatorioManutencaoDia } from './manutencao/RelatorioManutencaoDia';
 
-interface ManutencaoTabProps {
+export interface ManutencaoTabProps {
   ordensServico: OrdemServico[];
   equipamentos: Equipamento[];
   /** Controle diário da frota: os eventos de entrada e liberação são a fonte das horas do dia. */
@@ -77,12 +75,22 @@ interface ManutencaoTabProps {
   buscaInicial?: string;
   /** Abre a máquina no Quadro de frotas. */
   onVerNoQuadro?: (prefixo: string) => void;
+  /**
+   * Aba única Frotas e Manutenção (23/11/2026): a moldura
+   * (frotaManutencao/FrotaManutencao.tsx) monta as subtelas e guarda a escolhida.
+   */
+  subtela: Subtela;
+  onSubtela: (subtela: Subtela) => void;
+  abas: ReactNode;
+  /** Escolha da tela dentro da seção (Paradas de hoje / Ordens / Conferir 10 h). */
+  seletor?: ReactNode;
+  idAbaAtiva: string;
 }
 
 const TIPOS: OrdemServico['tipo'][] = ['Corretiva', 'Preventiva', 'Preditiva', 'Revisão'];
 const PRIORIDADES: OrdemServico['prioridade'][] = ['Baixa', 'Média', 'Alta', 'Urgente'];
 const STATUS_FILTRO = ['Todas', 'Em aberto', ...FLUXO_MANUTENCAO, 'Cancelada'] as const;
-type Subtela = 'hoje' | 'conferencia' | 'relatorio' | 'ordens' | 'historico';
+export type Subtela = 'hoje' | 'conferencia' | 'relatorio' | 'ordens' | 'historico';
 
 const prioridadeTone = (prioridade: OrdemServico['prioridade']) => {
   if (prioridade === 'Urgente') return 'danger' as const;
@@ -123,10 +131,13 @@ export default function ManutencaoTab({
   onDelete,
   buscaInicial = '',
   onVerNoQuadro,
+  subtela,
+  onSubtela: setSubtela,
+  abas,
+  seletor,
+  idAbaAtiva,
 }: ManutencaoTabProps) {
   const escopo = useRef<HTMLElement>(null);
-  // Quem chega do Quadro com um prefixo vai direto às ordens, onde fica a busca.
-  const [subtela, setSubtela] = useState<Subtela>(buscaInicial ? 'ordens' : 'hoje');
   // As horas do dia correm com o relógio: refaz a conta a cada minuto.
   const [agora, setAgora] = useState(() => new Date());
   useEffect(() => {
@@ -143,6 +154,7 @@ export default function ManutencaoTab({
   // semanas, e abrir a tela já filtrando o mês esconderia OS ainda abertas.
   const [periodo, setPeriodo] = useState<PeriodValue>(() => buildPeriod('mes'));
   const [usarPeriodo, setUsarPeriodo] = useState(false);
+  const [maisFiltros, setMaisFiltros] = useState(false);
   const [editando, setEditando] = useState<OrdemServico | null>(null);
   const [formAberto, setFormAberto] = useState(false);
   const [form, setForm] = useState(formularioVazio());
@@ -168,7 +180,6 @@ export default function ManutencaoTab({
   );
   const motivosDoRelatorio = useMemo(() => motivosDoDia(relatorioDoDia, registrosManutencao, ordensServico), [relatorioDoDia, registrosManutencao, ordensServico]);
   const pendentes = useMemo(() => diasParaConferir(registrosManutencao, ordensServico, agora), [registrosManutencao, ordensServico, agora]);
-  const paraConferir = pendentes.reduce((total, dia) => total + dia.aConferir, 0);
 
   const equipamentoPorId = useMemo(
     () => new Map(equipamentos.map(item => [item.id, item])),
@@ -208,19 +219,6 @@ export default function ManutencaoTab({
       .sort((a, b) => `${b.dataAbertura}${b.numero}`.localeCompare(`${a.dataAbertura}${a.numero}`));
   }, [ordensServico, filtroStatus, filtroFamilia, filtroMotivo, usarPeriodo, periodo.from, periodo.to, busca, equipamentoPorId]);
 
-  // Os indicadores acompanham o recorte: com um filtro ativo, os números do
-  // topo precisam falar do que está na tela, não do arquivo inteiro.
-  const resumo = useMemo(() => {
-    const abertas = lista.filter(ordem => !isOrdemEncerrada(ordem.status));
-    return {
-      abertas: abertas.length,
-      aguardandoPeca: lista.filter(ordem => ordem.status === 'Aguardando Peça').length,
-      concluidas: lista.filter(ordem => ordem.status === 'Concluída').length,
-      pelaRegra: lista.filter(ordem => (ordem.observacao || '').includes(OBSERVACAO_LIMITE)).length,
-      criticas: abertas.filter(ordem => ['Alta', 'Urgente'].includes(ordem.prioridade)).length,
-    };
-  }, [lista]);
-
   const familiasComOrdens = useMemo(() => {
     const contagem = new Map<EquipmentFamily, number>();
     ordensServico.forEach(ordem => {
@@ -230,6 +228,8 @@ export default function ManutencaoTab({
     return EQUIPMENT_FAMILIES.filter(familia => contagem.has(familia))
       .map(familia => ({ familia, total: contagem.get(familia) || 0 }));
   }, [ordensServico, equipamentoPorId]);
+
+  const filtrosEscondidos = [filtroFamilia !== 'todas', filtroMotivo !== 'todos', usarPeriodo].filter(Boolean).length;
 
   const filtrosAtivos = useMemo(() => [
     `Situação: ${filtroStatus}`,
@@ -355,7 +355,8 @@ export default function ManutencaoTab({
       render: ordem => (
         <span className="flex flex-wrap items-center gap-1.5 lg:flex-nowrap">
           <strong className="whitespace-nowrap tabular-nums text-slate-900">{ordem.numero}</strong>
-          <Badge tone={prioridadeTone(ordem.prioridade)}>{ordem.prioridade}</Badge>
+          {/* Prioridade só quando pede pressa: Baixa e Média ficam na ficha. */}
+          {(ordem.prioridade === 'Alta' || ordem.prioridade === 'Urgente') && <Badge tone={prioridadeTone(ordem.prioridade)}>{ordem.prioridade}</Badge>}
         </span>
       ),
     },
@@ -431,7 +432,6 @@ export default function ManutencaoTab({
       return (
         <>
           {proximo && <button type="button" onClick={() => avancar(ordem)} className={`${BOTAO_LINHA} border-emerald-300 text-emerald-800 hover:border-emerald-500`}>{proximo}</button>}
-          <button type="button" onClick={() => abrirEdicao(ordem)} aria-label={`Editar OS ${ordem.numero}`} className={`${BOTAO_LINHA} border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-800`}>Editar</button>
           {onDelete && <button type="button" onClick={() => setExclusao(ordem)} aria-label={`Excluir OS ${ordem.numero}`} className={`${BOTAO_LINHA} border-slate-200 text-rose-700 hover:border-rose-400`}>Excluir</button>}
         </>
       );
@@ -444,29 +444,17 @@ export default function ManutencaoTab({
     gsap.fromTo(raiz.querySelectorAll('[data-manutencao-reveal]'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity' });
   }, { scope: escopo, dependencies: [subtela] });
 
-  const subtelas = [
-    { id: 'hoje' as const, rotulo: 'Hoje', curto: 'Hoje', icone: Timer, contador: relatorioHoje.linhas.filter(linha => linha.parada.periodos.some(periodo => periodo.fim === null)).length, contadorRotulo: 'parados agora', tom: 'neutro' as const },
-    { id: 'conferencia' as const, rotulo: 'Conferência', curto: 'Conferir', icone: ClipboardCheck, contador: paraConferir, contadorRotulo: 'para conferir' },
-    { id: 'ordens' as const, rotulo: 'Ordens de serviço', curto: 'OS', icone: ClipboardList },
-    // Relatório do dia e Histórico dividem uma aba só: no máximo quatro no topo.
-    {
-      grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-        { id: 'relatorio' as const, rotulo: 'Relatório do dia', curto: 'Do dia', icone: BarChart3 },
-        { id: 'historico' as const, rotulo: 'Histórico', icone: History },
-      ],
-    },
-  ];
   const exportaExcel = subtela === 'ordens' || subtela === 'relatorio';
   const semNadaParaExportar = subtela === 'relatorio' ? relatorioDoDia.linhas.length === 0 : lista.length === 0;
 
   return (
-    <TelaCheia ref={escopo} id="manutencao-tab" rotulo="Manutenção"
-      longa={subtela !== 'ordens'} idAbaAtiva={idDaAba('manutencao', subtela)} idDados="manutencao-dados" chaveRolagem={subtela}
+    <TelaCheia ref={escopo} id="manutencao-tab" rotulo="Frotas e Manutenção"
+      longa={subtela !== 'ordens'} idAbaAtiva={idAbaAtiva} idDados="manutencao-dados" chaveRolagem={subtela}
       cabecalho={<PageHeader
        
         eyebrow="Frota"
-        title="Manutenção"
-        abas={<AbasDaTela<Subtela> id="manutencao" rotulo="Subtelas da manutenção" abas={subtelas} ativa={subtela} onTrocar={setSubtela} idPainel="manutencao-dados" testId="manutencao-aba" />}
+        title="Frotas e Manutenção"
+        abas={abas}
         actions={<>
           {exportaExcel && (
             <button type="button" onClick={() => void exportarExcel()} disabled={exportando || semNadaParaExportar} className={BOTAO_SECUNDARIO}>
@@ -480,102 +468,56 @@ export default function ManutencaoTab({
           )}
         </>}
       />}
-      faixa={avisoExport && subtela === 'relatorio'
-        ? <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{avisoExport}</p>
-        : subtela === 'ordens' && <div data-manutencao-reveal className="space-y-2">
-        {/* Números do recorte: acompanham os filtros logo abaixo. */}
-        <ul aria-label="Números do recorte" className="flex flex-wrap items-center gap-1.5">
-          {[
-            { label: 'OS em aberto', valor: String(resumo.abertas), alerta: false },
-            { label: 'Alta ou urgente', valor: String(resumo.criticas), alerta: resumo.criticas > 0 },
-            { label: 'Aguardando peça', valor: String(resumo.aguardandoPeca), alerta: false },
-            { label: 'Concluídas', valor: String(resumo.concluidas), alerta: false },
-            { label: 'Pelo limite de 10 h', valor: String(resumo.pelaRegra), alerta: false },
-          ].map(item => (
-            <li key={item.label} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-semibold ring-1 ring-inset ${item.alerta ? 'bg-amber-50 text-amber-900 ring-amber-200' : 'bg-white text-slate-600 ring-slate-200'}`}>
-              {item.label} <strong className="tabular-nums text-slate-950">{item.valor}</strong>
-            </li>
-          ))}
-        </ul>
-
-        {avisoExport && (
-          <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{avisoExport}</p>
-        )}
-
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-          <label className="relative min-w-0 flex-1 sm:min-w-56">
-            <span className="sr-only">Buscar ordem de serviço</span>
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-            <input
-              type="search"
-              value={busca}
-              onChange={event => setBusca(event.target.value)}
-              placeholder="Número, prefixo, problema, responsável..."
-              className={`${CAMPO} pl-9 pr-3`}
-            />
-          </label>
-          <select
-            value={filtroStatus}
-            onChange={event => setFiltroStatus(event.target.value as (typeof STATUS_FILTRO)[number])}
-            aria-label="Filtrar por situação"
-            className={`${CAMPO} sm:w-auto`}
-          >
-            {STATUS_FILTRO.map(item => <option key={item}>{item}</option>)}
-          </select>
-          <select
-            value={filtroMotivo}
-            onChange={event => setFiltroMotivo(event.target.value)}
-            aria-label="Filtrar por motivo"
-            className={`${CAMPO} sm:w-auto sm:max-w-[16rem]`}
-          >
-            <option value="todos">Todos os motivos</option>
-            {motivosDisponiveis.map(motivo => <option key={motivo} value={motivo}>{motivo}</option>)}
-          </select>
-        </div>
-
-        {familiasComOrdens.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por tipo de equipamento">
-            <button
-              type="button"
-              onClick={() => setFiltroFamilia('todas')}
-              aria-pressed={filtroFamilia === 'todas'}
-              className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 ${filtroFamilia === 'todas' ? 'border-emerald-400 bg-emerald-50/80 text-emerald-800 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-            >
-              Todos <span className="tabular-nums text-slate-500">{ordensServico.length}</span>
-            </button>
-            {familiasComOrdens.map(({ familia, total }) => {
-              const Icon = equipmentFamilyIcon(familia);
-              const ativo = filtroFamilia === familia;
-              return (
-                <button
-                  key={familia}
-                  type="button"
-                  onClick={() => setFiltroFamilia(ativo ? 'todas' : familia)}
-                  aria-pressed={ativo}
-                  title={EQUIPMENT_FAMILY_LABELS[familia]}
-                  className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 ${ativo ? 'border-emerald-400 bg-emerald-50/80 text-emerald-800 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-                >
-                  <Icon className="size-4" strokeWidth={1.7} aria-hidden="true" />
-                  <span className="hidden sm:inline">{EQUIPMENT_FAMILY_LABELS[familia]}</span>
-                  <span className="tabular-nums text-slate-500">{total}</span>
-                </button>
-              );
-            })}
+      faixa={<div className="flex flex-col gap-2">
+        {seletor}
+        {avisoExport && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{avisoExport}</p>}
+        {/* Ordens (23/11/2026, menos detalhe): busca e situação à vista; tipo, motivo e período no botão Filtros. */}
+        {subtela === 'ordens' && <div data-manutencao-reveal className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">Buscar ordem de serviço</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+              <input
+                type="search"
+                value={busca}
+                onChange={event => setBusca(event.target.value)}
+                placeholder="Número, prefixo, problema, responsável..."
+                className={`${CAMPO} pl-9 pr-3`}
+              />
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={filtroStatus}
+                onChange={event => setFiltroStatus(event.target.value as (typeof STATUS_FILTRO)[number])}
+                aria-label="Filtrar por situação"
+                className={`${CAMPO} min-w-0 flex-1 sm:w-auto`}
+              >
+                {STATUS_FILTRO.map(item => <option key={item}>{item}</option>)}
+              </select>
+              <button type="button" onClick={() => setMaisFiltros(atual => !atual)} aria-expanded={maisFiltros} className={`${BOTAO_SECUNDARIO} shrink-0`} data-testid="manutencao-filtros">
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+                {filtrosEscondidos ? `Filtros · ${filtrosEscondidos}` : 'Filtros'}
+              </button>
+            </div>
           </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-600">
-            <input
-              type="checkbox"
-              checked={usarPeriodo}
-              onChange={event => setUsarPeriodo(event.target.checked)}
-              className="size-6 accent-emerald-700"
-            />
-            Filtrar por período de abertura
-          </label>
-          {usarPeriodo && <PeriodFilter value={periodo} onChange={setPeriodo} />}
-        </div>
+          {maisFiltros && (
+            <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-3">
+              <select value={filtroFamilia} onChange={event => setFiltroFamilia(event.target.value as EquipmentFamily | 'todas')} aria-label="Filtrar por tipo de equipamento" className={CAMPO}>
+                <option value="todas">Todos os tipos</option>
+                {familiasComOrdens.map(({ familia, total }) => <option key={familia} value={familia}>{EQUIPMENT_FAMILY_LABELS[familia]} ({total})</option>)}
+              </select>
+              <select value={filtroMotivo} onChange={event => setFiltroMotivo(event.target.value)} aria-label="Filtrar por motivo" className={CAMPO}>
+                <option value="todos">Todos os motivos</option>
+                {motivosDisponiveis.map(motivo => <option key={motivo} value={motivo}>{motivo}</option>)}
+              </select>
+              <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
+                <input type="checkbox" checked={usarPeriodo} onChange={event => setUsarPeriodo(event.target.checked)} className="size-5 accent-emerald-700" />
+                Só um período de abertura
+              </label>
+              {usarPeriodo && <div className="sm:col-span-3"><PeriodFilter value={periodo} onChange={setPeriodo} /></div>}
+            </div>
+          )}
+        </div>}
       </div>}
     >
       {subtela === 'ordens' && (
@@ -602,8 +544,6 @@ export default function ManutencaoTab({
             responsavel={responsavel}
             podeEditar={podeEditar}
             agora={agora}
-            paraConferir={paraConferir}
-            onAbrirConferencia={() => setSubtela('conferencia')}
             onSaveControle={onSaveControle}
             onSalvarConferencia={onSalvarConferencia}
             onVerNoQuadro={onVerNoQuadro}
