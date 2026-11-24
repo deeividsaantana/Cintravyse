@@ -1,6 +1,7 @@
 import { loadAutoTable } from './pdfLoader';
 import type { jsPDF } from './pdfLoader';
 import { gerarEmUmaFolha } from './pdfUmaFolha';
+import { paraRelatorio } from './outroContrato';
 
 import reneaLogo from '../assets/images/renea_logo_new.png';
 import spmarLogo from '../assets/images/spmar_logo.png';
@@ -48,7 +49,8 @@ const imageAsDataUrl = async (url: string) => {
 };
 
 const safeFileName = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_');
-const text = (value: unknown) => value === null || value === undefined || value === '' ? '—' : String(value);
+// Máquina de terceiro sai como "Equipamento de Outro Contrato" em todo PDF gerado.
+const text = (value: unknown) => value === null || value === undefined || value === '' ? '—' : paraRelatorio(String(value));
 const linha = (columns: UniversalPdfColumn[], row: object, total = false) => {
   const record = row as Record<string, unknown>;
   // Na linha de total, a coluna sem valor fica em branco em vez de travessão.
@@ -83,7 +85,7 @@ export async function generateUniversalPdfReport(options: UniversalPdfReportOpti
       const titleX = margin + 52;
       doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.text(institutional, titleX, 11);
       doc.setFontSize(14); doc.text(options.title.toUpperCase(), titleX, 18);
-      if (options.subtitle) { doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(71, 85, 105); doc.text(options.subtitle, titleX, 23); }
+      if (options.subtitle) { doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(71, 85, 105); doc.text(paraRelatorio(options.subtitle), titleX, 23); }
       doc.setDrawColor(16, 185, 129); doc.setLineWidth(.6); doc.line(margin, 27, pageWidth - margin, 27);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(6.6); doc.setTextColor(71, 85, 105);
       doc.text(`Obra: ${options.work || 'Todas / não informada'}`, margin, 32);
@@ -97,7 +99,7 @@ export async function generateUniversalPdfReport(options: UniversalPdfReportOpti
     let startY = headerHeight + 3;
     if (options.filters?.length) {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(71, 85, 105);
-      const filterLines = doc.splitTextToSize(`Filtros aplicados: ${options.filters.join(' · ')}`, pageWidth - margin * 2);
+      const filterLines = doc.splitTextToSize(paraRelatorio(`Filtros aplicados: ${options.filters.join(' · ')}`), pageWidth - margin * 2);
       doc.text(filterLines, margin, startY);
       startY += filterLines.length * 3.4 + 2;
     }

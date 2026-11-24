@@ -1,5 +1,6 @@
 import type ExcelJS from 'exceljs';
 import type { FuelReportExcelRow } from './fuelReport';
+import { nomeNoRelatorio, paraRelatorio } from '../../utils/outroContrato';
 import { COLUNAS_PLANILHA, diaDaSemana, montarResumoGeral, separarPorMes } from './planilhaDiesel';
 
 /**
@@ -90,14 +91,14 @@ const adicionarAbaDoMes = (pasta: ExcelJS.Workbook, nome: string, textoTitulo: s
       diaDaSemana(item.data),
       dataExcel(item.data),
       item.prefixo,
-      item.descricao || 'NÃO CADASTRADO',
+      nomeNoRelatorio(item.descricao),
       numero(item.kmInicial),
       numero(item.horimetro),
       item.litros,
       item.hora,
       item.comboio,
       item.tipoCombustivel,
-      item.empresa || 'NÃO CADASTRADO',
+      nomeNoRelatorio(item.empresa),
       numero(item.bombaInicial),
       numero(item.bombaFinal),
     ]);
@@ -109,8 +110,6 @@ const adicionarAbaDoMes = (pasta: ExcelJS.Workbook, nome: string, textoTitulo: s
     [5, 6, 12, 13].forEach(coluna => { linha.getCell(coluna).numFmt = '0'; });
     linha.getCell(7).numFmt = '#,##0.0';
     linha.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
-    if (!item.descricao) linha.getCell(4).font = { ...FONTE, color: { argb: 'FFFF0000' } };
-    if (!item.empresa) linha.getCell(11).font = { ...FONTE, color: { argb: 'FFFF0000' } };
   });
   if (linhas.length) aba.autoFilter = { from: { row: 5, column: 2 }, to: { row: 5 + linhas.length, column: 13 } };
   return aba;
@@ -187,7 +186,7 @@ const adicionarEquipamentos = (pasta: ExcelJS.Workbook, equipamentos: readonly E
   [...equipamentos]
     .sort((a, b) => a.prefixo.localeCompare(b.prefixo, 'pt-BR', { numeric: true }))
     .forEach((item, indice) => {
-      const linha = aba.addRow([item.prefixo, item.nome, item.familia, item.empresa, item.status]);
+      const linha = aba.addRow([item.prefixo, nomeNoRelatorio(item.nome), paraRelatorio(item.familia), paraRelatorio(item.empresa), item.status]);
       estilizarLinha(linha, 1, 5, indice % 2 === 0);
     });
   if (equipamentos.length) aba.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1 + equipamentos.length, column: 5 } };

@@ -41,6 +41,7 @@ import './historicoCombustivel.test';
 import './protecaoEncolhimento.test';
 import './mudancasNuvem.test';
 import './planilhaDiesel.test';
+import './outroContrato.test';
 import './navigation.test';
 import './situacaoDiariaRastreabilidade.test';
 import './manutencao.test';
