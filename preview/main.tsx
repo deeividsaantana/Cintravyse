@@ -74,7 +74,14 @@ const noopImportAbastecimentos = (items: unknown[] = []) => ({
  * conferir e abrir OS voltam para a tela, como no app.
  */
 function FrotaManutencaoPreview({ vistaInicial, soManutencao = false }: { vistaInicial?: VistaFrotaManutencao; soManutencao?: boolean }) {
-  const [registros, setRegistros] = React.useState(() => [...fx.controlesEquipamentos, ...fx.controlesBasculantes, ...fx.controlesManutencao]);
+  const [registros, setRegistros] = React.useState(() => {
+    const base = [...fx.controlesEquipamentos, ...fx.controlesBasculantes, ...fx.controlesManutencao];
+    // ?muitos=60: repete a frota por 60 dias, perto do volume real (uns 2 mil lançamentos).
+    const dias = Number(new URLSearchParams(location.search).get('muitos') || 0);
+    if (!dias) return base;
+    const doDia = (iso: string, menos: number) => new Date(Date.parse(`${iso}T12:00:00Z`) - menos * 86_400_000).toISOString().slice(0, 10);
+    return base.flatMap(registro => Array.from({ length: dias }, (_, d) => ({ ...registro, id: `${registro.id}-${d}`, chave: `${registro.chave ?? registro.id}-${d}`, data: doDia(registro.data, d) })));
+  });
   const [ordens, setOrdens] = React.useState(() => {
     const vistas = new Set<string>();
     return [...fx.ordensManutencao, ...fx.ordensServico].filter(item => !vistas.has(item.id) && vistas.add(item.id));

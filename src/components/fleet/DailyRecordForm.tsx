@@ -505,7 +505,7 @@ export default function DailyRecordForm({
                   <span className="relative block"><UserRound className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} aria-hidden="true"/><input id="frota-matricula" ref={employeeCodeFieldRef} value={form.employeeCode} onChange={event => update('employeeCode', event.target.value)} onBlur={lookupEmployeeCode} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); lookupEmployeeCode(); prefixFieldRef.current?.focus(); } }} placeholder="Ex.: 103206" className={`${CAMPO} pl-10 pr-3 tabular-nums`}/></span>
                 </Campo>
                 <Campo rotulo="Motorista" para="frota-motorista">
-                  <select id="frota-motorista" value={form.employeeId} onChange={event => applyEmployee(event.target.value)} className={CAMPO}><option value="">Escolha ou use a matrícula</option>{[...activeEmployees].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(employee=><option key={employee.id} value={employee.id}>{employee.matricula ? `${employee.matricula} · ` : ''}{employee.nome}</option>)}</select>
+                  <select id="frota-motorista" value={form.employeeId} onChange={event => applyEmployee(event.target.value)} className={CAMPO}><option value="">Escolha ou use a matrícula</option>{[...activeEmployees].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(employee=><option key={employee.id} value={employee.id}>{employee.nome}{employee.matricula ? ` · ${employee.matricula}` : ''}</option>)}</select>
                 </Campo>
               </div>
               {form.employeeId && <p className="mt-3 text-sm text-slate-600">{form.employeeCompany || 'Empresa não informada'} · {form.teamName || 'sem equipe'}</p>}

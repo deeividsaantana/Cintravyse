@@ -10,8 +10,6 @@
  * V troca Quadro e Lançar, 1 a 4 filtram a situação, L limpa os filtros.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { gsap } from 'gsap';
-import { useGSAP } from '@gsap/react';
 import { DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { CheckCircle2, Keyboard, LayoutGrid, ListChecks, ListFilter, MapPin, Search, SlidersHorizontal, Trash2, Truck, X } from 'lucide-react';
 import type { Abastecimento, ControleEquipamentoDiario, Equipamento, FrenteServico, Funcionario, GrupoEquipe } from '../../types';
@@ -116,7 +114,6 @@ const CONTA: Record<GrupoStatus, (indicadores: ReturnType<typeof calcularIndicad
 };
 
 export default function QuadroFrota({ equipamentos, registros, gruposEquipe, abastecimentos, canteiros = CANTEIROS, frentes, funcionarios, operationalDrivers, podeEditar, usuario, onSave, onSaveMany, onDeleteMany, podeRemover = false, onRemoverEquipamentos, onNavigate, podeAbrir = () => true, dia, onAbrirSituacao, buscaInicial = '', onVerOrdens }: Props) {
-  const escopo = useRef<HTMLDivElement>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
   // Mesma lista de motoristas e operadores do Controle de Frotas, para o operador
   // sugerido aqui ser sempre o mesmo cadastro, sem duplicar em colaboradores.
@@ -303,17 +300,9 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
   useEffect(() => registrarAtalhosDoQuadro(() => acoesAtalho.current!), []);
   useKeyboardShortcuts('frotas', !aberto && !atalhosAberto && !modoSelecao);
 
-  useGSAP(() => {
-    const raiz = escopo.current;
-    if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    // Animações de entrada: sections e elementos com reveal
-    gsap.fromTo(raiz.querySelectorAll('[data-quadro-reveal]'),
-      { opacity: 0, y: 14 },
-      { opacity: 1, y: 0, duration: 0.5, stagger: 0.04, ease: 'power3.out', clearProps: 'transform,opacity' }
-    );
-
-  }, { scope: escopo, dependencies: [dia, vista] });
+  // Sem animação de entrada (24/11/2026): ela lia o estilo de cada bloco e
+  // atrasava a abertura do Quadro; o padrão do site também pede tela que não
+  // começa invisível.
 
   const lancadas = indicadores.total - indicadores.semLancamento;
   const porcento = indicadores.total ? Math.round((lancadas / indicadores.total) * 100) : 0;
@@ -325,7 +314,7 @@ export default function QuadroFrota({ equipamentos, registros, gruposEquipe, aba
   const situacoes = ([['', 'Todas', indicadores.total, 'bg-slate-400'], ...COLUNAS.map(grupo => [grupo, ROTULO_GRUPO[grupo], CONTA[grupo](indicadores), TOM[grupo].ponto] as const)] as const);
 
   return (
-    <div ref={escopo} id="quadro-frota-tab" data-testid="quadro-frota-tab" className="space-y-3">
+    <div id="quadro-frota-tab" data-testid="quadro-frota-tab" className="space-y-3">
       <section aria-label="Resumo do dia" data-quadro-reveal className={`${CARTAO} p-3 sm:p-4`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">

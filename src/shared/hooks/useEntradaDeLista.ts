@@ -10,8 +10,8 @@ import { useGSAP } from '@gsap/react';
  * entrada apenas: quem opera a mesma tela o dia inteiro não pode esperar meio
  * segundo a cada filtro, por isso o passo é de 20ms e a duração de 300ms.
  *
- * Só mexe em transform e opacity, que não forçam novo layout, e devolve os
- * dois ao estado natural no fim (`clearProps`) para não competir com os
+ * Só mexe em transform, que não força novo layout, e devolve o
+ * estado natural no fim (`clearProps`) para não competir com os
  * estilos da própria tela. Com `prefers-reduced-motion` nada é animado: a
  * lista já nasce visível porque nenhum estado inicial chega a ser aplicado.
  *
@@ -27,19 +27,21 @@ export const useEntradaDeLista = <T extends HTMLElement = HTMLDivElement>(
     const raiz = escopo.current;
     if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const linhas = raiz.querySelectorAll('[data-linha-lista]');
+    // Só as primeiras linhas deslizam, e nenhuma começa invisível (24/11/2026):
+    // com 200 linhas a cascata deixava a última escondida por 4 segundos e a
+    // lista parecia travada.
+    const linhas = Array.from(raiz.querySelectorAll('[data-linha-lista]')).slice(0, 12);
     if (!linhas.length) return;
 
     gsap.fromTo(
       linhas,
-      { autoAlpha: 0, y: 8 },
+      { y: 6 },
       {
-        autoAlpha: 1,
         y: 0,
-        duration: 0.3,
-        stagger: 0.02,
+        duration: 0.18,
+        stagger: 0.012,
         ease: 'power2.out',
-        clearProps: 'transform,opacity,visibility',
+        clearProps: 'transform',
       },
     );
   }, { scope: escopo, dependencies: dependencias });

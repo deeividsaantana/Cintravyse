@@ -8,9 +8,11 @@ import type { ConferenciaManutencao, ControleEquipamentoDiario, OrdemServico } f
 import { formatarMinutos, type ParadaDoDia, type SituacaoParada } from './horasParadasDoDia';
 import { montarRelatorioManutencaoDia, type LinhaRelatorioManutencao, type RelatorioManutencaoDia } from './relatorioManutencaoDia';
 
-export const dataDeHoje = (agora: Date): string => new Intl.DateTimeFormat('en-CA', {
+const DATA_LOCAL = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(agora);
+});
+
+export const dataDeHoje = (agora: Date): string => DATA_LOCAL.format(agora);
 
 export const diaAntes = (data: string, dias = 1): string => {
   const d = new Date(`${data}T12:00:00Z`);
@@ -40,11 +42,22 @@ export const diasParaConferir = (
 ): Array<{ data: string; aConferir: number }> => {
   const hoje = dataDeHoje(agora);
   const inicio = diaAntes(hoje, janelaDias);
-  const datas = [...new Set(registros.map(registro => registro.data))]
+  // Cada dia só precisa dos lançamentos dele e da véspera (quem vem parado de
+  // ontem): separar por dia antes evita varrer tudo de novo para cada dia.
+  const porDia = new Map<string, ControleEquipamentoDiario[]>();
+  for (const registro of registros) {
+    const lista = porDia.get(registro.data);
+    if (lista) lista.push(registro);
+    else porDia.set(registro.data, [registro]);
+  }
+  const datas = [...porDia.keys()]
     .filter(data => data >= inicio && data <= hoje)
     .sort((a, b) => b.localeCompare(a));
   return datas
-    .map(data => ({ data, aConferir: montarRelatorioManutencaoDia(data, registros, ordens, agora).aConferir }))
+    .map(data => {
+      const doDia = [...(porDia.get(diaAntes(data)) ?? []), ...(porDia.get(data) ?? [])];
+      return { data, aConferir: montarRelatorioManutencaoDia(data, doDia, ordens, agora).aConferir };
+    })
     .filter(dia => dia.aConferir > 0);
 };
 

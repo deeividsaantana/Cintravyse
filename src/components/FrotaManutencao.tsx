@@ -91,15 +91,18 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
     // versaoRelacao: a relação vem do aparelho e muda sem passar pelos registros.
     [frota?.registros, dia, versaoRelacao],
   );
+  // Depende só das ordens e dos registros: o objeto `manutencao` nasce de novo
+  // a cada render do app e refazia a conta toda vez (24/11/2026).
+  const ordensServico = manutencao?.ordensServico;
   const contadoresManutencao = useMemo(() => {
-    if (!manutencao) return { paradosAgora: 0, paraConferir10h: 0 };
+    if (!ordensServico) return { paradosAgora: 0, paraConferir10h: 0 };
     const doDia = registrosDeManutencao(registros);
-    const relatorio = montarRelatorioManutencaoDia(dataDeHoje(agora), doDia, manutencao.ordensServico, agora);
+    const relatorio = montarRelatorioManutencaoDia(dataDeHoje(agora), doDia, ordensServico, agora);
     return {
       paradosAgora: relatorio.linhas.filter(linha => linha.parada.periodos.some(periodo => periodo.fim === null)).length,
-      paraConferir10h: diasParaConferir(doDia, manutencao.ordensServico, agora).reduce((total, item) => total + item.aConferir, 0),
+      paraConferir10h: diasParaConferir(doDia, ordensServico, agora).reduce((total, item) => total + item.aConferir, 0),
     };
-  }, [manutencao, registros, agora]);
+  }, [ordensServico, registros, agora]);
 
   const contadores = { faltando: conferencia?.equipamentos.missing ?? 0, ...contadoresManutencao };
   // Topo no padrão do site: Manutenção e Relatórios escolhem a tela na

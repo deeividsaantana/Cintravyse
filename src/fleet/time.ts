@@ -1,3 +1,6 @@
+
+const DATA_HORA_CURTA = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
 export interface ParsedOperationalTime {
   raw: string;
   hours: number;
@@ -171,10 +174,7 @@ export const formatBrazilianDateTime = (
 ): string => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return emptyLabel;
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date);
+  return DATA_HORA_CURTA.format(date);
 };
 
 export const compareOperationalTimestamps = (

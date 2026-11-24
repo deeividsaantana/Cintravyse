@@ -23,9 +23,11 @@ export const LIMITE_10H_DESDE = '2026-10-29';
  */
 export const CONTINUIDADE_AUTOMATICA_DESDE = '2026-11-04';
 
-const dataLocal = (momento: Date): string => new Intl.DateTimeFormat('en-CA', {
+const DATA_LOCAL = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(momento);
+});
+
+const dataLocal = (momento: Date): string => DATA_LOCAL.format(momento);
 
 export type ResultadoConferencia = { ok: true; registro: ControleEquipamentoDiario } | { ok: false; erro: string };
 

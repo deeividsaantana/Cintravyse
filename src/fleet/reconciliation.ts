@@ -19,6 +19,8 @@ import {
   findCompanyCanonical,
   findEmployeeCanonical,
   findEquipmentCanonical,
+  indiceDeEquipamentos,
+  indiceDeFuncionarios,
   normalizeComparable,
   normalizeEmployeeCode,
   normalizePlate,
@@ -122,14 +124,14 @@ export const reconcileEquipment = (
   equipment: Equipamento[],
 ): ReconciliationResult<Equipamento> => {
   if (input.equipmentId) {
-    const byId = equipment.find(item => item.id === input.equipmentId);
+    const byId = indiceDeEquipamentos(equipment).porId.get(input.equipmentId)?.[0];
     if (byId) {
       return { value: byId, matchedBy: 'id', confidence: 'exact', warnings: [] };
     }
   }
   if (input.prefix) {
     const normalized = normalizePrefix(input.prefix);
-    const matches = equipment.filter(item => normalizePrefix(item.prefixo) === normalized);
+    const matches = indiceDeEquipamentos(equipment).porPrefixo.get(normalized) ?? [];
     if (matches.length === 1) {
       return {
         value: matches[0],
@@ -150,8 +152,7 @@ export const reconcileEquipment = (
   }
   if (input.plate) {
     const normalized = normalizePlate(input.plate);
-    const matches = equipment.filter(item =>
-      normalizePlate(item.placa || item.seriePlaca) === normalized);
+    const matches = indiceDeEquipamentos(equipment).porPlaca.get(normalized) ?? [];
     if (matches.length === 1) {
       return {
         value: matches[0],
@@ -200,15 +201,14 @@ export const reconcileEmployee = (
   employees: Funcionario[],
 ): ReconciliationResult<Funcionario> => {
   if (input.employeeId) {
-    const byId = employees.find(employee => employee.id === input.employeeId);
+    const byId = indiceDeFuncionarios(employees).porId.get(input.employeeId)?.[0];
     if (byId) {
       return { value: byId, matchedBy: 'id', confidence: 'exact', warnings: [] };
     }
   }
   if (input.employeeCode) {
     const normalized = normalizeEmployeeCode(input.employeeCode);
-    const matches = employees.filter(employee =>
-      normalizeEmployeeCode(employee.matricula) === normalized);
+    const matches = indiceDeFuncionarios(employees).porMatricula.get(normalized) ?? [];
     if (matches.length === 1) {
       return {
         value: matches[0],
