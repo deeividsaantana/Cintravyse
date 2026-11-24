@@ -72,36 +72,82 @@ const APERTOS = 4;
  */
 function useLinhaDoTopo() {
   const ref = useRef<HTMLElement>(null);
+  // O que foi medido por último. A conta força o navegador a refazer o
+  // layout (até 5 vezes); refeita a cada render, deixava a troca de subtela
+  // e o Quadro lentos (24/11/2026). Agora só mede quando o texto do topo, o
+  // número de itens ou a largura da janela mudam.
+  const medido = useRef('');
 
   useLayoutEffect(() => {
     const cabecalho = ref.current;
-    const raiz = document.documentElement;
     const barra = document.querySelector<HTMLElement>('.erp-workspace > .erp-topbar');
-    const subiu = Boolean(cabecalho && barra && cabecalho.closest('.renea-tela-cheia--raiz > .renea-tela-cheia__topo'))
-      && window.matchMedia('(min-width: 1024px)').matches
-      && !cabecalho?.classList.contains('renea-page-header--vazio');
-    if (!cabecalho || !barra || !subiu) {
+    if (!cabecalho || !barra || !topoSobe(cabecalho)) {
       cabecalho?.removeAttribute('data-aperto');
+      medido.current = '';
       return;
     }
-    const acoesDaBarra = barra.querySelector<HTMLElement>('.erp-topbar__actions');
-    const medir = () => {
-      for (let passo = 0; passo <= APERTOS; passo += 1) {
-        cabecalho.dataset.aperto = String(passo);
-        if (passo >= 1) raiz.dataset.topoApertado = '';
-        else delete raiz.dataset.topoApertado;
-        if (acoesDaBarra) raiz.style.setProperty('--renea-topo-direita', `${Math.ceil(acoesDaBarra.getBoundingClientRect().width)}px`);
-        if (cabe(cabecalho)) return;
-      }
-    };
-    medir();
-    const observador = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => medir());
-    observador?.observe(cabecalho);
-    return () => {
-      observador?.disconnect();
-      delete raiz.dataset.topoApertado;
-    };
+    const assinatura = `${window.innerWidth}|${cabecalho.childElementCount}|${cabecalho.getElementsByTagName('*').length}|${cabecalho.textContent}`;
+    if (assinatura === medido.current) return;
+    medido.current = assinatura;
+    // Topo que já foi medido nesta visita (voltar a uma subtela): aplica o
+    // passo guardado, sem medir de novo.
+    const guardado = PASSO_DO_TOPO.get(assinatura);
+    if (guardado !== undefined) aplicarPasso(cabecalho, barra, guardado);
+    else PASSO_DO_TOPO.set(assinatura, medirLinhaDoTopo(cabecalho, barra));
   });
 
+  useLayoutEffect(() => {
+    const cabecalho = ref.current;
+    const barra = document.querySelector<HTMLElement>('.erp-workspace > .erp-topbar');
+    if (!cabecalho || !barra || typeof ResizeObserver === 'undefined') return undefined;
+    // Observa a barra do topo (largura fixa), não o cabeçalho: o cabeçalho
+    // muda de tamanho com a própria medida e mediria de novo a cada troca.
+    let largura = Math.round(barra.getBoundingClientRect().width);
+    const observador = new ResizeObserver(() => {
+      const nova = Math.round(barra.getBoundingClientRect().width);
+      if (nova === largura) return;
+      largura = nova;
+      PASSO_DO_TOPO.clear();
+      if (medido.current && topoSobe(cabecalho)) PASSO_DO_TOPO.set(medido.current, medirLinhaDoTopo(cabecalho, barra));
+    });
+    observador.observe(barra);
+    return () => {
+      observador.disconnect();
+      delete document.documentElement.dataset.topoApertado;
+    };
+  }, []);
+
   return ref;
+}
+
+function topoSobe(cabecalho: HTMLElement) {
+  return Boolean(cabecalho.closest('.renea-tela-cheia--raiz > .renea-tela-cheia__topo'))
+    && window.matchMedia('(min-width: 1024px)').matches
+    && !cabecalho.classList.contains('renea-page-header--vazio');
+}
+
+const PASSO_DO_TOPO = new Map<string, number>();
+
+function aplicarPasso(cabecalho: HTMLElement, barra: HTMLElement, passo: number) {
+  // Só escreve o que muda: mexer no <html> refaz o estilo da página inteira
+  // (com uma tabela grande, cada escrita custava dezenas de ms).
+  const raiz = document.documentElement;
+  if (cabecalho.dataset.aperto !== String(passo)) cabecalho.dataset.aperto = String(passo);
+  const apertado = passo >= 1;
+  if (apertado !== ('topoApertado' in raiz.dataset)) {
+    if (apertado) raiz.dataset.topoApertado = '';
+    else delete raiz.dataset.topoApertado;
+  }
+  const acoesDaBarra = barra.querySelector<HTMLElement>('.erp-topbar__actions');
+  const largura = acoesDaBarra ? `${Math.ceil(acoesDaBarra.getBoundingClientRect().width)}px` : '';
+  if (largura && raiz.style.getPropertyValue('--renea-topo-direita') !== largura) raiz.style.setProperty('--renea-topo-direita', largura);
+}
+
+/** Aperta passo a passo até caber; devolve o passo que ficou. */
+function medirLinhaDoTopo(cabecalho: HTMLElement, barra: HTMLElement) {
+  for (let passo = 0; passo <= APERTOS; passo += 1) {
+    aplicarPasso(cabecalho, barra, passo);
+    if (cabe(cabecalho)) return passo;
+  }
+  return APERTOS;
 }

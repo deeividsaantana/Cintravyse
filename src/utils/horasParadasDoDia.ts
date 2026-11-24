@@ -41,13 +41,18 @@ const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 const paraMin = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
 const paraHora = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 
-export const horaLocal = (iso: string): string => new Intl.DateTimeFormat('pt-BR', {
+// Formatadores criados uma vez só: criar um a cada conta deixava a Manutenção
+// lenta (centenas por troca de subtela, 24/11/2026).
+const HORA_LOCAL = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-}).format(new Date(iso));
-
-const dataLocal = (momento: Date): string => new Intl.DateTimeFormat('en-CA', {
+});
+const DATA_LOCAL = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(momento);
+});
+
+export const horaLocal = (iso: string): string => HORA_LOCAL.format(new Date(iso));
+
+const dataLocal = (momento: Date): string => DATA_LOCAL.format(momento);
 
 export const formatarMinutos = (min: number): string => {
   const h = Math.floor(min / 60);

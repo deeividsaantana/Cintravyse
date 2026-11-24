@@ -15,9 +15,10 @@ import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CARTAO, FOCO, ROTULO } from '.
 import { BarraDoLimite, SeloSituacao } from './CartaoParada';
 
 const dataBr = (data: string) => data.split('-').reverse().join('/');
-const quando = (iso: string) => new Intl.DateTimeFormat('pt-BR', {
+const QUANDO = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-}).format(new Date(iso)).replace(',', ' às');
+});
+const quando = (iso: string) => QUANDO.format(new Date(iso)).replace(',', ' às');
 
 interface Props {
   registros: readonly ControleEquipamentoDiario[];

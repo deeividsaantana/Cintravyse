@@ -29,9 +29,11 @@ export interface RelatorioManutencaoDia {
 
 const ORDEM_GRUPO = { LIMITE: 0, INCONSISTENTE: 1, OK: 2 } as const;
 
-const dataHoje = (agora: Date): string => new Intl.DateTimeFormat('en-CA', {
+const DATA_LOCAL = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(agora);
+});
+
+const dataHoje = (agora: Date): string => DATA_LOCAL.format(agora);
 
 export const montarRelatorioManutencaoDia = (
   data: string,

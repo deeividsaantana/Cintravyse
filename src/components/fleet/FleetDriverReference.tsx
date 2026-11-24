@@ -173,7 +173,7 @@ export default function FleetDriverReference({ records, date, drivers, onAddDriv
               <span className="sr-only">Incluir operador da lista de Motoristas</span>
               <select value={escolhido} onChange={event => setEscolhido(event.target.value)} className={CAMPO}>
                 <option value="">Incluir operador de Motoristas…</option>
-                {foraDaRelacao.map(driver => <option key={driver.id} value={driver.id}>{driver.matricula} · {driver.nome}</option>)}
+                {[...foraDaRelacao].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(driver => <option key={driver.id} value={driver.id}>{driver.nome} · {driver.matricula}</option>)}
               </select>
             </label>
             <button type="button" disabled={!escolhido} onClick={() => {

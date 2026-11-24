@@ -304,8 +304,9 @@ export default function ControleEquipamentosDiarioTab({
 
     gsap.fromTo(
       '[data-fleet-enter]',
-      { autoAlpha: 0, y: 14 },
-      { autoAlpha: 1, y: 0, duration: 0.48, stagger: 0.075, ease: 'power2.out', clearProps: 'transform,visibility,opacity' },
+      // Só um deslizar curto, sem começar invisível (padrão do site, seção 5).
+      { y: 8 },
+      { y: 0, duration: 0.2, ease: 'power2.out', clearProps: 'transform' },
     );
 
     // Mesma profundidade do painel principal: o cartão sobe 3px ao receber
@@ -336,8 +337,8 @@ export default function ControleEquipamentosDiarioTab({
     if (!view || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     gsap.fromTo(
       view,
-      { autoAlpha: 0, y: 10 },
-      { autoAlpha: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform,visibility,opacity' },
+      { y: 8 },
+      { y: 0, duration: 0.2, ease: 'power2.out', clearProps: 'transform' },
     );
     // As linhas das tabelas entram em cascata curta pelo useEntradaDeLista
     // de cada subtela.

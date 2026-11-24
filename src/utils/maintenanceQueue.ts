@@ -3,6 +3,8 @@ import { isOrdemEncerrada } from './manutencao';
 import { horasParadasDoDia } from './horasParadasDoDia';
 import { classifyEquipment, type EquipmentFamily } from './equipmentPresentation';
 
+const DATA_LOCAL = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
+
 export interface MaintenanceQueueItem {
   ordemId: string;
   numero: string;
@@ -42,7 +44,7 @@ export const buildMaintenanceQueue = (
   controlesEquipamentos: ControleEquipamentoDiario[] = [],
 ): MaintenanceQueueItem[] => {
   const equipamentoPorId = new Map(equipamentos.map(item => [item.id, item]));
-  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(agora);
+  const hoje = DATA_LOCAL.format(agora);
   const doDia = controlesEquipamentos.filter(item => item.data === hoje);
   const controlePorOrdem = new Map(
     controlesEquipamentos

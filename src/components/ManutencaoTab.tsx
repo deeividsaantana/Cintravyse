@@ -441,7 +441,7 @@ export default function ManutencaoTab({
   useGSAP(() => {
     const raiz = escopo.current;
     if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    gsap.fromTo(raiz.querySelectorAll('[data-manutencao-reveal]'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out', clearProps: 'transform,opacity' });
+    gsap.fromTo(raiz.querySelectorAll('[data-manutencao-reveal]'), { y: 8 }, { y: 0, duration: 0.2, ease: 'power2.out', clearProps: 'transform' });
   }, { scope: escopo, dependencies: [subtela] });
 
   const exportaExcel = subtela === 'ordens' || subtela === 'relatorio';
