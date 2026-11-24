@@ -1,5 +1,6 @@
 import type { FuelReportExcelRow } from './fuelReport';
 import { getFuelRecordCompetence } from './fuelReport';
+import { nomeNoRelatorio } from '../../utils/outroContrato';
 
 /**
  * O modelo da planilha "FORNECIMENTO DIESEL" que a obra usa: uma aba por mês
@@ -91,12 +92,12 @@ export const montarResumoGeral = (linhas: readonly FuelReportExcelRow[], topEqui
     comboios.set(nomeComboio, comboio);
 
     const prefixo = linha.prefixo || 'Sem prefixo';
-    const maquina = maquinas.get(prefixo) ?? { prefixo, equipamento: linha.descricao || 'NÃO CADASTRADO', litros: 0, lancamentos: 0 };
+    const maquina = maquinas.get(prefixo) ?? { prefixo, equipamento: nomeNoRelatorio(linha.descricao), litros: 0, lancamentos: 0 };
     maquina.litros += linha.litros;
     maquina.lancamentos += 1;
     maquinas.set(prefixo, maquina);
 
-    const empresa = linha.empresa || 'NÃO CADASTRADO';
+    const empresa = nomeNoRelatorio(linha.empresa);
     empresas.set(empresa, (empresas.get(empresa) ?? 0) + linha.litros);
   });
 
