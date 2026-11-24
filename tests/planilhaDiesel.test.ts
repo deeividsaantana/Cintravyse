@@ -30,8 +30,8 @@ test('resumo geral soma por mês, comboio, máquina e empresa', () => {
   assert.equal(resumo.totalLitros, 205.3);
   assert.equal(resumo.lancamentos, 3);
   assert.deepEqual(resumo.porComboio, [{ comboio: 'TQC019', litros: 205.3, lancamentos: 3, ultimaData: '2026-10-06', ultimaBombaFinal: 165 }]);
-  assert.deepEqual(resumo.topEquipamentos.map(item => [item.prefixo, item.equipamento, item.litros]), [['LO165', 'Gerador', 105.3], ['CB795', 'NÃO CADASTRADO', 100]]);
-  assert.deepEqual(resumo.porEmpresa, [{ empresa: 'Renea', litros: 105.3 }, { empresa: 'NÃO CADASTRADO', litros: 100 }]);
+  assert.deepEqual(resumo.topEquipamentos.map(item => [item.prefixo, item.equipamento, item.litros]), [['LO165', 'Gerador', 105.3], ['CB795', 'Equipamento de Outro Contrato', 100]]);
+  assert.deepEqual(resumo.porEmpresa, [{ empresa: 'Renea', litros: 105.3 }, { empresa: 'Equipamento de Outro Contrato', litros: 100 }]);
 });
 
 test('o Excel sai no modelo da planilha', async () => {
@@ -45,7 +45,7 @@ test('o Excel sai no modelo da planilha', async () => {
   assert.equal(outubro.getCell('G6').value, 40.25);
   assert.equal(outubro.getCell('A6').value, 'seg');
   const setembro = pasta.getWorksheet('SETEMBRO 2026')!;
-  assert.equal(setembro.getCell('D6').value, 'NÃO CADASTRADO');
+  assert.equal(setembro.getCell('D6').value, 'Equipamento de Outro Contrato');
   assert.equal(pasta.getWorksheet('Resumo Geral')!.getCell('B4').value, 205.3);
   // A pasta abre no mês mais recente.
   assert.equal(pasta.views[0].activeTab, 3);

@@ -1,4 +1,5 @@
 import type ExcelJS from 'exceljs';
+import { paraRelatorio } from './outroContrato';
 
 // ExcelJS (939 kB) e JSZip so entram na memoria quando alguem realmente exporta
 // ou importa uma planilha. Antes, abrir a aba de Combustivel ja baixava a
@@ -268,7 +269,15 @@ export const loadValidatedWorkbook = async (file: File, maxSizeMb = 25) => {
   return workbook;
 };
 
+/** Máquina de terceiro sai como "Equipamento de Outro Contrato" em toda planilha gerada. */
+const trocarNomesDeTerceiro = (workbook: ExcelJS.Workbook) => {
+  workbook.eachSheet(aba => aba.eachRow(linha => linha.eachCell(celula => {
+    if (typeof celula.value === 'string') celula.value = paraRelatorio(celula.value);
+  })));
+};
+
 export const downloadCorporateWorkbook = async (workbook: ExcelJS.Workbook, fileName: string) => {
+  trocarNomesDeTerceiro(workbook);
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: EXCEL_MIME });
   const url = URL.createObjectURL(blob);

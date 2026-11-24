@@ -1,5 +1,6 @@
 import type { Abastecimento, Comboio, Empresa, Equipamento } from '../../types';
 import { chaveMaquina, idsRepetidos } from './repetidosDiesel';
+import { nomeNoRelatorio } from '../../utils/outroContrato';
 
 /**
  * Números do relatório do diesel para um período: total, ritmo por dia,
@@ -216,7 +217,7 @@ export const montarFornecimento = ({
       data: item.data,
       hora: item.hora || '',
       prefixo: maquina?.prefixo || item.prefixoInformado?.trim().toUpperCase() || 'Sem prefixo',
-      descricao: maquina?.nome || 'Sem cadastro',
+      descricao: nomeNoRelatorio(maquina?.nome),
       comboio: nomeComboio.get(item.comboioId) || '',
       horimetro: numeroOuNada(item.horimetroInicial),
       km: numeroOuNada(item.kmInicial),

@@ -1,5 +1,6 @@
 import type { Abastecimento, Comboio, Empresa, Equipamento, TipoCombustivel } from '../../types';
 import { parseFuelAnalyticsNumber } from '../../utils/fuelAnalyticsSafety';
+import { nomeNoRelatorio } from '../../utils/outroContrato';
 
 export interface FuelReportFilters {
   competencias?: readonly string[];
@@ -204,14 +205,14 @@ export const buildFuelReport = (sources: FuelReportSources, filters: FuelReportF
         dia: record.data ? record.data.slice(8, 10) : '',
         data: record.data,
         prefixo: equipamento?.prefixo || record.prefixoInformado || '',
-        descricao: equipamento?.nome || '',
+        descricao: nomeNoRelatorio(equipamento?.nome),
         kmInicial: record.kmInicial > 0 ? record.kmInicial : '',
         horimetro: record.horimetroInicial > 0 ? record.horimetroInicial : '',
         litros,
         hora: record.hora || '',
         comboio: comboios.get(record.comboioId)?.nome || record.comboioId || '',
         tipoCombustivel: combustiveis.get(record.tipoCombustivelId)?.nome || record.tipoCombustivelId || '',
-        empresa: empresa?.nome || '',
+        empresa: nomeNoRelatorio(empresa?.nome),
         bombaInicial: record.bombaInicial > 0 ? record.bombaInicial : '',
         bombaFinal: record.bombaFinal > 0 ? record.bombaFinal : '',
         status: review ? 'Conferência necessária' : record.status || 'OK',
