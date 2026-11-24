@@ -37,6 +37,7 @@ import { ETAPAS, SITUACOES, SOLICITACOES, emAberto, etapaPendente, nomeDaEtapa, 
 import {
   apagarContratacao,
   carregarContratacoes,
+  carregarPedido,
   linkDoPedido,
   type DadosContratacao,
   type Etapa,
@@ -128,7 +129,17 @@ export default function ContratacaoTab() {
   const pedidos = useMemo(() => dados?.requests ?? [], [dados]);
   const assina = Boolean(me && (ETAPAS as string[]).some(etapa => me.papeis.includes(etapa as PapelContratacao)));
   const fila = useMemo(() => (me ? pedidos.filter(pedido => podeDecidir(pedido, pedido.signatures, me)) : []), [pedidos, me]);
-  const aberto = pedidos.find(pedido => pedido.id === abertoId) ?? null;
+  const daLista = pedidos.find(pedido => pedido.id === abertoId) ?? null;
+  // A lista chega sem o desenho das assinaturas (fica leve); ao abrir a folha,
+  // o pedido vem inteiro. Enquanto não chega, a folha mostra o da lista.
+  const [completo, setCompleto] = useState<PedidoContratacao | null>(null);
+  useEffect(() => {
+    if (!daLista) return undefined;
+    let vivo = true;
+    carregarPedido(daLista.id).then(pedido => { if (vivo) setCompleto(pedido); }, () => undefined);
+    return () => { vivo = false; };
+  }, [daLista?.id, daLista?.version]);
+  const aberto = daLista && completo?.id === daLista.id && completo.version === daLista.version ? completo : daLista;
   const contagem = useMemo(() => {
     const total = { etapa_1: 0, etapa_2: 0, etapa_3: 0, concluido: 0, recusada: 0 } as Record<SituacaoContratacao, number>;
     pedidos.forEach(pedido => { if (pedido.status in total) total[pedido.status] += 1; });
