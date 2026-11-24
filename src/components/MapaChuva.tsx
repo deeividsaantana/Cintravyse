@@ -117,24 +117,8 @@ export default function MapaChuva({ diarios, responsavel = '', mesSelecionado, o
 
   return (
     <section id="mapa-de-chuvas" className="rounded-xl border border-[#e2e8e4] bg-white">
-      <header className="relative overflow-hidden border-b border-[#e2e8e4] px-4 py-4 sm:px-5">
-        {/* As nuvens andam devagar atrás do título. É só transform e opacity,
-            e param de vez para quem pede movimento reduzido. */}
-        <div className="mapa-chuva__ceu" aria-hidden="true">
-          {[0, 1, 2].map(indice => (
-            <svg key={indice} className={`mapa-chuva__nuvem mapa-chuva__nuvem--${indice}`} viewBox="0 0 120 48" width="120" height="48">
-              <path
-                d="M26 38h62a15 15 0 0 0 1-30 20 20 0 0 0-37-6 14 14 0 0 0-26 9A13 13 0 0 0 26 38Z"
-                fill="#bfdbfe"
-              />
-              {[38, 54, 70].map(x => (
-                <line key={x} x1={x} y1="40" x2={x - 4} y2="47" stroke="#93c5fd" strokeWidth="2.5" strokeLinecap="round" />
-              ))}
-            </svg>
-          ))}
-        </div>
-
-        <div className="relative flex flex-wrap items-center justify-between gap-3">
+      <header className="border-b border-[#e2e8e4] px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <CloudRain className="h-6 w-6 text-blue-700" aria-hidden="true" />
             <div>
@@ -169,13 +153,14 @@ export default function MapaChuva({ diarios, responsavel = '', mesSelecionado, o
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-3 lg:grid-cols-5 sm:p-5">
+      <div className="grid grid-cols-2 gap-2.5 p-4 lg:grid-cols-4 sm:p-5">
         {[
           { rotulo: 'Total no mês', valor: `${dados.totalMm.toLocaleString('pt-BR')} mm` },
           { rotulo: 'Dias com chuva', valor: String(dados.diasComChuva) },
           { rotulo: 'Dias impraticáveis', valor: String(dados.diasImpraticaveis) },
           { rotulo: 'Horas paradas', valor: dados.horasParadas.toLocaleString('pt-BR') },
-          { rotulo: 'Dias sem diário', valor: String(dados.diasSemDiario) },
+          // No máximo 4 números (padrão do site); os dias sem diário já
+          // aparecem em cinza no calendário e seguem no PDF.
         ].map(item => (
           <div key={item.rotulo} className="min-w-0 rounded-lg border border-[#e2e8e4] p-3">
             <p className="text-xs font-bold leading-tight text-slate-500">{item.rotulo}</p>

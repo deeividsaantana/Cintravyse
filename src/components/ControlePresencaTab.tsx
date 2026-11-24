@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -871,62 +870,55 @@ export default function ControlePresencaTab({
     </div>
   ) : null;
 
+  // Padrão do site (seção 3): busca + um filtro (o dia) à vista; o resto no
+  // botão Filtros, com o número de filtros ligados.
+  const filtrosNoBotao = filtrosAtivos - (dashboardSearch.trim() !== '' ? 1 : 0);
   const faixaPainel = (
     <section className={PANEL} aria-label="Recorte do painel">
       <div className="flex flex-wrap items-center gap-2 p-3">
+        <label className="relative min-w-[12rem] flex-1">
+          <span className="sr-only">Buscar pessoa</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+          <input type="search" value={dashboardSearch} onChange={event => setDashboardSearch(event.target.value)} placeholder="Buscar nome ou matrícula" className={`${FIELD} pl-9`} />
+        </label>
+        {view !== 'relatorios' && (
+          <label className="max-sm:flex-1">
+            <span className="sr-only">Dia</span>
+            <input type="date" value={referenceDate} onChange={event => setReferenceDate(event.target.value)} max={today} className={FIELD} />
+          </label>
+        )}
         <button
           type="button"
           onClick={() => setFiltrosAbertos(atual => !atual)}
           aria-expanded={filtrosAbertos}
           aria-controls="presenca-filtros"
-          className={`inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 transition hover:border-emerald-700 ${FOCO}`}
+          className={`${filtrosAbertos ? PRIMARY_BUTTON : SECONDARY_BUTTON}`}
         >
-          <Filter className="h-4 w-4 text-emerald-800" aria-hidden="true" />
-          Filtros
-          {filtrosAtivos > 0 && (
-            <span className="rounded-full bg-[#176b4d] px-1.5 text-xs font-black text-white">{filtrosAtivos}</span>
-          )}
-          <ChevronDown className={`h-4 w-4 transition-transform ${filtrosAbertos ? 'rotate-180' : ''}`} aria-hidden="true" />
+          <Filter className="h-4 w-4" aria-hidden="true" />
+          Filtros{filtrosNoBotao > 0 ? ` (${filtrosNoBotao})` : ''}
         </button>
-
-        {view === 'relatorios' ? (
-          <span className="inline-flex min-h-11 items-center rounded-lg px-1 text-xs font-semibold text-[#5b6870]">
-            Os filtros valem para o relatório inteiro
-          </span>
-        ) : (
-          <>
-            <span className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3">
-              <span className="text-xs font-bold text-[#5b6870]">Exibindo</span>
-              <strong className="text-sm font-black text-emerald-800">{dashboardRecords.length} pessoas</strong>
-            </span>
-
-            <span className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-900">
-              {dataBr(referenceDate)}
-            </span>
-          </>
-        )}
-
         {filtrosAtivos > 0 && (
           <button
             type="button"
             onClick={limparFiltrosPainel}
-            className={`ml-auto inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-black text-[#5b6870] hover:text-emerald-800 ${FOCO}`}
+            className={`inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold text-[#5b6870] hover:text-emerald-800 ${FOCO}`}
           >
             Limpar
           </button>
         )}
+        <span className="ml-auto text-sm text-[#5b6870]">
+          {view === 'relatorios' ? 'Os filtros valem para o relatório inteiro' : <><strong className="font-black text-slate-900">{dashboardRecords.length}</strong> pessoas no dia</>}
+        </span>
       </div>
 
       {filtrosAbertos && (
-        <div id="presenca-filtros" className="grid gap-2 border-t border-slate-200 p-3 sm:grid-cols-2 xl:grid-cols-4">
-          {view !== 'relatorios' && <label><span className="sr-only">Data de referência</span><input type="date" value={referenceDate} onChange={event => setReferenceDate(event.target.value)} max={today} className={FIELD} /></label>}
+        <div id="presenca-filtros" className="grid gap-2 border-t border-slate-200 p-3 sm:grid-cols-2 xl:grid-cols-3">
           <label><span className="sr-only">Empresa</span><select value={dashboardCompany} onChange={event => setDashboardCompany(event.target.value)} className={FIELD}><option value="todas">Todas as empresas</option>{safeEmpresas.map(company => <option key={company.id} value={company.id}>{company.nome}</option>)}</select></label>
           <label><span className="sr-only">Equipe</span><select value={dashboardGroup} onChange={event => setDashboardGroup(event.target.value)} className={FIELD}><option value="todos">Todas as equipes</option>{activeGroups.map(group => <option key={group.id} value={group.id}>{group.nome}</option>)}</select></label>
           <label><span className="sr-only">Função</span><select value={dashboardRole} onChange={event => setDashboardRole(event.target.value)} className={FIELD}><option value="todas">Todas as funções</option>{roleOptions.map(role => <option key={role}>{role}</option>)}</select></label>
           <label><span className="sr-only">Situação</span><select value={dashboardStatus} onChange={event => setDashboardStatus(event.target.value as 'todos' | PresencaStatus)} className={FIELD}><option value="todos">Todos os status</option>{STATUS_OPTIONS.map(status => <option key={status}>{status}</option>)}</select></label>
           <label><span className="sr-only">Ramo</span><select value={dashboardBranch} onChange={event => setDashboardBranch(event.target.value)} className={FIELD}><option value="todos">Todos os ramos</option>{ACTIVE_BRANCHES.map(branch => <option key={branch}>{branch}</option>)}</select></label>
           <label><span className="sr-only">Canteiro</span><select value={dashboardSite} onChange={event => setDashboardSite(event.target.value)} className={FIELD}><option value="todos">Todos os canteiros</option>{canteiros.map(site => <option key={site}>{site}</option>)}</select></label>
-          <label><span className="sr-only">Buscar pessoa</span><input type="search" value={dashboardSearch} onChange={event => setDashboardSearch(event.target.value)} placeholder="Nome ou matrícula" className={FIELD} /></label>
         </div>
       )}
     </section>
@@ -1065,24 +1057,24 @@ export default function ControlePresencaTab({
             <article data-cartao-painel className={`renea-card ${PANEL} p-5`}>
               <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-700" /><h2 className="text-lg font-black text-slate-900">Atenção agora</h2></div>
               <div className="mt-4 space-y-2">
-                {pendingGroups.length === 0 && metrics.absent === 0 ? <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">Todas as equipes enviaram e não há ausências abertas.</p> : null}
+                {pendingGroups.length === 0 && metrics.absent === 0 ? <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">Todas as equipes enviaram e não há ausências abertas.</p> : null}
                 {/* A equipe que não usou o link precisa de saída aqui mesmo: é
                     neste cartão que alguém descobre que falta apontamento. */}
                 {pendingGroups.slice(0, 5).map(group => (
-                  <div key={group.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                    <span><strong>{group.nome}</strong> ainda não enviou a presença.</span>
+                  <div key={group.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    <span className="flex items-center gap-2"><span className="size-2 shrink-0 rounded-full bg-[#f26a2e]" aria-hidden="true" /><span><strong className="text-slate-900">{group.nome}</strong> ainda não enviou a presença.</span></span>
                     {onLancarPresencaManual && (
                       <button
                         type="button"
                         onClick={() => abrirLancamento(group.id)}
-                        className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-xs font-bold text-amber-900 transition hover:border-emerald-700 hover:text-emerald-800"
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 transition hover:border-[#176b4d] hover:text-[#176b4d]"
                       >
                         <Edit3 className="h-3.5 w-3.5" /> Lançar presença
                       </button>
                     )}
                   </div>
                 ))}
-                {metrics.absent > 0 && <button type="button" onClick={() => { setRecordStatus('Ausente'); setView('registros'); }} className="flex w-full items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-3 text-left text-sm font-semibold text-rose-900"><span>{metrics.absent} ausência(s) aguardando conferência</span><ChevronRight className="h-4 w-4" /></button>}
+                {metrics.absent > 0 && <button type="button" onClick={() => { setRecordStatus('Ausente'); setView('registros'); }} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-white p-3 text-left text-sm font-semibold text-slate-800 hover:border-[#176b4d]"><span><strong className="text-rose-700">{metrics.absent}</strong> ausência(s) aguardando conferência</span><ChevronRight className="h-4 w-4" /></button>}
               </div>
             </article>
             </div>

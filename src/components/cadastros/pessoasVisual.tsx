@@ -90,9 +90,10 @@ export function ResumoColaboradores({ linhas, filtros, onFiltrar }: {
     { rotulo: 'Sem equipe', total: contar('equipe', 'Sem equipe'), filtro: 'equipe', valor: 'Sem equipe' },
     { rotulo: 'Sem líder', total: contar('lider', 'Sem líder'), filtro: 'lider', valor: 'Sem líder' },
     { rotulo: 'Sem cargo', total: contar('cargo', 'Sem cargo'), filtro: 'cargo', valor: 'Sem cargo' },
-  ];
+  // Contador com zero não aparece (padrão do site, seção 3); o total fica sempre.
+  ].filter(quadro => quadro.filtro === null || quadro.total > 0 || filtros[quadro.filtro] === quadro.valor);
   return (
-    <div role="group" aria-label="Resumo dos colaboradores" data-testid="resumo-colaboradores" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+    <div role="group" aria-label="Resumo dos colaboradores" data-testid="resumo-colaboradores" className="grid grid-cols-2 gap-2 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none">
       {quadros.map(quadro => {
         const ligado = quadro.filtro ? filtros[quadro.filtro] === quadro.valor : false;
         const atencao = quadro.filtro !== null && quadro.total > 0;

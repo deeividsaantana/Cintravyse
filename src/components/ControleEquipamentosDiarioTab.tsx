@@ -6,7 +6,7 @@ import {
   CalendarDays,
   Database,
   CheckCircle2,
-  ChevronDown,
+  MoreVertical,
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
@@ -691,11 +691,10 @@ export default function ControleEquipamentosDiarioTab({
               {filters.date !== hoje && <button type="button" onClick={() => updateFilter('date', hoje)} className={`${BOTAO_SECUNDARIO} shrink-0 px-3`} data-testid="frota-hoje">Hoje</button>}
             </div>
             <input ref={inputRef} type="file" accept=".xlsx,.xlsm,.xls" className="hidden" onChange={readImport}/>
-            <details className="erp-fleet-menu group relative max-sm:flex-1" data-testid="frota-relatorios">
-              <summary className={`${BOTAO_SECUNDARIO} cursor-pointer px-3 max-sm:w-full list-none [&::-webkit-details-marker]:hidden`}>
-                <FileSpreadsheet className="size-4" aria-hidden="true" />
-                Mais ações
-                <ChevronDown className="size-4 transition duration-300 group-open:rotate-180" aria-hidden="true" />
+            {/* ⋮ Mais ações, igual ao de toda aba (padrão do site, seção 2). */}
+            <details className="erp-fleet-menu group relative shrink-0" data-testid="frota-relatorios">
+              <summary aria-label="Mais ações" title="Mais ações" className={`${BOTAO_SECUNDARIO} size-11 min-w-11 cursor-pointer justify-center !px-0 list-none [&::-webkit-details-marker]:hidden`}>
+                <MoreVertical className="size-5" aria-hidden="true" />
               </summary>
               <div className="absolute right-0 z-30 mt-2 w-64 min-w-60 space-y-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-16px_rgba(15,40,31,0.35)]">
                 <p className={ROTULO_GRUPO_MENU}>Importar</p>

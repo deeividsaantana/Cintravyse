@@ -18,6 +18,7 @@ import { ConfirmDialog, isoDay } from '../shared/ui';
 import { PageHeader } from '../shared/ui/PageHeader';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
+import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, FOCO } from './cadastros/estilos';
 import HistoricoCombustivel, { type FiltrosExportacao, type PedidoFiltro } from './combustivel/HistoricoCombustivel';
 import LancamentoCombustivel from './combustivel/LancamentoCombustivel';
@@ -316,9 +317,9 @@ export default function CombustivelOperacionalTab({
     setView(id);
   };
   const cartoes = [
-    { titulo: 'Hoje', valor: litrosTexto(numeros.litrosHoje), detalhe: `${numeros.lancamentosHoje} lançamento(s)` },
-    { titulo: 'Mês', valor: litrosTexto(numeros.litrosMes), detalhe: `${numeros.maquinasMes} máquina(s)` },
-    { titulo: 'A conferir', valor: numeros.aConferir.toLocaleString('pt-BR'), detalhe: numeros.aConferir ? 'Abra e corrija' : 'Tudo certo', alerta: numeros.aConferir > 0 },
+    { titulo: 'Hoje', valor: litrosTexto(numeros.litrosHoje), detalhe: `${numeros.lancamentosHoje} lançamento(s)`, mostrar: numeros.lancamentosHoje > 0 },
+    { titulo: 'Mês', valor: litrosTexto(numeros.litrosMes), detalhe: `${numeros.maquinasMes} máquina(s)`, mostrar: numeros.litrosMes > 0 },
+    { titulo: 'A conferir', valor: numeros.aConferir.toLocaleString('pt-BR'), detalhe: numeros.aConferir ? 'Abra e corrija' : 'Tudo certo', alerta: numeros.aConferir > 0, mostrar: numeros.aConferir > 0 },
   ];
 
   return (
@@ -330,11 +331,12 @@ export default function CombustivelOperacionalTab({
           abas={<AbasDaTela id="combustivel" rotulo="Área de combustível" abas={vistas} ativa={abaAtiva} onTrocar={trocarVista} idPainel="combustivel-dados" />}
           actions={<>
             {view === 'historico' && <ul className="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex" data-testid="combustivel-numeros">
-              {cartoes.map(cartao => <li key={cartao.titulo} title={cartao.detalhe} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold ring-1 ring-inset ${cartao.alerta ? 'bg-amber-50 text-amber-900 ring-amber-200' : 'bg-white text-slate-600 ring-slate-200'}`}>
+              {cartoes.filter(cartao => cartao.mostrar).map(cartao => <li key={cartao.titulo} title={cartao.detalhe} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold ring-1 ring-inset ${cartao.alerta ? 'bg-amber-50 text-amber-900 ring-amber-200' : 'bg-white text-slate-600 ring-slate-200'}`}>
                 {cartao.titulo} <strong className="tabular-nums text-slate-950">{cartao.valor}</strong>
               </li>)}
             </ul>}
-            <button type="button" onClick={onOpenLubrificacao} className={`${BOTAO_SECUNDARIO} min-h-11 shrink-0 px-3`}><Droplets className="size-4 shrink-0" aria-hidden="true" />Lubrificação</button>
+            {/* Coisa rara mora no Mais ações (padrão do site, seção 2). */}
+            <MaisAcoes testId="combustivel-mais-acoes" acoes={[{ rotulo: 'Lubrificação', icone: Droplets, onClick: onOpenLubrificacao, testId: 'combustivel-lubrificacao' }]} />
             <button type="button" onClick={() => abrirNovo()} data-testid="combustivel-vista-novo" className={`${BOTAO_PRIMARIO} max-sm:order-first shrink-0 px-5`}>
               <Plus className="size-5" aria-hidden="true" />Lançar
               <kbd className="hidden rounded-md bg-white/15 px-1.5 font-mono text-xs xl:inline">N</kbd>

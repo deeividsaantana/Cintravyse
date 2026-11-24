@@ -1096,37 +1096,7 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   }
 }
 
-/* ==========================================================================
-   Mapa de chuvas
-   As nuvens andam devagar atrás do título. Só transform e opacity — nada que
-   force o navegador a refazer o layout — e param de vez para quem pediu
-   movimento reduzido no sistema.
-   ========================================================================== */
-.mapa-chuva__ceu {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.mapa-chuva__nuvem {
-  position: absolute;
-  top: -6px;
-  left: -140px;
-  opacity: .34;
-  will-change: transform;
-  animation: mapa-chuva-passa 34s linear infinite;
-}
-
-.mapa-chuva__nuvem--1 { top: 10px; opacity: .22; animation-duration: 52s; animation-delay: -14s; }
-.mapa-chuva__nuvem--2 { top: 26px; opacity: .16; animation-duration: 68s; animation-delay: -30s; }
-
-@keyframes mapa-chuva-passa {
-  from { transform: translateX(0) scale(.9); }
-  to { transform: translateX(calc(100vw + 160px)) scale(.9); }
-}
-
+/* Mapa de chuvas */
 /* O quadradinho do dia cresce de leve ao passar o ponteiro: ajuda a mirar sem
    deslocar os vizinhos, porque a escala não muda o espaço ocupado. */
 .mapa-chuva__dia {
@@ -1137,7 +1107,6 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mapa-chuva__nuvem { animation: none; }
   .mapa-chuva__dia { transition: none; }
   .mapa-chuva__dia:hover { transform: none; }
 }
@@ -1360,3 +1329,32 @@ body,
    ocupa a tela inteira, no computador e no celular. Esc ou Fechar volta. */
 body:has([data-lancamento]) :is(.erp-sidebar, .erp-topbar, #mobile-header) { display: none !important; }
 body:has([data-lancamento]) #main-tab-viewport { --renea-topo: 0px; }
+
+/* Topo no celular (padrão do site, seção 7, 24/11/2026): as ações quebram em
+   linhas; o botão principal (verde) estica e o ⋮ e os botões menores ficam ao
+   lado dele, na mesma linha. Fica por último para valer sobre as camadas
+   antigas acima. */
+@media (max-width: 767px) {
+  #main-tab-viewport .renea-page-header .renea-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: .5rem;
+    width: 100%;
+    overflow: visible;
+  }
+
+  #main-tab-viewport .renea-page-header .renea-page-actions > * {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  #main-tab-viewport .renea-page-header .renea-page-actions > button[class*="bg-[#176b4d]"] {
+    flex: 1 1 10rem;
+    min-width: 0;
+    width: auto;
+    justify-content: center;
+  }
+
+  #main-tab-viewport .renea-page-header .renea-page-actions > input.sr-only { flex: 0 0 0; width: 1px; }
+}
