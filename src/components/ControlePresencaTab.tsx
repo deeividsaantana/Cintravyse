@@ -27,10 +27,13 @@ import {
   Clock,
   X,
   PieChart,
+  Link2,
 } from 'lucide-react';
 import { CartaoIndicador, ConfirmDialog, Modal, PageHeader } from '../shared/ui';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
+import { MaisAcoes } from '../shared/ui/MaisAcoes';
+import LinkPresenca from './cadastros/LinkPresenca';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
 import { normalizeComparable } from '../utils/canonicalIdentity';
 import { readableTeamText, recoverTeamGroups, teamRecordMatches } from '../utils/teamIdentity';
@@ -141,11 +144,15 @@ interface ControlePresencaTabProps {
   onRestorePresenceHistory?: () => Promise<{ success: boolean; message: string }>;
   /** Parte que abre primeiro; a aba Relatórios pede 'relatorios'. */
   viewInicial?: View;
+  /** Link geral de presença (só o administrador), aberto por "Mais ações". */
+  ehAdmin?: boolean;
+  /** Grava só o token do link numa equipe que já existe; equipe nova ou excluída só em Cadastros (A29). */
+  onSalvarLinkDaEquipe?: (grupo: GrupoEquipe) => void;
   /** Leva para Cadastros > Equipes, a única tela onde as equipes se criam e se editam. */
   onGerenciarEquipes?: () => void;
 }
 
-type View = 'ao-vivo' | 'relatorios' | 'registros' | 'historico';
+type View = 'ao-vivo' | 'relatorios' | 'registros' | 'historico' | 'link';
 
 const localToday = () => {
   const now = new Date();
@@ -234,6 +241,8 @@ export default function ControlePresencaTab({
   onRestorePresenceHistory,
   viewInicial,
   onGerenciarEquipes,
+  ehAdmin = false,
+  onSalvarLinkDaEquipe,
 }: ControlePresencaTabProps) {
   const today = localToday();
   const safeFuncionarios = useMemo(() => (Array.isArray(funcionarios) ? funcionarios : []).filter(Boolean), [funcionarios]);
@@ -759,12 +768,14 @@ export default function ControlePresencaTab({
   };
 
   // Duas opções no topo: o dia e um grupo com tudo que é consulta. Equipes moram só em Cadastros.
+  // Padrão do site (23/11/2026): o dia, a lista do que foi lançado e
+  // Relatórios por último. O Link de presença fica em "Mais ações".
   const navItems: ReadonlyArray<ItemDasAbas<View>> = [
     { id: 'ao-vivo', rotulo: 'Ao vivo', icone: Radio },
+    { id: 'registros', rotulo: 'Registros', icone: FileSpreadsheet },
     {
       grupo: 'consulta', rotulo: 'Relatórios', icone: PieChart, abas: [
         { id: 'relatorios', rotulo: 'Resumo', icone: PieChart },
-        { id: 'registros', rotulo: 'Registros', icone: FileSpreadsheet },
         { id: 'historico', rotulo: 'Histórico', icone: History },
       ],
     },
@@ -980,13 +991,14 @@ export default function ControlePresencaTab({
       : view === 'registros' ? faixaRegistros
         : null;
 
-  const acaoPrincipal = view === 'registros'
-      ? <button type="button" onClick={() => void exportExcel()} className={PRIMARY_BUTTON} disabled={filteredRecords.length === 0}><FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Baixar Excel</button>
-      : undefined;
+  const acaoPrincipal = <>
+    {ehAdmin && <MaisAcoes testId="presenca-mais-acoes" acoes={[{ rotulo: 'Link de presença', icone: Link2, onClick: () => setView('link'), testId: 'presenca-abrir-link' }]} />}
+    {view === 'registros' && <button type="button" onClick={() => void exportExcel()} className={PRIMARY_BUTTON} disabled={filteredRecords.length === 0}><FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Baixar Excel</button>}
+  </>;
 
   return (
     <TelaCheia ref={tabRef} id="presenca-tab" rotulo="Presença" className="text-slate-900"
-      longa={!telaDeTabela} idAbaAtiva={idDaAba('presenca', view)} idDados="presenca-dados" chaveRolagem={view}
+      longa={!telaDeTabela} idAbaAtiva={view === 'link' ? undefined : idDaAba('presenca', view)} idDados="presenca-dados" chaveRolagem={view}
       cabecalho={<PageHeader
         eyebrow="Pessoas"
         title="Presença"
@@ -995,6 +1007,7 @@ export default function ControlePresencaTab({
       />}
       faixa={aviso || faixaDaVista ? <>{aviso}{faixaDaVista && <div className={aviso ? 'mt-2' : undefined}>{faixaDaVista}</div>}</> : undefined}
     >
+      {view === 'link' && ehAdmin && <LinkPresenca gruposEquipe={gruposEquipe} onSalvarLink={onSalvarLinkDaEquipe} />}
 
       {view === 'ao-vivo' && pendingPublicSubmissionsCount > 0 && (
         <div role="status" className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

@@ -7,15 +7,16 @@ import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CARTAO } from './estilos';
 
 interface LinkPresencaProps {
   gruposEquipe: GrupoEquipe[];
-  onSaveGrupoEquipe?: (grupo: GrupoEquipe, isNew: boolean) => void;
+  /** Grava só o token do link numa equipe que já existe. */
+  onSalvarLink?: (grupo: GrupoEquipe) => void;
 }
 
 /**
  * Link geral de presença: o endereço que os responsáveis de campo usam para
- * lançar a presença da equipe. Morava na Administração; foi para Cadastros
- * quando a Administração saiu do menu (10/11/2026).
+ * lançar a presença da equipe. Morava na Administração, depois em Cadastros;
+ * desde 23/11/2026 abre pela Presença ("Mais ações"), só para o administrador.
  */
-export default function LinkPresenca({ gruposEquipe, onSaveGrupoEquipe }: LinkPresencaProps) {
+export default function LinkPresenca({ gruposEquipe, onSalvarLink }: LinkPresencaProps) {
   const [aviso, setAviso] = useState('');
   const [renovando, setRenovando] = useState(false);
   const ativos = useMemo(
@@ -37,7 +38,7 @@ export default function LinkPresenca({ gruposEquipe, onSaveGrupoEquipe }: LinkPr
   };
 
   const gerar = () => {
-    if (!dono || !onSaveGrupoEquipe) {
+    if (!dono || !onSalvarLink) {
       setAviso('Crie uma equipe ativa antes de gerar o link geral.');
       return;
     }
@@ -46,7 +47,7 @@ export default function LinkPresenca({ gruposEquipe, onSaveGrupoEquipe }: LinkPr
       return;
     }
     setRenovando(false);
-    onSaveGrupoEquipe({ ...dono, tokenGeral: `geral-${generateSecurePublicToken('presenca')}`, updatedAt: new Date().toISOString() }, false);
+    onSalvarLink({ ...dono, tokenGeral: `geral-${generateSecurePublicToken('presenca')}`, updatedAt: new Date().toISOString() });
     setAviso(token ? 'Link geral renovado.' : 'Link geral criado.');
   };
 

@@ -216,7 +216,7 @@ test('o padrão antigo de tabela não volta: só a TabelaPadrao desenha tabela c
 
 test('telas já migradas usam a TabelaPadrao e não montam <table> à mão', () => {
   const migradas = [
-    'ManutencaoTab.tsx', 'UsuariosTab.tsx', 'cadastros/CadastroLista.tsx',
+    'ManutencaoTab.tsx', 'DevTab.tsx', 'cadastros/CadastroLista.tsx',
   ];
   for (const arquivo of migradas) {
     const fonte = readFileSync(new URL(`../src/components/${arquivo}`, import.meta.url), 'utf8');

@@ -23,7 +23,6 @@ import {
   PenLine,
   Search,
   Settings2,
-  ShieldCheck,
   Trash2,
   UserCheck,
 } from 'lucide-react';
@@ -33,24 +32,23 @@ import { TelaCheia } from '../shared/ui/TelaCheia';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
 import { BOTAO_PERIGO_LEVE, BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CAMPO_SELECT, CARTAO } from './cadastros/estilos';
-import { ETAPAS, PAPEIS, SITUACOES, SOLICITACOES, emAberto, etapaPendente, nomeDaEtapa, podeDecidir, resumoDoPedido } from '../../api/_shared/contratacao-regras.js';
+import { ETAPAS, SITUACOES, SOLICITACOES, emAberto, etapaPendente, nomeDaEtapa, podeDecidir, resumoDoPedido } from '../../api/_shared/contratacao-regras.js';
 import {
   apagarContratacao,
   carregarContratacoes,
-  definirPapelContratacao,
   linkDoPedido,
   type DadosContratacao,
   type Etapa,
   type PapelContratacao,
   type PedidoContratacao,
-  type PessoaContratacao,
   type SituacaoContratacao,
 } from '../services/contratacaoApi';
 import { FolhaContratacao } from './contratacao/FolhaContratacao';
 import { LinhaDeEtapas, SelosDasEtapas, SeloSituacaoContratacao } from './contratacao/SeloSituacaoContratacao';
 import { dataBr, dataHoraBr } from './contratacao/formatos';
 
-type Subtela = 'painel' | 'fila' | 'pedidos' | 'nova' | 'papeis';
+// Quem assina saiu daqui em 23/11/2026: mora só no Dev (cada coisa num lugar só).
+type Subtela = 'painel' | 'fila' | 'pedidos' | 'nova';
 type Bloco = 'indicadores' | 'faltaAssinar' | 'etapas' | 'porArea' | 'movimentos';
 
 const BLOCOS: Record<Bloco, string> = {
@@ -180,7 +178,6 @@ export default function ContratacaoTab() {
     { grupo: 'relatorios', rotulo: 'Relatórios', icone: LayoutDashboard, abas: [
       { id: 'painel', rotulo: 'Resumo', icone: LayoutDashboard },
     ] },
-    ...(me?.admin ? [{ id: 'papeis' as const, rotulo: 'Quem assina', curto: 'Papéis', icone: ShieldCheck }] : []),
   ];
 
   const colunas: ColunaTabela<PedidoContratacao>[] = [
@@ -394,7 +391,6 @@ export default function ContratacaoTab() {
         />
       );
     }
-    if (subtela === 'papeis' && me.admin) return <PapeisContratacao pessoas={dados?.people ?? []} onMudou={() => void carregar(true)} />;
     return painel;
   };
 
@@ -466,47 +462,5 @@ export default function ContratacaoTab() {
         onCancel={() => setApagando(null)}
       />
     </TelaCheia>
-  );
-}
-
-function PapeisContratacao({ pessoas, onMudou }: { pessoas: PessoaContratacao[]; onMudou: () => void }) {
-  const [ocupado, setOcupado] = useState('');
-  const [falha, setFalha] = useState('');
-  const alternar = async (pessoa: PessoaContratacao, papel: PapelContratacao) => {
-    setOcupado(`${pessoa.user_id}:${papel}`);
-    setFalha('');
-    try {
-      await definirPapelContratacao(pessoa.user_id, papel, !pessoa.roles.includes(papel));
-      onMudou();
-    } catch (erro) {
-      setFalha(erro instanceof Error ? erro.message : 'Não foi possível salvar.');
-    } finally {
-      setOcupado('');
-    }
-  };
-  const colunas: ColunaTabela<PessoaContratacao>[] = [
-    { chave: 'nome', titulo: 'Pessoa', render: p => <span><span className="block font-bold">{p.name}</span><span className="block text-[#5b6870]">{p.email}</span></span>, valorOrdenacao: p => p.name, larguraMinima: 220 },
-    ...(Object.entries(PAPEIS) as [PapelContratacao, string][]).map(([papel, rotulo]) => ({
-      chave: papel,
-      titulo: rotulo,
-      larguraMinima: 170,
-      valorOrdenacao: (p: PessoaContratacao) => (p.roles.includes(papel) ? 1 : 0),
-      valorExportacao: (p: PessoaContratacao) => (p.roles.includes(papel) ? 'Sim' : 'Não'),
-      render: (p: PessoaContratacao) => (
-        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
-          <input type="checkbox" className="size-5 accent-[#176b4d]" checked={p.roles.includes(papel)} disabled={Boolean(ocupado)} onChange={() => void alternar(p, papel)} aria-label={`${rotulo}: ${p.name}`} />
-          {p.roles.includes(papel) ? 'Sim' : 'Não'}
-        </label>
-      ),
-    })),
-  ];
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <p data-ct-reveal className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-        Qualquer pessoa com login pode pedir. Aqui você marca quem faz a <strong>1ª assinatura</strong> (Recursos Humanos), a <strong>2ª assinatura</strong> (Gerência, ex.: Bruno) e a <strong>3ª assinatura</strong> (Gerência, ex.: Marcelo Suegama), e quem é <strong>auxiliar</strong> (vê tudo, não assina). 2ª e 3ª têm uma pessoa só cada. Vale para contratação, promoção e desligamento. A mesma pessoa nunca assina duas etapas do mesmo pedido.
-      </p>
-      {falha && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{falha}</p>}
-      <TabelaPadrao titulo="Quem assina a contratação" linhas={pessoas} colunas={colunas} idDaLinha={p => p.user_id} nomeDoItem={{ um: 'pessoa', varios: 'pessoas' }} ordenacaoInicial={{ chave: 'nome', direcao: 'asc' }} />
-    </div>
   );
 }

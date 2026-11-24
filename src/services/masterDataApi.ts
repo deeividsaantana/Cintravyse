@@ -47,34 +47,6 @@ export interface PersistedAuditLog {
 }
 
 export type ManagedUserRole = 'admin' | 'gestor' | 'operador' | 'leitura';
-export type ManagedUserPermission =
-  | 'dashboard'
-  | 'lancamentos'
-  | 'compras'
-  | 'cadastros'
-  | 'frota'
-  | 'presenca'
-  | 'diario'
-  | 'usuarios';
-
-export interface ManagedUser {
-  id: string;
-  userId: string;
-  email: string | null;
-  fullName: string;
-  role: ManagedUserRole;
-  active: boolean;
-  profileName?: string | null;
-  avatarColor?: string | null;
-  avatarPhoto?: string | null;
-  jobTitle?: string | null;
-  phone?: string | null;
-  area?: string | null;
-  registration?: string | null;
-  permissions?: ManagedUserPermission[];
-  lastSeenAt?: unknown;
-}
-
 interface ApiEnvelope<T> {
   success: boolean;
   data: T;
@@ -131,54 +103,6 @@ export const loadPersistedAuditTrail = async (limit = 100): Promise<PersistedAud
   return response.data.records;
 };
 
-export const loadManagedUsers = async (limit = 100): Promise<ManagedUser[]> => {
-  const query = new URLSearchParams({ action: 'users', limit: String(limit) });
-  const response = await request<{ users: ManagedUser[] }>(endpoint + '?' + query);
-  return response.data.users;
-};
-
-export const createManagedUser = async (input: {
-  fullName: string;
-  email: string;
-  role: ManagedUserRole;
-  profileName?: string;
-  avatarColor?: string;
-  avatarPhoto?: string;
-  jobTitle?: string;
-  phone?: string;
-  area?: string;
-  registration?: string;
-  permissions?: ManagedUserPermission[];
-}) => {
-  // senhaPendente: login novo, a pessoa cria a própria senha na tela de entrada.
-  const response = await request<ManagedUser & { senhaPendente: boolean }>(endpoint, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'create-user', ...input }),
-  });
-  return response.data;
-};
-
-export const updateManagedUser = async (input: {
-  uid: string;
-  role: ManagedUserRole;
-  active: boolean;
-  fullName?: string;
-  profileName?: string;
-  avatarColor?: string;
-  avatarPhoto?: string;
-  jobTitle?: string;
-  phone?: string;
-  area?: string;
-  registration?: string;
-  permissions?: ManagedUserPermission[];
-}) => {
-  const response = await request<ManagedUser>(endpoint, {
-    method: 'PATCH',
-    body: JSON.stringify({ action: 'update-user', ...input }),
-  });
-  return response.data;
-};
-
 /** Nome, cor e foto de uma pessoa da equipe, para os avatares. */
 export interface PessoaComAvatar {
   userId: string;
@@ -214,14 +138,6 @@ export const updateMyProfile = async (input: { fullName: string; avatarColor: st
 export const loadPeopleWithAvatars = async (): Promise<PessoaComAvatar[]> => {
   const response = await request<{ pessoas: PessoaComAvatar[] }>(endpoint + '?action=people');
   return response.data.pessoas;
-};
-
-export const deleteManagedUser = async (uid: string): Promise<{ uid: string }> => {
-  const response = await request<{ uid: string }>(endpoint, {
-    method: 'DELETE',
-    body: JSON.stringify({ action: 'delete-user', uid }),
-  });
-  return response.data;
 };
 
 export const listMasterData = async <T extends Record<string, unknown>>(

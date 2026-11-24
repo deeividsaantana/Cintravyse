@@ -162,12 +162,11 @@ test('cargo em uso e equipe com presença não são excluídos de verdade', () =
 });
 
 test('Pessoas reúne colaboradores, cargos, equipes, organograma e pirâmide', () => {
-  const [pessoas] = abasCadastros(() => 1, false);
+  const [pessoas] = abasCadastros(() => 1);
   assert.ok('grupo' in pessoas);
   if (!('grupo' in pessoas)) return;
+  // Acessos mora só no Dev e o Link de presença na Presença (23/11/2026).
   assert.deepEqual(pessoas.abas.map(aba => aba.id), ['funcionarios', 'cargos', 'equipes', 'organograma', 'piramide']);
-  const [comAdmin] = abasCadastros(() => 1, true);
-  assert.ok('grupo' in comAdmin && comAdmin.abas.some(aba => aba.id === 'acessos'));
 });
 
 test('colaborador repetido não entra: matrícula (sem zeros à esquerda) ou nome igual', () => {

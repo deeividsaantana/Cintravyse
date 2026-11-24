@@ -18,7 +18,7 @@ import { ConfirmDialog, isoDay } from '../shared/ui';
 import { PageHeader } from '../shared/ui/PageHeader';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
-import { BOTAO_SECUNDARIO, FOCO } from './cadastros/estilos';
+import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, FOCO } from './cadastros/estilos';
 import HistoricoCombustivel, { type FiltrosExportacao, type PedidoFiltro } from './combustivel/HistoricoCombustivel';
 import LancamentoCombustivel from './combustivel/LancamentoCombustivel';
 import RelatorioDiesel, { type ParteRelatorio } from './combustivel/RelatorioDiesel';
@@ -299,7 +299,6 @@ export default function CombustivelOperacionalTab({
   }, [ativos]);
 
   const vistas = [
-    { id: 'novo' as const, rotulo: view === 'novo' && lancamento.emEdicao ? 'Corrigindo' : 'Lançar', icone: Plus, testId: 'combustivel-vista-novo' },
     { id: 'historico' as const, rotulo: 'Lançamentos', icone: History, testId: 'combustivel-vista-historico' },
     // Relatórios tem duas subtelas: o grupo abre a segunda linha de abas (AbasDaTela).
     {
@@ -310,8 +309,8 @@ export default function CombustivelOperacionalTab({
     },
   ];
   const abaAtiva: AbaCombustivel = view === 'relatorios' ? parteRelatorio : view;
+  // Lançar não é aba (padrão de 23/11/2026): é o botão principal do topo e a tecla N.
   const trocarVista = (id: AbaCombustivel) => {
-    if (id === 'novo') { if (view !== 'novo') abrirNovo(); return; }
     if (id === 'resumo' || id === 'consumo') { setParteRelatorio(id); setView('relatorios'); return; }
     if (id === 'historico') setPedidoFiltro(undefined);
     setView(id);
@@ -336,6 +335,10 @@ export default function CombustivelOperacionalTab({
               </li>)}
             </ul>}
             <button type="button" onClick={onOpenLubrificacao} className={`${BOTAO_SECUNDARIO} min-h-11 shrink-0 px-3`}><Droplets className="size-4 shrink-0" aria-hidden="true" />Lubrificação</button>
+            <button type="button" onClick={() => abrirNovo()} data-testid="combustivel-vista-novo" className={`${BOTAO_PRIMARIO} max-sm:order-first shrink-0 px-5`}>
+              <Plus className="size-5" aria-hidden="true" />Lançar
+              <kbd className="hidden rounded-md bg-white/15 px-1.5 font-mono text-xs xl:inline">N</kbd>
+            </button>
           </>} />
       </div>}
       faixa={<>

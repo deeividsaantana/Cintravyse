@@ -8,11 +8,10 @@ import { cn } from './styles';
  * das abas do topo do Controle de Frotas e da Presença: faixa branca com
  * borda e a aba aberta em verde cheio.
  *
- * Muitas subtelas (Materiais, Estacas e Cadastros têm 17-18): agrupe com
- * `{ grupo, rotulo, abas }`. A primeira linha mostra os grupos (e as abas
- * soltas); a segunda linha, logo abaixo, mostra só as abas do grupo aberto.
- * Tocar num grupo abre a última aba usada nele (ou a primeira). Assim 18
- * subtelas cabem a 1366 px sem rolagem lateral.
+ * Padrão do site (23/11/2026): no máximo quatro opções na linha. Uma opção
+ * com mais de uma tela é um grupo `{ grupo, rotulo, abas }`: a escolha da
+ * tela aparece numa caixinha "Ver" na mesma linha (SeletorVer), nunca numa
+ * segunda fileira. Tocar num grupo abre a última tela usada nele.
  *
  * Acessibilidade: cada linha é um role=tablist com aria-selected; só a aba
  * ativa de cada linha entra no Tab do teclado, e as setas (Home/End também)
@@ -91,7 +90,7 @@ interface BotaoDaLinha {
 }
 
 /** Uma linha de abas (role=tablist) com setas, rolagem própria no celular e selo. */
-function LinhaDeAbas({ botoes, rotulo, testId, secundaria = false }: { botoes: BotaoDaLinha[]; rotulo: string; testId?: string; secundaria?: boolean }) {
+function LinhaDeAbas({ botoes, rotulo, testId }: { botoes: BotaoDaLinha[]; rotulo: string; testId?: string }) {
   const listaRef = useRef<HTMLDivElement>(null);
   const ativa = botoes.find(botao => botao.selecionada)?.chave;
 
@@ -129,8 +128,7 @@ function LinhaDeAbas({ botoes, rotulo, testId, secundaria = false }: { botoes: B
       onKeyDown={teclar}
       data-testid={testId}
       className={cn(
-        'renea-abas flex w-full max-w-full min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:thin] md:w-auto lg:flex-wrap lg:overflow-visible',
-        secundaria ? 'renea-abas--grupo px-1' : 'rounded-xl bg-white p-1 ring-1 ring-inset ring-slate-200',
+        'renea-abas flex w-full max-w-full min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain rounded-xl bg-white p-1 ring-1 ring-inset ring-slate-200 [scrollbar-width:thin] md:w-auto lg:flex-wrap lg:overflow-visible',
       )}
     >
       {botoes.map(botao => {
@@ -148,9 +146,8 @@ function LinhaDeAbas({ botoes, rotulo, testId, secundaria = false }: { botoes: B
             data-testid={botao.testId}
             className={cn(
               'relative inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap px-3 text-sm font-bold transition duration-200 md:flex-none',
-              secundaria
-                ? cn('min-h-11 rounded-none border-b-2 lg:min-h-9', botao.selecionada ? 'border-[#176b4d] text-[#176b4d]' : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900')
-                : cn('min-h-11 flex-1 rounded-lg lg:min-h-10', botao.selecionada ? 'bg-[#176b4d] text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-slate-900'),
+              'min-h-11 flex-1 rounded-lg lg:min-h-10',
+              botao.selecionada ? 'bg-[#176b4d] text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-slate-900',
               FOCO,
             )}
           >
@@ -161,8 +158,8 @@ function LinhaDeAbas({ botoes, rotulo, testId, secundaria = false }: { botoes: B
             </> : <span>{botao.rotulo}</span>}
             {botao.contador > 0 && <>
               <span aria-hidden="true" className={cn('min-w-5 rounded-full px-1.5 text-center text-xs font-bold leading-5 tabular-nums', botao.tom === 'neutro'
-                ? (botao.selecionada ? (secundaria ? 'bg-emerald-50 text-[#176b4d]' : 'bg-white text-[#176b4d]') : 'bg-slate-100 text-slate-700')
-                : (botao.selecionada && !secundaria ? 'bg-white text-[#176b4d]' : 'bg-[#c2410c] text-white'))}>{botao.contador.toLocaleString('pt-BR')}</span>
+                ? (botao.selecionada ? 'bg-white text-[#176b4d]' : 'bg-slate-100 text-slate-700')
+                : (botao.selecionada ? 'bg-white text-[#176b4d]' : 'bg-[#c2410c] text-white'))}>{botao.contador.toLocaleString('pt-BR')}</span>
               <span className="sr-only">, {botao.contador} {botao.contadorRotulo ?? ''}</span>
             </>}
           </button>
@@ -222,11 +219,39 @@ export function AbasDaTela<T extends string>({ abas, ativa, onTrocar, rotulo, id
   });
 
   return (
-    <div className={cn('renea-abas-da-tela flex min-w-0 max-w-full flex-col items-start gap-1', className)}>
+    <div className={cn('renea-abas-da-tela flex min-w-0 max-w-full flex-wrap items-center gap-2', className)}>
       <LinhaDeAbas botoes={primeiraLinha} rotulo={rotulo} testId={testId} />
       {grupoAtivo && grupoAtivo.abas.length > 1 && (
-        <LinhaDeAbas secundaria botoes={grupoAtivo.abas.map(botaoDaAba)} rotulo={`${rotulo}: ${grupoAtivo.rotulo}`} testId={testId ? `${testId}-grupo` : undefined} />
+        <SeletorVer abas={grupoAtivo.abas} ativa={ativa} onTrocar={onTrocar} rotulo={`${rotulo}: ${grupoAtivo.rotulo}`} testId={testId ? `${testId}-grupo` : undefined} />
       )}
     </div>
+  );
+}
+
+/**
+ * Escolha dentro de um grupo (padrão do site, 23/11/2026): uma caixinha "Ver"
+ * na mesma linha das abas, no lugar da antiga segunda fileira. Cada opção
+ * leva o número dela quando pede atenção.
+ */
+function SeletorVer<T extends string>({ abas, ativa, onTrocar, rotulo, testId }: {
+  abas: ReadonlyArray<AbaDaTela<T>>; ativa: T; onTrocar: (id: T) => void; rotulo: string; testId?: string;
+}) {
+  return (
+    <label className="renea-abas-ver flex min-h-11 w-full shrink-0 items-center gap-2 rounded-xl bg-white pl-3 ring-1 ring-inset ring-slate-200 sm:inline-flex sm:w-auto lg:min-h-10">
+      <span className="text-sm font-semibold text-slate-600">Ver</span>
+      <select
+        value={ativa}
+        onChange={evento => onTrocar(evento.target.value as T)}
+        aria-label={rotulo}
+        data-testid={testId}
+        className={cn('min-h-11 min-w-0 flex-1 cursor-pointer rounded-xl border-0 !bg-transparent pr-8 pl-1 text-sm font-bold text-slate-900 shadow-none sm:flex-none lg:min-h-10', FOCO)}
+      >
+        {abas.map(aba => (
+          <option key={aba.id} value={aba.id}>
+            {aba.rotulo}{aba.contador && aba.tom !== 'neutro' ? ` (${aba.contador.toLocaleString('pt-BR')})` : ''}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

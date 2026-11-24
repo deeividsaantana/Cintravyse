@@ -173,5 +173,3 @@ export const apagarAssinaturaSalva = () => chamar<void>({ method: 'POST', body: 
 /** Endereço do link individual de um pedido. */
 export const linkDoPedido = (token: string) => `${window.location.origin}/contratacao-link/${token}`;
 
-export const definirPapelContratacao = (userId: string, role: PapelContratacao, active: boolean) =>
-  chamar<void>({ method: 'POST', body: JSON.stringify({ action: 'papel', user_id: userId, role, active }) });

@@ -61,9 +61,9 @@ test('M12: a última conta de administrador ativa não perde o perfil nem é ina
   await assertKeepsActiveAdmin({ uid: 'a1', role: 'admin', active: true, adminIds: ['a1'], getUser });
 });
 
-test('M12: trocar perfil e inativar pedem confirmação na tela de Usuários', () => {
-  const tela = readFileSync('src/components/UsuariosTab.tsx', 'utf8');
-  assert.match(tela, /onChange=\{event => setPendente\(/);
-  assert.match(tela, /setPendente\(\{ user, changes: \{ active: false \} \}\)/);
+test('M12: trocar perfil e inativar pedem confirmação no Dev (único lugar de acessos)', () => {
+  const tela = readFileSync('src/components/DevTab.tsx', 'utf8');
+  assert.match(tela, /titulo: `Mudar \$\{pessoa\.name\} para/);
+  assert.match(tela, /titulo: `Inativar \$\{pessoa\.name\}\?`/);
   assert.match(tela, /<ConfirmDialog/);
 });

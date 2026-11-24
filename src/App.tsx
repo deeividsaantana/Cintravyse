@@ -4287,7 +4287,6 @@ export default function App() {
                 exclusoes={exclusoes}
                 podeEditar={pode(currentUserRole, 'cadastros', 'editar')}
                 podeExcluir={pode(currentUserRole, 'cadastros', 'excluir')}
-                ehAdmin={currentUserRole === 'admin'}
                 pedidoNovoColaborador={pedidoNovoColaborador}
                 pedidoEquipes={pedidoEquipes}
                 gruposEquipe={gruposEquipe}
@@ -4501,6 +4500,8 @@ export default function App() {
                 onReativarPresencaLink={handleReativarPresencaLink}
                 onResetPresencaDia={handleResetPresencaDia}
                 onGerenciarEquipes={() => { navigateTo('cadastros'); setPedidoEquipes(atual => atual + 1); }}
+                ehAdmin={currentUserRole === 'admin'}
+                onSalvarLinkDaEquipe={grupo => handleSaveGrupoEquipe(grupo, false)}
               />
             )}
 
