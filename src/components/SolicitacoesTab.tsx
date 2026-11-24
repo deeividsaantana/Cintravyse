@@ -830,9 +830,11 @@ export default function SolicitacoesTab({
     subtela === "conferencia" ||
     subtela === "historico";
   const comBusca =
+    subtela === "pedidos" ||
     subtela === "aprovacao" ||
     subtela === "conferencia" ||
     subtela === "historico";
+  const filtrosLigados = [filtroSolicitante, filtroDataInicio, filtroDataFim].filter(Boolean).length;
   const irPara = (proximo: Filtro) => {
     setAbertaId(null);
     setSubtela("pedidos");
@@ -879,13 +881,6 @@ export default function SolicitacoesTab({
       detalhe: "itens aguardando chegada",
       tom: "text-slate-900",
     },
-    {
-      id: "entregues",
-      rotulo: "Entregues",
-      valor: contagem.entregues,
-      detalhe: "pedidos concluídos",
-      tom: "text-[#176b4d]",
-    },
   ] as const;
 
   return (
@@ -904,36 +899,18 @@ export default function SolicitacoesTab({
           eyebrow="Suprimentos"
           title="Solicitações e compras"
           abas={
-            <div className="flex w-full min-w-0 max-w-full items-start gap-2">
-              <AbasDaTela<Subtela>
-                className="min-w-0 flex-1 sm:flex-none"
-                id="solicitacoes"
-                rotulo="Subtelas de solicitações"
-                abas={subtelas}
-                ativa={subtela}
-                onTrocar={(proxima) => {
-                  setAbertaId(null);
-                  setSubtela(proxima);
-                }}
-                idPainel="solicitacoes-dados"
-                testId="solicitacoes-aba"
-              />
-              {subtela === "pedidos" && !aberta && (
-                <span className="hidden shrink-0 self-stretch sm:block">
-                  <button
-                    type="button"
-                    onClick={() => setFiltrosAbertos((aberto) => !aberto)}
-                    aria-expanded={filtrosAbertos}
-                    aria-controls="filtros-solicitacoes"
-                    className={`${filtrosAbertos ? BOTAO_PRIMARIO : BOTAO_SECUNDARIO} h-full px-3`}
-                    data-testid="solicitacoes-filtros"
-                  >
-                    <Filter className="size-4" aria-hidden="true" />
-                    <span>Filtros</span>
-                  </button>
-                </span>
-              )}
-            </div>
+            <AbasDaTela<Subtela>
+              id="solicitacoes"
+              rotulo="Subtelas de solicitações"
+              abas={subtelas}
+              ativa={subtela}
+              onTrocar={(proxima) => {
+                setAbertaId(null);
+                setSubtela(proxima);
+              }}
+              idPainel="solicitacoes-dados"
+              testId="solicitacoes-aba"
+            />
           }
           actions={
             <>
@@ -971,28 +948,13 @@ export default function SolicitacoesTab({
           data-sol-reveal
           className="flex min-w-0 flex-wrap items-center gap-2 px-1 pb-1 sm:flex-nowrap sm:overflow-x-auto sm:[scrollbar-width:thin]"
         >
-          {/* No celular as abas ocupam a linha toda; o Filtros vem para cá. */}
-          {subtela === "pedidos" && (
-            <span className="shrink-0 sm:hidden">
-              <button
-                type="button"
-                onClick={() => setFiltrosAbertos((aberto) => !aberto)}
-                aria-expanded={filtrosAbertos}
-                aria-controls="filtros-solicitacoes"
-                className={`${filtrosAbertos ? BOTAO_PRIMARIO : BOTAO_SECUNDARIO} min-h-10 px-3`}
-              >
-                <Filter className="size-4" aria-hidden="true" />
-                <span>Filtros</span>
-              </button>
-            </span>
-          )}
           {subtela === "pedidos" && (
             <section
               aria-label="Resumo operacional de solicitações"
               className="grid min-w-0 basis-full grid-cols-3 gap-1.5 sm:flex sm:flex-1 sm:basis-auto sm:items-center"
             >
               <span className="sr-only">Resumo operacional</span>
-              {resumo.map((item) => (
+              {resumo.filter((item) => item.valor > 0).map((item) => (
                 <div
                   key={item.id}
                   data-testid={`resumo-solicitacoes-${item.id}`}
@@ -1094,6 +1056,34 @@ export default function SolicitacoesTab({
                     ))}
                   </select>
                 )}
+                {subtela === "pedidos" && (
+                  <>
+                    <select
+                      value={filtro}
+                      onChange={(event) => setFiltro(event.target.value as Filtro)}
+                      aria-label="Filtrar por situação"
+                      data-testid="solicitacoes-situacao"
+                      className={`${CAMPO} w-auto sm:w-48`}
+                    >
+                      {FILTROS.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.rotulo} ({contagem[item.id]})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setFiltrosAbertos((aberto) => !aberto)}
+                      aria-expanded={filtrosAbertos}
+                      aria-controls="filtros-solicitacoes"
+                      className={`${filtrosAbertos ? BOTAO_PRIMARIO : BOTAO_SECUNDARIO} min-h-11 shrink-0 px-3`}
+                      data-testid="solicitacoes-filtros"
+                    >
+                      <Filter className="size-4" aria-hidden="true" />
+                      <span>Filtros{filtrosLigados > 0 ? ` (${filtrosLigados})` : ""}</span>
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1178,25 +1168,7 @@ export default function SolicitacoesTab({
               aria-label="Filtros dos pedidos"
               className={`${CARTAO} grid shrink-0 gap-3 p-3 sm:p-4`}
             >
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_10rem]">
-                <label className="grid gap-1.5 text-sm font-bold text-slate-700 col-span-2 sm:col-span-3 lg:col-span-1">
-                  Buscar
-                  <span className="relative">
-                    <Search
-                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="search"
-                      value={busca}
-                      onChange={(event) => {
-                        setBusca(event.target.value);
-                      }}
-                      placeholder="Ex.: José Augusto, SOL-2026, tubos..."
-                      className={`${CAMPO} pl-9`}
-                    />
-                  </span>
-                </label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <label className="col-span-2 grid gap-1.5 text-sm font-bold text-slate-700 sm:col-span-1">
                   Solicitante
                   <select
@@ -1235,34 +1207,6 @@ export default function SolicitacoesTab({
                     className={`${CAMPO} min-w-0`}
                   />
                 </label>
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-bold text-slate-700">
-                  Situação do pedido
-                </span>
-                <div
-                  className="flex flex-wrap gap-2"
-                  role="group"
-                  aria-label="Filtrar por situação"
-                >
-                  {FILTROS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-pressed={filtro === item.id}
-                      onClick={() => {
-                        setFiltro(item.id);
-                      }}
-                      data-testid={`filtro-${item.id}`}
-                      className={`flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-bold ${filtro === item.id ? "border-[#176b4d] bg-[#176b4d] text-white" : item.id === "atraso" && contagem.atraso > 0 ? "border-rose-200 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-700 hover:border-[#176b4d]"}`}
-                    >
-                      {item.rotulo}{" "}
-                      <span className="tabular-nums opacity-80">
-                        {contagem[item.id]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-2.5">
                 <div

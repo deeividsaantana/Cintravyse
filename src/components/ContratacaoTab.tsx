@@ -27,6 +27,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { CartaoIndicador, ConfirmDialog, PageHeader } from '../shared/ui';
+import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
@@ -226,7 +227,10 @@ export default function ContratacaoTab() {
     <div className="space-y-5">
       {moldando && (
         <section data-ct-reveal className={PAINEL} aria-label="Escolher o que aparece no painel">
-          <p className="text-sm font-black text-slate-900">O que aparece no seu painel</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-black text-slate-900">O que aparece no seu painel</p>
+            <button type="button" onClick={() => setMoldando(false)} className={BOTAO_PRIMARIO}>Pronto</button>
+          </div>
           <p className="mt-1 text-xs text-[#5b6870]">Marque os blocos que você quer ver. Fica salvo neste aparelho.</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {(Object.entries(BLOCOS) as [Bloco, string][]).map(([bloco, rotulo]) => (
@@ -326,7 +330,7 @@ export default function ContratacaoTab() {
         </article>
       )}
       {blocos.length === 0 && !moldando && (
-        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-[#5b6870]">Seu painel está vazio. Toque em <strong>Personalizar</strong> para escolher o que ver.</p>
+        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-[#5b6870]">Seu painel está vazio. Toque em <strong>Mais ações</strong> (os três pontos no topo) e depois em <strong>Personalizar o painel</strong> para escolher o que ver.</p>
       )}
     </div>
   );
@@ -431,9 +435,7 @@ export default function ContratacaoTab() {
           actions={
             <>
               {subtela === 'painel' && !aberto && (
-                <button type="button" onClick={() => setMoldando(atual => !atual)} aria-expanded={moldando} className={moldando ? BOTAO_PRIMARIO : BOTAO_SECUNDARIO}>
-                  <Settings2 className="size-4" aria-hidden="true" /> Personalizar
-                </button>
+                <MaisAcoes testId="contratacao-mais-acoes" acoes={[{ rotulo: moldando ? 'Pronto, fechar personalizar' : 'Personalizar o painel', icone: Settings2, onClick: () => setMoldando(atual => !atual) }]} />
               )}
               <button type="button" onClick={() => trocar('nova')} className={BOTAO_PRIMARIO} data-testid="contratacao-nova">
                 <FilePlus2 className="size-4" aria-hidden="true" /> <span className="sm:hidden">Nova</span><span className="hidden sm:inline">Nova Solicitação</span>
