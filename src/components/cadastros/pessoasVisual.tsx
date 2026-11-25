@@ -93,7 +93,7 @@ export function ResumoColaboradores({ linhas, filtros, onFiltrar }: {
   // Contador com zero não aparece (padrão do site, seção 3); o total fica sempre.
   ].filter(quadro => quadro.filtro === null || quadro.total > 0 || filtros[quadro.filtro] === quadro.valor);
   return (
-    <div role="group" aria-label="Resumo dos colaboradores" data-testid="resumo-colaboradores" className="grid grid-cols-2 gap-2 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none">
+    <div role="group" aria-label="Resumo dos colaboradores" data-testid="resumo-colaboradores" className="renea-faixa-numeros grid-cols-2 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none">
       {quadros.map(quadro => {
         const ligado = quadro.filtro ? filtros[quadro.filtro] === quadro.valor : false;
         const atencao = quadro.filtro !== null && quadro.total > 0;
@@ -103,10 +103,10 @@ export function ResumoColaboradores({ linhas, filtros, onFiltrar }: {
             type="button"
             aria-pressed={quadro.filtro ? ligado : undefined}
             onClick={() => onFiltrar(ligado ? null : quadro.filtro, quadro.valor)}
-            className={`flex min-h-16 flex-col justify-center rounded-2xl border bg-white px-4 py-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#176b4d]/40 ${ligado ? 'border-[#f26a2e]/60 ring-2 ring-[#f26a2e]/20' : 'border-slate-200 hover:border-emerald-300'}`}
+            className="flex min-h-16 flex-col justify-center px-4 py-3 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#176b4d]"
           >
-            <span className="text-2xl font-black tabular-nums text-slate-900">{quadro.total.toLocaleString('pt-BR')}</span>
-            <span className={`text-sm font-semibold ${atencao ? 'text-[#c2410c]' : 'text-slate-600'}`}>{quadro.rotulo}</span>
+            <span className="text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums text-slate-900">{quadro.total.toLocaleString('pt-BR')}</span>
+            <span className={`mt-1.5 text-[13px] font-semibold ${atencao ? 'text-[#c2410c]' : 'text-[#5b6870]'}`}>{quadro.rotulo}</span>
           </button>
         );
       })}

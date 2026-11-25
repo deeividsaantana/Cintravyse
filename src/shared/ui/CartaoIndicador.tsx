@@ -30,32 +30,23 @@ const COR_DO_VALOR: Record<TomIndicador, string> = {
   vermelho: 'text-rose-700',
 };
 
-const COR_DO_ICONE: Record<TomIndicador, string> = {
-  neutro: 'bg-[#f7f8f6] text-[#5b6870]',
-  verde: 'bg-emerald-50 text-[#176b4d]',
-  laranja: 'bg-orange-50 text-[#c2410c]',
-  vermelho: 'bg-rose-50 text-rose-700',
-};
-
 /**
- * Cartão de número do topo das abas, no mesmo desenho do Painel de Controle:
- * rótulo à esquerda, ícone à direita, número grande e uma linha de detalhe.
+ * Número do topo das abas (redesenho de 25/11/2026): rótulo pequeno, ícone
+ * discreto sem fundo colorido, número e uma linha de detalhe. Dentro de uma
+ * faixa (`renea-faixa-numeros`) os números viram uma peça só, com linhas
+ * finas entre eles, como num app premium.
  * Toda aba usa este cartão, para o mesmo tipo de informação ter a mesma cara
  * em qualquer tela.
  */
 export function CartaoIndicador({ rotulo, valor, detalhe, icone: Icone, tom = 'neutro', onClick, ariaLabel, className, dados }: CartaoIndicadorProps) {
   const conteudo = (
     <>
-      <span className="flex items-start justify-between gap-3">
-        <span className="min-w-0 text-sm font-bold leading-snug text-slate-600 [overflow-wrap:anywhere]">{rotulo}</span>
-        {Icone && (
-          <span className={cn('grid size-8 shrink-0 place-items-center rounded-lg', COR_DO_ICONE[tom])}>
-            <Icone className="size-4" aria-hidden="true" />
-          </span>
-        )}
+      <span className="flex items-center justify-between gap-2">
+        <span className="min-w-0 text-[13px] font-semibold leading-snug text-[#5b6870] [overflow-wrap:anywhere]">{rotulo}</span>
+        {Icone && <Icone className="size-4 shrink-0 text-slate-500" aria-hidden="true" />}
       </span>
-      <strong className={cn('mt-1 block text-3xl font-black leading-tight tracking-tight tabular-nums', COR_DO_VALOR[tom])}>{valor}</strong>
-      {detalhe && <span className="mt-1 block text-xs font-semibold text-[#5b6870]">{detalhe}</span>}
+      <strong className={cn('mt-1.5 block text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums', COR_DO_VALOR[tom])}>{valor}</strong>
+      {detalhe && <span className="mt-1.5 block text-xs text-[#5b6870]">{detalhe}</span>}
     </>
   );
   const classe = cn('renea-indicador block min-w-0 rounded-2xl border border-slate-200 bg-white p-4 text-left', className);
@@ -74,10 +65,10 @@ export function CartaoIndicador({ rotulo, valor, detalhe, icone: Icone, tom = 'n
   );
 }
 
-/** Grade dos cartões de número: dois por linha no celular, quatro no computador. */
+/** Faixa dos números: dois por linha no celular, quatro no computador, numa peça só. */
 export function GradeIndicadores({ children, rotulo, className, colunas = 4 }: { children: ReactNode; rotulo?: string; className?: string; colunas?: 3 | 4 }) {
   return (
-    <section aria-label={rotulo} className={cn('grid grid-cols-2 gap-3', colunas === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4', className)}>
+    <section aria-label={rotulo} className={cn('renea-faixa-numeros grid-cols-2', colunas === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4', className)}>
       {children}
     </section>
   );

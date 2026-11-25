@@ -2,19 +2,18 @@
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #dce7e0;
+  border: 1px solid #e2e8f0;
   border-radius: 1rem;
   background: #fff;
   padding: clamp(1rem, 1.6vw, 1.4rem);
-  box-shadow: 0 12px 35px rgba(18, 58, 42, .035);
 }
 
 .dashboard-visual--fleet {
-  background: radial-gradient(circle at 8% 100%, #e6f3ea 0, transparent 44%), #fff;
+  background: #fff;
 }
 
 .dashboard-visual--trend {
-  background: radial-gradient(circle at 90% 0, #e4eee8 0, transparent 42%), #f8fbf9;
+  background: #fff;
 }
 
 .dashboard-visual__heading {
@@ -34,12 +33,10 @@
 }
 
 .dashboard-visual__kicker {
-  margin-bottom: .3rem;
-  color: #4a6b5a;
-  font-size: .75rem;
-  font-weight: 800;
-  letter-spacing: .11em;
-  text-transform: uppercase;
+  margin-bottom: .2rem;
+  color: #5b6870;
+  font-size: .8125rem;
+  font-weight: 600;
 }
 
 .dashboard-visual__link {

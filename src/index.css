@@ -1360,3 +1360,27 @@ body:has([data-lancamento]) #main-tab-viewport { --renea-topo: 0px; }
 
   #main-tab-viewport .renea-page-header .renea-page-actions > input.sr-only { flex: 0 0 0; width: 1px; }
 }
+
+/* Faixa de números (redesenho de 25/11/2026): os números do topo de uma aba
+   viram uma peça só, branca, com linha fina entre eles. Nada de fileira de
+   cartões soltos com ícone colorido (padrão do site, seção 4). */
+.renea-faixa-numeros {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #e9edf1;
+}
+.renea-faixa-numeros > * {
+  min-width: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #fff;
+  box-shadow: none !important;
+}
+.renea-faixa-numeros > button:hover { background: #f7faf8; }
+@media (max-width: 1023px) {
+  .renea-faixa-numeros.grid-cols-2 > :last-child:nth-child(odd) { grid-column: span 2; }
+}
+.renea-faixa-numeros > [aria-pressed="true"] { background: #fff7ed; box-shadow: inset 0 -3px 0 #f26a2e !important; }

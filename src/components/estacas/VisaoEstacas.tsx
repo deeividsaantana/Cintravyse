@@ -75,19 +75,19 @@ export default function VisaoEstacas({ hoje, estacas, frentes, frenteAtual, onFr
     // relative: os textos só para leitor de tela (sr-only) ficam presos aqui
     // dentro e não esticam a página atrás da área que rola.
     <div className="relative space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="renea-faixa-numeros grid-cols-2 xl:grid-cols-4">
         <div data-estacas-reveal className={`${CARTAO} estacas-vivo flex items-center gap-4 p-4 col-span-2 xl:col-span-1`}>
           <Anel valor={total.porcentagem} />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-600">Concluído</p>
-            <p className="text-3xl font-black tabular-nums text-slate-900"><CountUp value={total.porcentagem} format={valor => numero(valor, 1)} suffix="%" /></p>
+            <p className="text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums text-slate-900"><CountUp value={total.porcentagem} format={valor => numero(valor, 1)} suffix="%" /></p>
             <p className="text-xs text-slate-500">{total.cravadas.toLocaleString('pt-BR')} de {total.previstas.toLocaleString('pt-BR')} estacas</p>
           </div>
         </div>
         {cartoes.map(({ nome, valor, ajuda, Icone, tom }) => (
           <CartaoIndicador
             key={nome}
-            className={`estacas-vivo ${nome === 'Faltam' ? 'max-sm:col-span-2' : ''}`}
+            className={`estacas-vivo ${nome === 'Faltam' ? 'max-xl:col-span-2' : ''}`}
             dados={{ 'data-estacas-reveal': true }}
             rotulo={nome}
             valor={<CountUp value={valor} />}
