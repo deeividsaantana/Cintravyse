@@ -116,13 +116,13 @@ export default function MapaChuva({ diarios, responsavel = '', mesSelecionado, o
   };
 
   return (
-    <section id="mapa-de-chuvas" className="rounded-xl border border-[#e2e8e4] bg-white">
+    <section id="mapa-de-chuvas" className="rounded-2xl border border-slate-200 bg-white">
       <header className="border-b border-[#e2e8e4] px-4 py-4 sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <CloudRain className="h-6 w-6 text-blue-700" aria-hidden="true" />
             <div>
-              <h2 className="text-lg font-black leading-tight text-[#101a22]">Mapa de chuvas</h2>
+              <h2 className="text-lg font-bold leading-tight text-slate-900">Mapa de chuvas</h2>
               <p className="text-xs text-[#5b6870]">Alimentado pelo pluviômetro lançado no diário do dia.</p>
             </div>
           </div>
@@ -153,7 +153,7 @@ export default function MapaChuva({ diarios, responsavel = '', mesSelecionado, o
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5 p-4 lg:grid-cols-4 sm:p-5">
+      <div className="p-4 sm:p-5"><div className="renea-faixa-numeros grid-cols-2 lg:grid-cols-4">
         {[
           { rotulo: 'Total no mês', valor: `${dados.totalMm.toLocaleString('pt-BR')} mm` },
           { rotulo: 'Dias com chuva', valor: String(dados.diasComChuva) },
@@ -162,12 +162,12 @@ export default function MapaChuva({ diarios, responsavel = '', mesSelecionado, o
           // No máximo 4 números (padrão do site); os dias sem diário já
           // aparecem em cinza no calendário e seguem no PDF.
         ].map(item => (
-          <div key={item.rotulo} className="min-w-0 rounded-lg border border-[#e2e8e4] p-3">
-            <p className="text-xs font-bold leading-tight text-slate-500">{item.rotulo}</p>
-            <strong className="mt-1 block truncate text-xl font-black tabular-nums text-[#101a22]">{item.valor}</strong>
+          <div key={item.rotulo} className="min-w-0 p-4">
+            <p className="text-[13px] font-semibold leading-tight text-[#5b6870]">{item.rotulo}</p>
+            <strong className="mt-1.5 block truncate text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums text-slate-900">{item.valor}</strong>
           </div>
         ))}
-      </div>
+      </div></div>
 
       <div className="px-4 pb-4 sm:px-5 sm:pb-5">
         <div ref={gradeRef} className="grid grid-cols-7 gap-1.5" role="grid" aria-label={`Mapa de chuvas de ${dados.rotulo}`} onKeyDown={andar}>

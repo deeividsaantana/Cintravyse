@@ -168,7 +168,7 @@ export default function DiarioObraTab({
         />
       </div>}
     >
-      <section ref={escopoIndicadores} aria-label="Números do dia" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section ref={escopoIndicadores} aria-label="Números do dia" className="renea-faixa-numeros grid-cols-2 lg:grid-cols-4">
         <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Presentes" valor={resumo.presentes} detalhe="pessoas na obra" icone={Users} tom={resumo.presentes > 0 ? 'verde' : 'neutro'} />
         <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Equipes com apontamento" valor={resumo.equipes} detalhe="equipes que lançaram" icone={ClipboardCheck} />
         <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Frota informada" valor={resumo.frota.length} detalhe="equipamentos do dia" icone={Truck} />

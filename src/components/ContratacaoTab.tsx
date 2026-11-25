@@ -254,7 +254,7 @@ export default function ContratacaoTab() {
         </section>
       )}
       {ver('indicadores') && (
-        <div data-ct-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div data-ct-reveal className="renea-faixa-numeros grid-cols-2 lg:grid-cols-4">
           <CartaoIndicador rotulo="Com Recursos Humanos" valor={contagem.etapa_1} detalhe="1ª assinatura" icone={UserCheck} tom={contagem.etapa_1 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_1')} />
           <CartaoIndicador rotulo="Com a Gerência" valor={contagem.etapa_2} detalhe="2ª assinatura" icone={Clock} tom={contagem.etapa_2 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_2')} />
           <CartaoIndicador rotulo="Com a Gerência" valor={contagem.etapa_3} detalhe="3ª assinatura" icone={PenLine} tom={contagem.etapa_3 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_3')} />

@@ -1046,7 +1046,7 @@ export default function ControlePresencaTab({
                   )}
                 </div>
               </article>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="renea-faixa-numeros grid-cols-2">
                 <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Ausentes" valor={<span data-count={metrics.absent}>0</span>} detalhe="faltaram no dia" icone={UserX} tom={metrics.absent > 0 ? 'vermelho' : 'neutro'} />
                 <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Justificados" valor={<span data-count={metrics.justified}>0</span>} detalhe="ausências com motivo" icone={FileText} tom={metrics.justified > 0 ? 'laranja' : 'neutro'} />
                 <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Equipes pendentes" valor={<span data-count={metrics.pending}>0</span>} detalhe="ainda não enviaram" icone={Clock} tom={metrics.pending > 0 ? 'laranja' : 'neutro'} />
