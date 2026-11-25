@@ -42,7 +42,7 @@ function ExecutiveCard({ label, value, detail, tone, icon: Icon, onClick }: { la
   const icone = { green: 'bg-emerald-50 text-emerald-800', blue: 'bg-blue-50 text-blue-800', orange: 'bg-orange-50 text-orange-800', slate: 'bg-slate-100 text-slate-600' };
   return <Elemento type={onClick ? 'button' : undefined} onClick={onClick} data-dashboard-reveal className="dashboard-kpi group flex min-w-0 flex-col justify-center rounded-xl border border-slate-200 bg-white p-4 text-left text-slate-950 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)">
     <div className="flex items-start justify-between gap-3"><span className="text-sm font-bold text-slate-600">{label}</span><span className={`rounded-lg p-1.5 ${icone[tone]}`}><Icon className="size-4" /></span></div>
-    <strong className={`mt-2 block font-black leading-tight tabular-nums ${typeof value === 'number' || /\d/.test(value) ? 'text-3xl' : 'text-xl'}`}>{value}</strong><span className="mt-1 block text-xs font-semibold text-slate-600">{detail}</span>
+    <strong className={`mt-2 block leading-tight tabular-nums ${typeof value === 'number' || /\d/.test(value) ? 'text-3xl font-black' : 'text-base font-bold text-slate-500'}`}>{value}</strong><span className="mt-1 block text-xs font-semibold text-slate-600">{detail}</span>
   </Elemento>;
 }
 

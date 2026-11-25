@@ -81,6 +81,7 @@ function useLinhaDoTopo() {
   useLayoutEffect(() => {
     const cabecalho = ref.current;
     const barra = document.querySelector<HTMLElement>('.erp-workspace > .erp-topbar');
+    marcarTopoNaBarra(cabecalho, Boolean(cabecalho && barra && cabecalhoDaRaiz(cabecalho)));
     if (!cabecalho || !barra || !topoSobe(cabecalho)) {
       cabecalho?.removeAttribute('data-aperto');
       medido.current = '';
@@ -117,13 +118,38 @@ function useLinhaDoTopo() {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    const cabecalho = ref.current;
+    return () => marcarTopoNaBarra(cabecalho, false);
+  }, []);
+
   return ref;
 }
 
-function topoSobe(cabecalho: HTMLElement) {
+function cabecalhoDaRaiz(cabecalho: HTMLElement) {
   return Boolean(cabecalho.closest('.renea-tela-cheia--raiz > .renea-tela-cheia__topo'))
-    && window.matchMedia('(min-width: 1024px)').matches
     && !cabecalho.classList.contains('renea-page-header--vazio');
+}
+
+function topoSobe(cabecalho: HTMLElement) {
+  return cabecalhoDaRaiz(cabecalho) && window.matchMedia('(min-width: 1024px)').matches;
+}
+
+/**
+ * Marca no <html> (data-topo-na-barra) que há um cabeçalho de aba subindo
+ * para a barra do topo. O CSS lia isso com `.erp-workspace:has(...)`, e o
+ * navegador refazia essa conta a cada mudança na tela: a troca de subtela
+ * chegava a levar quase 1 s no celular (25/11/2026).
+ */
+const CABECALHOS_NA_BARRA = new Set<HTMLElement>();
+function marcarTopoNaBarra(cabecalho: HTMLElement | null, sobe: boolean) {
+  if (!cabecalho) return;
+  if (sobe) CABECALHOS_NA_BARRA.add(cabecalho);
+  else CABECALHOS_NA_BARRA.delete(cabecalho);
+  const raiz = document.documentElement;
+  if (CABECALHOS_NA_BARRA.size > 0) {
+    if (!raiz.hasAttribute('data-topo-na-barra')) raiz.setAttribute('data-topo-na-barra', '');
+  } else if (raiz.hasAttribute('data-topo-na-barra')) raiz.removeAttribute('data-topo-na-barra');
 }
 
 const PASSO_DO_TOPO = new Map<string, number>();
