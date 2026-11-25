@@ -67,7 +67,7 @@ export function AvailabilityTrend({ measure, onNavigate }: { measure: DashboardM
 
   return <section ref={scope} className="dashboard-visual dashboard-visual--trend" data-dashboard-reveal aria-labelledby="dashboard-trend-title">
     <div className="dashboard-visual__heading"><div><p className="dashboard-visual__kicker">Evolução</p><h2 id="dashboard-trend-title">Disponibilidade da frota</h2></div><TrendingUp size={20} aria-hidden="true" /></div>
-    <div className="dashboard-trend__summary"><strong>{measure.value === null ? 'Sem posição' : `${measure.value.toFixed(1).replace('.', ',')}%`}</strong><span>{selectedPoint?.value === null || !selectedPoint ? 'Sem registro comparável' : `${selectedPoint.label} · ${selectedPoint.value.toFixed(1).replace('.', ',')}%`}</span></div>
+    <div className="dashboard-trend__summary"><strong className={measure.value === null ? 'dashboard-trend__vazio' : undefined}>{measure.value === null ? 'Sem posição' : `${measure.value.toFixed(1).replace('.', ',')}%`}</strong><span>{selectedPoint?.value === null || !selectedPoint ? 'Sem registro comparável' : `${selectedPoint.label} · ${selectedPoint.value.toFixed(1).replace('.', ',')}%`}</span></div>
     {runs.length ? <div className="dashboard-trend__plot">
       <svg viewBox="0 0 640 220" preserveAspectRatio="none" role="img" aria-label="Evolução diária da disponibilidade da frota">
         {[25, 50, 75, 100].map(value => <g key={value}><line className="dashboard-trend__grid" x1="28" x2="612" y1={y(value)} y2={y(value)} /><text className="dashboard-trend__axis" x="0" y={y(value) + 4}>{value}</text></g>)}

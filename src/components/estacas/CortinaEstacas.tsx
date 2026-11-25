@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type SyntheticEvent } from 'react';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
 import type { CravacaoEstaca } from '../../types';
 import { estaCravada, nomeDaEstaca, type FrenteEstacas } from '../../modules/estacas/avancoEstacas';
 import { formatarData, numero } from '../../utils/formato';
-import { reduzMovimento } from '../cadastros/estilos';
 import './Estacas.css';
 
 interface Props {
@@ -84,17 +81,8 @@ export default function CortinaEstacas({ frente, escolhidaId, onEscolher }: Prop
     return grupos;
   }, [frente.estacas, porLinha]);
 
-  const escopo = useRef<HTMLDivElement>(null);
-  // As cravadas descem até a profundidade delas, uma atrás da outra, e o
-  // martelo da próxima fica batendo. Nada se mexe com movimento reduzido.
-  useGSAP(() => {
-    if (!escopo.current || reduzMovimento()) return;
-    const descem = gsap.utils.toArray<SVGGElement>('[data-desce]', escopo.current);
-    descem.forEach((grupo, indice) => {
-      gsap.from(grupo, { y: -Number(grupo.dataset.desce || 0), opacity: 0, duration: 0.55, delay: Math.min(indice * 0.018, 0.9), ease: 'power3.out', clearProps: 'transform,opacity' });
-    });
-    gsap.to('[data-martelo]', { y: 6, duration: 0.32, repeat: -1, yoyo: true, ease: 'power1.inOut' });
-  }, { scope: escopo, dependencies: [frente.frente, porLinha, frente.cravadas] });
+  // Sem animação (25/11/2026): descer cada estaca e o martelo batendo sem
+  // parar pesavam a aba toda no celular.
 
   const escolherPeloTeclado = (event: KeyboardEvent, estaca: CravacaoEstaca) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -107,7 +95,7 @@ export default function CortinaEstacas({ frente, escolhidaId, onEscolher }: Prop
 
   return (
     <div ref={caixa} className="cortina relative">
-      <div ref={escopo} className="space-y-3">
+      <div className="space-y-3">
         {linhas.map((linha, indiceLinha) => {
           // Todas as linhas com a mesma largura: a última, mais curta, fica na mesma escala.
           const largura = MARGEM_ESQUERDA + porLinha * PASSO + MARGEM_DIREITA;
@@ -186,7 +174,7 @@ export default function CortinaEstacas({ frente, escolhidaId, onEscolher }: Prop
                       onKeyDown={event => escolherPeloTeclado(event, estaca)}
                     />
                     {cravada ? (
-                      <g data-desce={fundo + acima}>
+                      <g>
                         <rect x={x + 1} y={topo} width={PASSO - 2} height={fundo + acima} className="cortina-cravada-corpo" />
                         {/* Face dobrada do perfil: alterna o lado para parecer a cortina encaixada. */}
                         <rect x={indice % 2 === 0 ? x + PASSO * 0.55 : x + 1} y={topo} width={PASSO * 0.44} height={fundo + acima} className="cortina-cravada-face" />
@@ -201,7 +189,7 @@ export default function CortinaEstacas({ frente, escolhidaId, onEscolher }: Prop
                       </g>
                     )}
                     {proxima && (
-                      <g data-martelo>
+                      <g>
                         <line x1={x + PASSO / 2} x2={x + PASSO / 2} y1={FAIXA_PLANTA} y2={chao - 20} className="cortina-martelo-cabo" />
                         <rect x={x + 3} y={chao - 22} width={PASSO - 6} height="16" rx="3" className="cortina-martelo" />
                       </g>
