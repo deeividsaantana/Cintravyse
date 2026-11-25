@@ -1,21 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { nomeDaPessoa } from '../../auth/nomeDaPessoa';
-import { Avatar } from '../../shared/ui';
-import type { MeuAvatar } from '../perfil/usePerfis';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import { reduzMovimento } from '../../shared/motion/reduzMovimento';
-import { LogOut } from 'lucide-react';
-import type { SupabaseAuthUser as User } from '../../auth/supabaseAuth';
-import { OBRA } from '../../config/obra';
 import { descreverSalvamento, type DescricaoSalvamento } from '../../cloud/estadoSalvamento';
-
-const ICON_STROKE = 1.75;
+import { SIDEBAR_NAVIGATION_GROUPS } from '../navigation/navigation';
 
 interface DesktopTopBarProps {
-  currentUser: User | null;
-  meuAvatar: MeuAvatar | null;
-  onAbrirPerfil: () => void;
+  /** Aba aberta: vira o caminho "Grupo / Tela" à esquerda. */
+  activeTab: string;
   isCloudConnected: boolean;
   /** Estado do salvamento (aparelho e nuvem). Sem ele, usa só isCloudConnected. */
   salvamento?: DescricaoSalvamento;
@@ -24,13 +12,25 @@ interface DesktopTopBarProps {
   pendingCount?: number;
   isRetryingPending?: boolean;
   onRetryPending?: () => void;
-  onLogout: () => void;
 }
 
+/** Grupo e nome da aba no menu, para o caminho do topo. */
+export function trilhaDaAba(activeTab: string) {
+  for (const grupo of SIDEBAR_NAVIGATION_GROUPS) {
+    const item = grupo.items.find(i => i.id === activeTab);
+    if (item) return { grupo: grupo.label === item.label ? '' : grupo.label, tela: item.label };
+  }
+  return { grupo: '', tela: '' };
+}
+
+/**
+ * Barra do topo no padrão Cintravyse (25/11/2026): uma faixa fina com o
+ * caminho da tela (Grupo / Tela) e, à direita, se está tudo salvo. Quem
+ * entrou e o botão de sair moram no rodapé do menu lateral. O título, as
+ * subtelas e a ação principal ficam no cabeçalho da própria tela.
+ */
 export function DesktopTopBar({
-  currentUser,
-  meuAvatar,
-  onAbrirPerfil,
+  activeTab,
   isCloudConnected,
   salvamento: salvamentoRecebido,
   onRetryUpload,
@@ -38,69 +38,18 @@ export function DesktopTopBar({
   pendingCount,
   isRetryingPending,
   onRetryPending,
-  onLogout,
 }: DesktopTopBarProps) {
   const salvamento = salvamentoRecebido ?? descreverSalvamento({ online: true, conectado: isCloudConnected, enviando: false, pendente: false, falhasSeguidas: 0 });
-  const headerRef = useRef<HTMLElement>(null);
-  const acoesRef = useRef<HTMLDivElement>(null);
-  const logoutBtnRef = useRef<HTMLButtonElement>(null);
-
-  // O cabeçalho da aba sobe para esta faixa (index.css, "Cabeçalho na barra
-  // do topo") e precisa saber quanto o lado direito (salvamento e
-  // pessoa) ocupa para não passar por baixo dele.
-  useEffect(() => {
-    const acoes = acoesRef.current;
-    if (!acoes || typeof ResizeObserver === 'undefined') return;
-    const raiz = document.documentElement;
-    const medir = () => raiz.style.setProperty('--renea-topo-direita', `${Math.ceil(acoes.getBoundingClientRect().width)}px`);
-    medir();
-    const observador = new ResizeObserver(medir);
-    observador.observe(acoes);
-    return () => observador.disconnect();
-  }, []);
-  const userName = meuAvatar?.nome || nomeDaPessoa(currentUser);
-
-  useGSAP(() => {
-    if (!logoutBtnRef.current || reduzMovimento()) return;
-    const btn = logoutBtnRef.current;
-
-    const onEnter = () => {
-      gsap.to(btn, { scale: 1.12, rotate: 10, duration: 0.3, ease: 'power2.out' });
-    };
-    const onLeave = () => {
-      gsap.to(btn, { scale: 1, rotate: 0, duration: 0.3, ease: 'power2.out' });
-    };
-
-    btn.addEventListener('mouseenter', onEnter);
-    btn.addEventListener('mouseleave', onLeave);
-
-    return () => {
-      btn.removeEventListener('mouseenter', onEnter);
-      btn.removeEventListener('mouseleave', onLeave);
-    };
-  }, { scope: headerRef });
+  const { grupo, tela } = trilhaDaAba(activeTab);
 
   return (
-    <header
-      ref={headerRef}
-      className="erp-topbar hidden lg:flex"
-      aria-label="Barra de contexto do sistema"
-    >
-      {/* Sem busca geral aqui (pedido de 11/11/2026): cada aba tem a busca
-          dela, e duas barras de busca na mesma tela confundem. */}
+    <header className="erp-topbar hidden lg:flex" aria-label="Barra de contexto do sistema">
+      <nav aria-label="Trilha de navegação" className="erp-topbar__trilha">
+        {grupo && <><span>{grupo}</span><span aria-hidden="true">/</span></>}
+        <strong aria-current="page">{tela}</strong>
+      </nav>
 
-      <div
-        className="erp-topbar__project"
-        title="Obra ativa"
-        aria-label={`Obra ativa: ${OBRA.nome}`}
-      >
-        <span>
-          <small>Projeto atual</small>
-          <strong>{OBRA.nome}</strong>
-        </span>
-      </div>
-
-      <div ref={acoesRef} className="erp-topbar__actions">
+      <div className="erp-topbar__actions">
         <div
           className="erp-topbar__status"
           role="status"
@@ -109,49 +58,21 @@ export function DesktopTopBar({
           title={`${salvamento.detalhe} ${lastCloudSync ? `Última sincronização: ${lastCloudSync}` : 'Ainda sem sincronização nesta sessão.'}`}
         >
           <span aria-hidden="true" />
-          <em className="erp-topbar__status-texto not-italic">{salvamento.rotulo}</em>
+          <em className="not-italic">{salvamento.estado === 'sincronizado' ? 'Tudo salvo' : salvamento.curto}</em>
         </div>
         {salvamento.tentarNovamente && onRetryUpload && (
           <button type="button" className="erp-topbar__retry" onClick={onRetryUpload}>Tentar novamente</button>
         )}
         {typeof pendingCount === 'number' && pendingCount > 0 && (
-          <div
-            className="erp-topbar__pending"
-            title={`${pendingCount} pendência(s) offline aguardando envio`}
-          >
+          <div className="erp-topbar__pending" title={`${pendingCount} pendência(s) offline aguardando envio`}>
             <span aria-live="polite">Pendente: {pendingCount}</span>
             {onRetryPending && (
-              <button
-                type="button"
-                onClick={onRetryPending}
-                disabled={isRetryingPending}
-                aria-label="Tentar enviar pendências agora"
-              >
+              <button type="button" onClick={onRetryPending} disabled={isRetryingPending} aria-label="Tentar enviar pendências agora">
                 {isRetryingPending ? 'Enviando…' : 'Tentar agora'}
               </button>
             )}
           </div>
         )}
-        <button
-          type="button"
-          onClick={onAbrirPerfil}
-          className="erp-topbar__user"
-          title="Meu perfil: trocar nome e foto"
-        >
-          <Avatar nome={userName} foto={meuAvatar?.foto} cor={meuAvatar?.cor} />
-          <strong>{userName}</strong>
-          <span className="sr-only">, abrir meu perfil</span>
-        </button>
-        <button
-          ref={logoutBtnRef}
-          type="button"
-          onClick={onLogout}
-          title="Sair da conta"
-          aria-label="Sair da conta"
-          className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-700 hover:shadow-sm"
-        >
-          <LogOut className="h-4 w-4" strokeWidth={ICON_STROKE} />
-        </button>
       </div>
     </header>
   );

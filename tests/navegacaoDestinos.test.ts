@@ -39,7 +39,10 @@ test('A10: todo cartão do Painel leva a uma tela que existe', () => {
 });
 
 test('M7: atalho para Cadastros e Manutenção só para quem abre a aba', () => {
-  assert.match(app, /\{allowedTabs\.includes\('cadastros'\) && \(\s*<button[\s\S]{0,120}navigateTo\('cadastros', true\)/);
+  // Celular (padrão Cintravyse, 25/11/2026): os atalhos de baixo só mostram
+  // as abas que a pessoa abre.
+  assert.match(app, /<MobileBottomNav[\s\S]{0,80}allowedTabs=\{allowedTabs\}/);
+  assert.match(ler('src/app/shell/MobileBottomNav.tsx'), /ATALHOS\.filter\(atalho => allowedTabs\.includes\(atalho\.tab\)\)/);
   // Frotas e Manutenção numa aba só (23/11/2026): a parte da manutenção só
   // existe para quem abre a Manutenção, e o atalho do lançamento depende dela.
   assert.match(app, /manutencao=\{podeAbrir\('manutencao'\) \? \{/);

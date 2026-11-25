@@ -1,16 +1,21 @@
-import { useRef, useState } from 'react';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
-import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronsLeft, ChevronsRight, LogOut, Search } from 'lucide-react';
+import { Avatar } from '../../shared/ui/Avatar';
 import type { NavigationGroupView } from './NavigationMenu';
 import { CartaoAmbiente, MarcaProduto, SimboloProduto } from '../../shared/ui/MarcaProduto';
 import { APP_VERSION_LABEL } from '../version';
-import { FOCO, reduzMovimento } from '../../components/cadastros/estilos';
+import { FOCO } from '../../components/cadastros/estilos';
 
 interface DesktopSidebarProps {
   activeTab: string;
   groups: NavigationGroupView[];
   onNavigate: (tab: string) => void;
+  /** Quem entrou: aparece no rodapé do menu, com o botão de sair. */
+  pessoa?: { nome: string; foto?: string | null; cor?: string | null; papel?: string };
+  onAbrirPerfil?: () => void;
+  onSair?: () => void;
+  /** Abre a pesquisa geral (a mesma do Ctrl K). */
+  onPesquisar?: () => void;
 }
 
 const COLLAPSE_KEY = 'renea_sidebar_recolhido';
@@ -37,10 +42,9 @@ const readCollapsed = () => {
  * cliente num cartão compacto logo abaixo da marca. O projeto também aparece
  * na barra superior.
  */
-export function DesktopSidebar({ activeTab, groups, onNavigate }: DesktopSidebarProps) {
+export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirPerfil, onSair, onPesquisar }: DesktopSidebarProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
-  const navRef = useRef<HTMLElement>(null);
-
+  
   // Só grava quando a pessoa aperta o botão: o padrão pela largura da tela
   // não vira escolha guardada.
   const mudarRecolhido = (valor: boolean) => {
@@ -51,16 +55,6 @@ export function DesktopSidebar({ activeTab, groups, onNavigate }: DesktopSidebar
       // Preferência de layout não vale interromper a navegação.
     }
   };
-
-  // Só na primeira carga: uma entrada leve dos itens, uma vez só.
-  useGSAP(() => {
-    if (!navRef.current || reduzMovimento()) return;
-    gsap.fromTo(
-      navRef.current.querySelectorAll('[data-sidebar-item]'),
-      { opacity: 0, x: -4 },
-      { opacity: 1, x: 0, duration: .3, stagger: .015, ease: 'power2.out', clearProps: 'transform' },
-    );
-  }, { scope: navRef, dependencies: [] });
 
   const versao = APP_VERSION_LABEL.split(' — ')[0];
 
@@ -95,16 +89,23 @@ export function DesktopSidebar({ activeTab, groups, onNavigate }: DesktopSidebar
           <ChevronsRight className="size-4" strokeWidth={ICON_STROKE} />
         </button>
       ) : (
-        <div className="px-3 pt-3">
+        <div className="space-y-2 px-2.5 pt-2.5">
           <CartaoAmbiente />
+          {onPesquisar && (
+            <button type="button" onClick={onPesquisar} className={`flex h-8 w-full items-center gap-2 rounded-md border border-[#e6e8eb] bg-white px-2.5 text-[0.8125rem] text-slate-500 hover:border-slate-300 ${FOCO}`}>
+              <Search className="size-3.5 shrink-0" strokeWidth={ICON_STROKE} aria-hidden="true" />
+              Buscar ou ir para…
+              <kbd className="ml-auto rounded border border-[#e6e8eb] px-1 font-sans text-xs text-slate-500">Ctrl K</kbd>
+            </button>
+          )}
         </div>
       )}
 
-      <nav ref={navRef} className={`flex-1 overflow-y-auto pb-3 pt-1 ${collapsed ? 'px-2' : 'px-3'}`}>
+      <nav className={`flex-1 overflow-y-auto pb-3 pt-1 ${collapsed ? 'px-2' : 'px-3'}`}>
         {groups.map((group, index) => (
           <section key={group.label} aria-label={group.label} className={index > 0 && collapsed ? 'mt-2 border-t border-slate-100 pt-2' : ''}>
             {!collapsed && (
-              <p className="px-2.5 pb-1 pt-4 text-xs font-semibold text-slate-500">{group.label}</p>
+              <p className="px-2.5 pb-1 pt-3.5 text-xs font-medium text-slate-500">{group.label}</p>
             )}
             <div className="space-y-0.5">
               {group.items.map(item => {
@@ -118,14 +119,11 @@ export function DesktopSidebar({ activeTab, groups, onNavigate }: DesktopSidebar
                     onClick={() => onNavigate(item.id)}
                     aria-current={active ? 'page' : undefined}
                     title={item.label}
-                    className={`relative flex min-h-9 w-full items-center gap-2.5 rounded-lg text-left text-sm transition-colors ${FOCO} ${
-                      active
-                        ? 'bg-[#eef6f1] font-semibold text-[#176b4d]'
-                        : 'font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                    className={`erp-sidebar__item relative flex w-full items-center gap-2.5 rounded-md text-left text-[0.8125rem] font-medium ${FOCO} ${
+                      active ? 'erp-sidebar__item--ativo text-slate-950' : 'text-slate-700 hover:bg-[#eef0f2] hover:text-slate-950'
                     } ${collapsed ? 'justify-center px-0' : 'px-2.5'}`}
                   >
-                    {active && !collapsed && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-[#176b4d]" />}
-                    <Icon className={`size-[18px] shrink-0 ${active ? 'text-[#176b4d]' : 'text-slate-500'}`} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                    <Icon className={`size-4 shrink-0 ${active ? 'text-[#176b4d]' : 'text-slate-500'}`} strokeWidth={ICON_STROKE} aria-hidden="true" />
                     {!collapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -138,8 +136,24 @@ export function DesktopSidebar({ activeTab, groups, onNavigate }: DesktopSidebar
         )}
       </nav>
 
-      <div className={`border-t border-slate-200 py-2.5 text-xs text-slate-500 ${collapsed ? 'text-center' : 'px-5'}`} title={APP_VERSION_LABEL}>
-        {versao.replace(/^ERP\s*/, '')}
+      <div className={`flex items-center gap-2 border-t border-slate-200 py-2 ${collapsed ? 'flex-col px-2' : 'px-3'}`} title={APP_VERSION_LABEL}>
+        {pessoa && (
+          <button type="button" onClick={onAbrirPerfil} title="Meu perfil: trocar nome e foto" className={`flex min-w-0 flex-1 items-center gap-2 rounded-md p-1 text-left hover:bg-[#eef0f2] ${FOCO}`}>
+            <Avatar nome={pessoa.nome} foto={pessoa.foto ?? undefined} cor={pessoa.cor ?? undefined} />
+            {!collapsed && (
+              <span className="min-w-0 leading-tight">
+                <strong className="block truncate text-[0.8125rem] font-semibold text-slate-900">{pessoa.nome}</strong>
+                <span className="block truncate text-xs text-slate-500">{pessoa.papel ? `${pessoa.papel} · ` : ''}{versao.replace(/^ERP\s*/, '')}</span>
+              </span>
+            )}
+          </button>
+        )}
+        {onSair && (
+          <button type="button" onClick={onSair} title="Sair da conta" aria-label="Sair da conta" className={`grid size-8 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-[#eef0f2] hover:text-slate-900 ${FOCO}`}>
+            <LogOut className="size-4" strokeWidth={ICON_STROKE} />
+          </button>
+        )}
+        {!pessoa && !onSair && <span className="text-xs text-slate-500">{versao.replace(/^ERP\s*/, '')}</span>}
       </div>
     </aside>
   );

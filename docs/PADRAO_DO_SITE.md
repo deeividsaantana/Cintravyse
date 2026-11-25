@@ -4,7 +4,9 @@ Regra de ouro: **toda aba é igual**. Quem aprendeu uma aba sabe usar todas.
 Visual de app premium, mas ERP simples: muito espaço, letra limpa, poucas cores, nenhum enfeite.
 Se uma tela não segue este guia, ela não entra.
 
-Versão 1, 23/11/2026. Aprovado pelo Deivid no mapa `padrao-abas/mapa-antes-depois.png`.
+Versão 2, 25/11/2026: **padrão Cintravyse de app de ERP**, aprovado pelo Deivid na maquete
+`frontend-erp/sistema-design-25-11/` (Visão geral, Frotas e Solicitações, no PC e no celular).
+Versão 1, 23/11/2026, no mapa `padrao-abas/mapa-antes-depois.png`.
 
 ---
 
@@ -19,14 +21,21 @@ Versão 1, 23/11/2026. Aprovado pelo Deivid no mapa `padrao-abas/mapa-antes-depo
 | Pessoas | Presença, Contratação |
 | Administração | Cadastros, Dev |
 
+- Menu cinza-claro (`#f7f8f9`), sempre à vista no computador: logo Cintravyse em cima, o **seletor de ambiente** (símbolo da RENEA num quadradinho, "RENEA Infraestrutura", "Ambiente ativo · obra"), a busca **Buscar ou ir para… Ctrl K**, os grupos e, no rodapé, quem entrou (abre Meu perfil) e o botão de sair.
+- Item aberto: fundo branco com borda fina e ícone verde. Linhas de 32 px.
 - Cada coisa mora **num lugar só**. Cadastro (pessoa, equipe, máquina, empresa) só em **Cadastros**. Quem pode o quê (acessos, quem assina, quem aprova) só no **Dev**.
 - Nada de aba nova no menu sem passar por este guia.
 
-## 2. Topo da aba (uma linha só)
+## 2. Topo da aba
 
 ```
-[Opção 1] [Opção 2] [Opção 3] [Relatórios] [Ver: ▾]        [⋮] [+ Ação principal]
+Grupo / Nome da aba                                              ● Tudo salvo     ← barra do topo (48 px)
+Nome da aba                                               [⋮] [+ Ação principal N]
+Opção 1   Opção 2 (3)   Opção 3   Relatórios   [Ver: ▾]                           ← subabas sublinhadas
+──────────────────────────────────────────────────────────────────────────────
 ```
+
+- A barra do topo só mostra o **caminho** e se está **tudo salvo**. O cabeçalho é da própria tela: título de 18 px, ação principal à direita e as subabas sublinhadas embaixo, com uma linha fina separando dos dados.
 
 1. **No máximo 4 opções.** **Relatórios é sempre a última** (quando a aba tem relatório).
 2. **Nada de segunda fileira de abas ou de botões.** Se uma opção tem mais de uma tela (ex.: Relatórios → Resumo, Histórico), a escolha aparece numa caixinha **"Ver"** ao lado, na mesma linha.
@@ -51,7 +60,8 @@ Componentes: `TelaCheia` + `PageHeader` + `AbasDaTela` + `MaisAcoes`.
 - **Computador:** `TabelaPadrao`. Cabeçalho fixo, uma linha por registro, texto numa linha só (partes separadas por "·"), números alinhados à direita.
 - **Celular:** a mesma lista vira **cartões**, com os mesmos campos na mesma ordem.
 - Tocar na linha abre a ficha. A ficha e a edição abrem em **tela cheia, com fundo branco**, e **Ctrl+S** salva.
-- Cartão: fundo branco, borda cinza fina, canto de 16 px, sem sombra pesada, sem fundo colorido.
+- Tabela: cabeçalho cinza-claro de 34 px com letra normal (nada de MAIÚSCULAS), linhas de 40 px, linha fina entre elas.
+- Cartão: fundo branco, borda cinza fina (`#e6e8eb`), canto de 10 px, sem sombra, sem fundo colorido.
 - Números de resumo só quando ajudam a decidir, no máximo 4, pequenos, na linha do topo. Nada de fileira de cartões grandes.
 
 ## 5. Cores e tamanhos
@@ -61,14 +71,16 @@ Componentes: `TelaCheia` + `PageHeader` + `AbasDaTela` + `MaisAcoes`.
 | Fundo das telas | branco `#ffffff` |
 | Ação principal e aba aberta | verde `#176b4d` |
 | Texto | quase preto `#0f172a`; secundário cinza `#5b6870` |
-| Borda | cinza claro `#e2e8f0` |
+| Borda | cinza claro `#e6e8eb` (entre linhas de tabela `#eef0f2`) |
+| Menu lateral | cinza bem claro `#f7f8f9` |
 | Pede atenção | laranja `#c2410c` (selo com número) |
 | Erro | vermelho `rose-700` |
 
 - Letra: mínimo 12 px; texto normal 14 px; título da tela 16 a 18 px em negrito.
-- Botões e campos: altura mínima 44 px (toque fácil), canto 12 px.
+- Uma fonte só (Geist). Título da tela 18 px, peso 600.
+- Botões e campos: 36 px no computador, 44 px no toque (celular), canto 7 px, peso 500.
 - Espaço: 16 px entre blocos, 24 px nas bordas da tela. Respiro é premium; aperto não é.
-- Ícone só quando ajuda a reconhecer. Sem emoji, sem gradiente, sem animação chamativa. Entrada da tela: só um deslizar curto, **nunca** começa invisível.
+- Ícone só quando ajuda a reconhecer. Sem emoji, sem gradiente, sem animação chamativa. Troca de tela: só um esmaecer de 120 ms, como num aplicativo. Nada de blocos deslizando nem cartão que sobe ao passar o mouse.
 
 ## 6. Avisos
 
@@ -79,7 +91,9 @@ Componentes: `TelaCheia` + `PageHeader` + `AbasDaTela` + `MaisAcoes`.
 ## 7. Celular (390 px)
 
 - Nada sai da tela de lado. Nunca.
-- O topo vira: opções roláveis numa faixa + botão principal com largura cheia logo abaixo.
+- Topo do celular: logo Cintravyse, selo da RENEA, bolinha do salvamento e lupa.
+- Embaixo, fixa, a **barra de atalhos**: Início, Frotas, Compras, Pessoas e Menu (só as abas que a pessoa abre).
+- O cabeçalho da tela vira: título, depois as ações (botão principal largo) e as subabas sublinhadas, que rolam de lado.
 - Tabela vira cartão. Formulário em uma coluna. Botão Salvar fixo no pé da tela.
 - Conferir sempre com print em 390 px e no computador (1366 px) antes de dar a tela por pronta.
 
