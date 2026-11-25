@@ -46,7 +46,7 @@ test('ROLE_ACCESS cleanup', async (suite) => {
   await suite.test('leitura should have access to dashboard, contratacao and presenca-publica', () => {
     // 14/11/2026: qualquer login pede contratação; o servidor filtra o resto.
     // 25/11/2026: Dashboards só mostra gráfico das abas que a pessoa abre.
-    assert.deepStrictEqual(ROLE_ACCESS.leitura, ['dashboard', 'dashboards', 'contratacao', 'presenca-publica']);
+    assert.deepStrictEqual(ROLE_ACCESS.leitura, ['dashboard', 'dashboards', 'relatorios', 'contratacao', 'presenca-publica']);
   });
 });
 
@@ -56,7 +56,7 @@ test('ALL_NAVIGATION_ITEMS cleanup', async (suite) => {
   // 13: painel Dev de acessos (16/11/2026), que só abre para o dev.
   // 14: Dashboards, os gráficos numa aba própria (25/11/2026).
   await suite.test('should contain exactly 14 items from PRIMARY_MODULE_IDS', () => {
-    assert.strictEqual(ALL_NAVIGATION_ITEMS.length, 14, `Expected 14 items, got ${ALL_NAVIGATION_ITEMS.length}`);
+    assert.strictEqual(ALL_NAVIGATION_ITEMS.length, 15, `Expected 15 items, got ${ALL_NAVIGATION_ITEMS.length}`);
   });
 
   await suite.test('should contain only primary module IDs', () => {
@@ -94,7 +94,8 @@ test('endereços antigos abrem a tela onde o dado mora hoje', async (suite) => {
     assert.strictEqual(MODULE_REDIRECTS.permissoes, 'cadastros');
     // Abas tiradas em 2026-11-10 a pedido do usuário.
     assert.strictEqual(MODULE_REDIRECTS.administracao, 'cadastros');
-    assert.strictEqual(MODULE_REDIRECTS.relatorios, 'dashboard');
+    // Relatórios voltou como guia própria em 25/11/2026: deixa de ser redirecionada.
+    assert.strictEqual(MODULE_REDIRECTS.relatorios, undefined);
     assert.strictEqual(MODULE_REDIRECTS.planejamento, 'programacao');
     // Materiais e Jazida saíram com os dados em 2026-11-10: não há para onde levar.
     assert.strictEqual(MODULE_REDIRECTS.materiais, undefined);

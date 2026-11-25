@@ -42,6 +42,8 @@ interface Props {
   /** Dono do sistema (erp_dev_owners): o único que apaga lançamento de vez. */
   podeApagar?: boolean;
   onApagarProducao?: (id: string) => void;
+  /** Aba que abre primeiro (a guia Relatórios abre direto no avanço ou na produção). */
+  abaPedida?: 'avanco' | 'producao';
 }
 
 type Aba = 'hoje' | 'quadro' | 'lista' | 'avanco' | 'producao';
@@ -49,11 +51,11 @@ const DIAS_NO_QUADRO = 14;
 const ordenarTexto = (lista: Iterable<string>) => [...new Set(lista)].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
 const abaInicial = (): Aba => (typeof window !== 'undefined' && window.innerWidth < 768 ? 'hoje' : 'quadro');
 
-export default function ProgramacaoTab({ planejamento: planejamentoSalvo, producao, servicos, responsavel, podeEditar, onSavePlanejamento, onSaveProducao, podeApagar = false, onApagarProducao }: Props) {
+export default function ProgramacaoTab({ planejamento: planejamentoSalvo, producao, servicos, responsavel, podeEditar, onSavePlanejamento, onSaveProducao, podeApagar = false, onApagarProducao, abaPedida }: Props) {
   const escopo = useRef<HTMLElement>(null);
   const planejamento = useMemo(() => planejamentoSalvo.map(completarEstacasDaCarga), [planejamentoSalvo]);
   const hoje = diaLocal();
-  const [aba, setAba] = useState<Aba>(abaInicial);
+  const [aba, setAba] = useState<Aba>(() => abaPedida ?? abaInicial());
   const [busca, setBusca] = useState('');
   const [verFiltros, setVerFiltros] = useState(false);
   const [frente, setFrente] = useState('');

@@ -1457,3 +1457,22 @@ h1, h2, h3 { letter-spacing: -.01em; }
 .cv-ranking div { height: .5rem; border-radius: 999px; background: var(--cv-linha-fraca); }
 .cv-ranking i { display: block; height: 100%; border-radius: 999px; background: var(--cv-verde); }
 .cv-ranking b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Relatórios (RelatoriosTab): lista de todos os relatórios, por área. */
+.cv-relatorios__grupo h2 { margin: .25rem 0 .5rem; color: var(--cv-mudo); font-size: .75rem; font-weight: 500; }
+.cv-relatorios__grupo ul { overflow: hidden; border: 1px solid var(--cv-linha); border-radius: .625rem; list-style: none; }
+.cv-relatorios__grupo li + li { border-top: 1px solid var(--cv-linha-fraca); }
+#main-tab-viewport .cv-relatorios__grupo button { display: grid; width: 100%; min-height: 3.75rem; grid-template-columns: 2rem 1fr auto auto; align-items: center; gap: .875rem; padding: .625rem 1rem; border: 0; background: #fff; text-align: left; }
+#main-tab-viewport .cv-relatorios__grupo button:hover { background: #f8faf9; }
+.cv-relatorios__icone { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: .4375rem; background: var(--cv-verde-claro); color: var(--cv-verde); }
+.cv-relatorios__grupo strong { display: block; color: var(--cv-texto); font-size: .875rem; font-weight: 600; }
+.cv-relatorios__grupo small { display: block; overflow: hidden; color: var(--cv-mudo); font-size: .8125rem; text-overflow: ellipsis; white-space: nowrap; }
+.cv-relatorios__formatos { display: flex; gap: .25rem; }
+.cv-relatorios__formatos em { padding: .0625rem .4375rem; border-radius: .3125rem; background: var(--cv-linha-fraca); color: #374151; font-size: .75rem; font-style: normal; font-weight: 500; }
+.cv-relatorios__abrir { color: var(--cv-mudo); font-size: .8125rem; font-weight: 500; }
+@media (max-width: 767px) {
+  #main-tab-viewport .cv-relatorios__grupo button { grid-template-columns: 2rem 1fr; }
+  .cv-relatorios__grupo small { white-space: normal; }
+  .cv-relatorios__formatos { grid-column: 2; }
+  .cv-relatorios__abrir { display: none; }
+}

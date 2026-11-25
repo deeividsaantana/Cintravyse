@@ -17,6 +17,7 @@ export const ABA_DEV = 'dev';
 export const ABAS_AJUSTAVEIS: ReadonlyArray<{ id: string; nome: string }> = [
   { id: 'dashboard', nome: 'Visão geral' },
   { id: 'dashboards', nome: 'Dashboards' },
+  { id: 'relatorios', nome: 'Relatórios' },
   { id: 'pluviometro', nome: 'Pluviômetro' },
   { id: 'programacao', nome: 'Programação' },
   { id: 'estacas', nome: 'Controle de Estacas' },
