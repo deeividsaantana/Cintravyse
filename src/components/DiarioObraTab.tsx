@@ -6,7 +6,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { Camera, ClipboardCheck, Clock, CloudRain, NotebookPen, Save, Truck, Users } from 'lucide-react';
+import { Camera, CloudRain, NotebookPen, Save, Users } from 'lucide-react';
 import MapaChuva from './MapaChuva';
 import type {
   ApontamentoOperacional,
@@ -169,10 +169,10 @@ export default function DiarioObraTab({
       </div>}
     >
       <section ref={escopoIndicadores} aria-label="Números do dia" className="renea-faixa-numeros grid-cols-2 lg:grid-cols-4">
-        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Presentes" valor={resumo.presentes} detalhe="pessoas na obra" icone={Users} tom={resumo.presentes > 0 ? 'verde' : 'neutro'} />
-        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Equipes com apontamento" valor={resumo.equipes} detalhe="equipes que lançaram" icone={ClipboardCheck} />
-        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Frota informada" valor={resumo.frota.length} detalhe="equipamentos do dia" icone={Truck} />
-        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Horas apontadas" valor={`${resumo.horasApontadas.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`} detalhe="somadas das equipes" icone={Clock} />
+        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Presentes" valor={resumo.presentes} detalhe="pessoas na obra" tom={resumo.presentes > 0 ? 'verde' : 'neutro'} />
+        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Equipes com apontamento" valor={resumo.equipes} detalhe="equipes que lançaram" />
+        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Frota informada" valor={resumo.frota.length} detalhe="equipamentos do dia" />
+        <CartaoIndicador dados={{ 'data-linha-lista': true }} rotulo="Horas apontadas" valor={`${resumo.horasApontadas.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`} detalhe="somadas das equipes" />
       </section>
 
       <input ref={inputFoto} type="file" accept="image/*" capture="environment" hidden onChange={event => void receberFoto(event.target.files?.[0])} />

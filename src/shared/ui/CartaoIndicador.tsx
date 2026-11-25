@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
 import { cn } from './styles';
 
 export type TomIndicador = 'neutro' | 'verde' | 'laranja' | 'vermelho';
@@ -11,7 +10,6 @@ interface CartaoIndicadorProps {
   valor: ReactNode;
   /** Uma linha curta embaixo do número: de onde ele vem ou o que fazer. */
   detalhe?: ReactNode;
-  icone?: LucideIcon;
   /** Cor do número. Verde = bom, laranja = atenção, vermelho = problema. */
   tom?: TomIndicador;
   /** Torna o cartão um botão que leva ao detalhe do número. */
@@ -31,22 +29,19 @@ const COR_DO_VALOR: Record<TomIndicador, string> = {
 };
 
 /**
- * Número do topo das abas (redesenho de 25/11/2026): rótulo pequeno, ícone
- * discreto sem fundo colorido, número e uma linha de detalhe. Dentro de uma
+ * Número do topo das abas (redesenho de 25/11/2026): rótulo pequeno, número
+ * e uma linha de detalhe, sem ícone (minimalismo pedido pelo Deivid em 25/11). Dentro de uma
  * faixa (`renea-faixa-numeros`) os números viram uma peça só, com linhas
  * finas entre eles, como num app premium.
  * Toda aba usa este cartão, para o mesmo tipo de informação ter a mesma cara
  * em qualquer tela.
  */
-export function CartaoIndicador({ rotulo, valor, detalhe, icone: Icone, tom = 'neutro', onClick, ariaLabel, className, dados }: CartaoIndicadorProps) {
+export function CartaoIndicador({ rotulo, valor, detalhe, tom = 'neutro', onClick, ariaLabel, className, dados }: CartaoIndicadorProps) {
   const conteudo = (
     <>
-      <span className="flex items-center justify-between gap-2">
-        <span className="min-w-0 text-[13px] font-semibold leading-snug text-[#5b6870] [overflow-wrap:anywhere]">{rotulo}</span>
-        {Icone && <Icone className="size-4 shrink-0 text-slate-500" aria-hidden="true" />}
-      </span>
-      <strong className={cn('mt-1.5 block text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums', COR_DO_VALOR[tom])}>{valor}</strong>
-      {detalhe && <span className="mt-1.5 block text-xs text-[#5b6870]">{detalhe}</span>}
+      <span className="block min-w-0 text-[13px] font-medium leading-snug text-[#5b6870] [overflow-wrap:anywhere]">{rotulo}</span>
+      <strong className={cn('mt-2 block text-2xl font-semibold leading-none tracking-tight tabular-nums', COR_DO_VALOR[tom])}>{valor}</strong>
+      {detalhe && <span className="mt-2 block text-xs text-[#5b6870]">{detalhe}</span>}
     </>
   );
   const classe = cn('renea-indicador block min-w-0 rounded-2xl border border-slate-200 bg-white p-4 text-left', className);
@@ -56,7 +51,7 @@ export function CartaoIndicador({ rotulo, valor, detalhe, icone: Icone, tom = 'n
       onClick={onClick}
       aria-label={ariaLabel}
       {...dados}
-      className={cn(classe, 'w-full cursor-pointer transition duration-200 hover:border-emerald-300 hover:shadow-sm active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)')}
+      className={cn(classe, 'w-full cursor-pointer transition duration-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)')}
     >
       {conteudo}
     </button>

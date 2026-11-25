@@ -79,7 +79,7 @@ export function TelaCheia({
 
   return (
     <section ref={ref} id={id} aria-label={rotulo} data-testid={testId} data-tela-cheia=""
-      className={cn('renea-tela-cheia flex w-full min-w-0 max-w-none flex-col gap-2 lg:gap-3', embutida ? 'renea-tela-cheia--embutida' : 'renea-tela-cheia--raiz', className)}>
+      className={cn('renea-tela-cheia flex w-full min-w-0 max-w-none flex-col gap-4 lg:gap-5', embutida ? 'renea-tela-cheia--embutida' : 'renea-tela-cheia--raiz', className)}>
       {cabecalho && <div className="renea-tela-cheia__topo shrink-0">{cabecalho}</div>}
       {faixa && <div className="renea-tela-cheia__faixa shrink-0">{faixa}</div>}
       <div

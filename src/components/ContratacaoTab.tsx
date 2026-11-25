@@ -12,20 +12,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import {
-  CheckCircle2,
   ClipboardList,
-  Clock,
   FilePlus2,
   Download,
   Inbox,
   LayoutDashboard,
   Link2,
-  PenLine,
   Search,
   Settings2,
   Trash2,
-  UserCheck,
-} from 'lucide-react';
+  } from 'lucide-react';
 import { CartaoIndicador, ConfirmDialog, PageHeader } from '../shared/ui';
 import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
@@ -255,10 +251,10 @@ export default function ContratacaoTab() {
       )}
       {ver('indicadores') && (
         <div data-ct-reveal className="renea-faixa-numeros grid-cols-2 lg:grid-cols-4">
-          <CartaoIndicador rotulo="Com Recursos Humanos" valor={contagem.etapa_1} detalhe="1ª assinatura" icone={UserCheck} tom={contagem.etapa_1 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_1')} />
-          <CartaoIndicador rotulo="Com a Gerência" valor={contagem.etapa_2} detalhe="2ª assinatura" icone={Clock} tom={contagem.etapa_2 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_2')} />
-          <CartaoIndicador rotulo="Com a Gerência" valor={contagem.etapa_3} detalhe="3ª assinatura" icone={PenLine} tom={contagem.etapa_3 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_3')} />
-          <CartaoIndicador rotulo="Concluídas" valor={contagem.concluido} detalhe={`com as 3 assinaturas${contagem.recusada ? ` · ${contagem.recusada} recusada${contagem.recusada > 1 ? 's' : ''}` : ''}`} icone={CheckCircle2} tom="verde" onClick={() => verSituacao('concluido')} />
+          <CartaoIndicador rotulo="Com Recursos Humanos" valor={contagem.etapa_1} detalhe="1ª assinatura" tom={contagem.etapa_1 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_1')} />
+          <CartaoIndicador rotulo="Com a Gerência" valor={contagem.etapa_2} detalhe="2ª assinatura" tom={contagem.etapa_2 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_2')} />
+          <CartaoIndicador rotulo="Com a Gerência" valor={contagem.etapa_3} detalhe="3ª assinatura" tom={contagem.etapa_3 ? 'laranja' : 'neutro'} onClick={() => verSituacao('etapa_3')} />
+          <CartaoIndicador rotulo="Concluídas" valor={contagem.concluido} detalhe={`com as 3 assinaturas${contagem.recusada ? ` · ${contagem.recusada} recusada${contagem.recusada > 1 ? 's' : ''}` : ''}`} tom="verde" onClick={() => verSituacao('concluido')} />
         </div>
       )}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
