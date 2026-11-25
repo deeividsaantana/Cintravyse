@@ -76,7 +76,7 @@
   gap: 7px;
   color: #fff;
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -123,7 +123,7 @@
   margin: 0 0 8px;
   color: var(--presence-green);
   font-size: .75rem;
-  font-weight: 850;
+  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -133,7 +133,7 @@
 .presence-public__success-card h1 {
   margin: 0;
   font-size: clamp(30px, 9vw, 48px);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.055em;
   line-height: 0.98;
 }
@@ -168,7 +168,7 @@
   margin: 9px 2px 0;
   color: var(--presence-muted);
   font-size: .75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__search input {
@@ -259,7 +259,7 @@
   margin-top: 4px;
   color: var(--presence-muted);
   font-size: .75rem;
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -308,7 +308,7 @@
   margin-top: 4px;
   color: var(--presence-muted);
   font-size: .75rem;
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -371,7 +371,7 @@
   border-radius: 50%;
   color: var(--presence-green-strong);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 600;
   background: #e1e9e2;
 }
 
@@ -392,7 +392,7 @@
   border-radius: 12px;
   color: #4f5a54;
   font-size: .75rem;
-  font-weight: 750;
+  font-weight: 600;
   background: #fff;
   transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
@@ -435,7 +435,7 @@
   border-radius: 10px;
   color: #8c4639;
   font-size: .75rem;
-  font-weight: 750;
+  font-weight: 600;
   background: #fffaf7;
 }
 
@@ -449,7 +449,7 @@
 .presence-public__remove-confirm span {
   color: #70443b;
   font-size: .75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__remove-confirm button[data-danger] {
@@ -468,7 +468,7 @@
   border-radius: 10px;
   color: #24664d;
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 600;
   background: #f0f8f2;
 }
 
@@ -512,7 +512,7 @@
   padding: .85rem 1rem;
   color: #735d13;
   font-size: .88rem;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .presence-public__submit-actions {
@@ -600,7 +600,7 @@
   border-radius: 8px;
   color: white;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 600;
   background: var(--presence-green-strong);
 }
 
@@ -716,7 +716,7 @@
   padding: 5px 10px;
   color: #8a5b05;
   font-size: .75rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -729,7 +729,7 @@
   margin-top: 18px;
   color: #80570d !important;
   font-size: .75rem !important;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .presence-public__success-card h1 {
@@ -786,7 +786,7 @@
   align-self: start;
   color: var(--presence-muted);
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -883,7 +883,7 @@
   border-radius: 999px;
   color: #4f5a54;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   background: var(--presence-surface);
 }
@@ -913,7 +913,7 @@
   border-radius: 999px;
   color: var(--presence-green-strong);
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
   background: #e4eee7;
@@ -930,7 +930,7 @@
   border-radius: 10px;
   color: white;
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   background: var(--presence-green-strong);
 }
 
@@ -945,7 +945,7 @@
   padding: 9px 11px;
   border-radius: 8px;
   font-size: .75rem;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .presence-public__card-error {
@@ -1085,7 +1085,7 @@
   border-radius: 12px;
   color: var(--presence-green-strong);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   background: #f3f8f4;
   transition: border-color 160ms ease, background 160ms ease;
 }
@@ -1176,7 +1176,7 @@
   margin: 0;
   color: var(--presence-green-strong);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Atalho de volta ao comprovante a partir da lista conferivel. */
@@ -1191,7 +1191,7 @@
   border-radius: 999px;
   color: var(--presence-green-strong);
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 600;
   background: var(--presence-surface);
 }
 
@@ -1218,7 +1218,7 @@
   margin: 0;
   color: var(--presence-muted);
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1244,7 +1244,7 @@
   margin: 0;
   color: var(--presence-muted);
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1275,7 +1275,7 @@
   border-radius: 10px;
   color: #fff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   background: var(--presence-green-strong);
 }
 
@@ -1283,7 +1283,7 @@
   margin: 0;
   color: var(--presence-green-strong);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__daynote--readonly p {
@@ -1417,7 +1417,7 @@
   padding: 0 16px;
   border-radius: 12px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__saturday-cta button {
@@ -1461,7 +1461,7 @@
 .presence-public__saturday-legend {
   margin-bottom: 8px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__saturday-list {
@@ -1496,7 +1496,7 @@
 
 .presence-public__saturday-name {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__saturday-cargo {
@@ -1508,7 +1508,7 @@
   display: grid;
   gap: 6px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .presence-public__saturday-textarea {

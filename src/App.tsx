@@ -4110,7 +4110,7 @@ export default function App() {
         <MarcaProduto />
         <div className="flex items-center gap-1">
           <span className="renea-ambiente__selo" title={`Ambiente ${CLIENTE.nome}`}><img src={simboloCliente} alt={`Ambiente ${CLIENTE.nome}`} /></span>
-          <div
+          {(activeTab === 'dev' || salvamento.ponto !== 'verde') && <div
             role="status"
             aria-live="polite"
             className="grid size-9 place-items-center"
@@ -4118,7 +4118,7 @@ export default function App() {
           >
             <span aria-hidden="true" className={`size-2.5 rounded-full ${salvamento.ponto === 'verde' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
             <span className="sr-only">{salvamento.rotulo}</span>
-          </div>
+          </div>}
           {salvamento.tentarNovamente && (
             <button type="button" onClick={tentarNovamenteEnvio} className="min-h-11 rounded-full border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800">
               Tentar novamente

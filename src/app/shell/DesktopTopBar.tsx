@@ -25,7 +25,8 @@ export function trilhaDaAba(activeTab: string) {
 
 /**
  * Barra do topo no padrão Cintravyse (25/11/2026): uma faixa fina com o
- * caminho da tela (Grupo / Tela) e, à direita, se está tudo salvo. Quem
+ * caminho da tela (Grupo / Tela) e, à direita, o salvamento (sempre na aba
+ * Dev; nas outras, só quando há problema). Quem
  * entrou e o botão de sair moram no rodapé do menu lateral. O título, as
  * subtelas e a ação principal ficam no cabeçalho da própria tela.
  */
@@ -41,6 +42,10 @@ export function DesktopTopBar({
 }: DesktopTopBarProps) {
   const salvamento = salvamentoRecebido ?? descreverSalvamento({ online: true, conectado: isCloudConnected, enviando: false, pendente: false, falhasSeguidas: 0 });
   const { grupo, tela } = trilhaDaAba(activeTab);
+  // "Tudo salvo" só na aba Dev (pedido do Deivid, 25/11/2026). Nas outras
+  // telas o aviso só aparece quando há problema: sem internet ou envio que
+  // falhou, para ninguém perder lançamento sem saber.
+  const mostrarStatus = activeTab === 'dev' || salvamento.ponto !== 'verde' || salvamento.tentarNovamente;
 
   return (
     <header className="erp-topbar hidden lg:flex" aria-label="Barra de contexto do sistema">
@@ -50,7 +55,7 @@ export function DesktopTopBar({
       </nav>
 
       <div className="erp-topbar__actions">
-        <div
+        {mostrarStatus && <div
           className="erp-topbar__status"
           role="status"
           aria-live="polite"
@@ -59,7 +64,7 @@ export function DesktopTopBar({
         >
           <span aria-hidden="true" />
           <em className="not-italic">{salvamento.estado === 'sincronizado' ? 'Tudo salvo' : salvamento.curto}</em>
-        </div>
+        </div>}
         {salvamento.tentarNovamente && onRetryUpload && (
           <button type="button" className="erp-topbar__retry" onClick={onRetryUpload}>Tentar novamente</button>
         )}
