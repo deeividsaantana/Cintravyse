@@ -1417,3 +1417,43 @@ h1, h2, h3 { letter-spacing: -.01em; }
   #main-tab-viewport { padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important; }
   body:has([data-lancamento]) .erp-barra-celular { display: none; }
 }
+
+/* Dashboards (DashboardsTab + dashboards/Graficos), padrão Cintravyse. */
+.cv-periodo { display: inline-flex; gap: .25rem; padding: .1875rem; border: 1px solid var(--cv-linha); border-radius: .5rem; background: #fff; }
+#main-tab-viewport .cv-periodo button { min-height: 1.875rem; padding: 0 .75rem; border: 0; border-radius: .375rem; background: none; color: var(--cv-mudo); font-size: .8125rem; font-weight: 500; }
+#main-tab-viewport .cv-periodo button[aria-pressed="true"] { background: var(--cv-verde-claro); color: var(--cv-verde); }
+.cv-graficos { display: grid; gap: .875rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
+@media (min-width: 1024px) { .cv-graficos { grid-template-columns: 1.5fr 1fr; } }
+.cv-grafico { min-width: 0; padding: .875rem 1rem 1rem; border: 1px solid var(--cv-linha); border-radius: .625rem; background: #fff; }
+.cv-grafico > header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; }
+.cv-grafico h2 { color: var(--cv-texto); font-size: .875rem; font-weight: 600; }
+.cv-grafico header p { color: var(--cv-mudo); font-size: .75rem; }
+#main-tab-viewport .cv-grafico header button { min-height: 1.75rem; padding: 0 .5rem; border: 0; border-radius: .375rem; background: none; color: var(--cv-mudo); font-size: .75rem; font-weight: 500; }
+#main-tab-viewport .cv-grafico header button:hover { background: var(--cv-linha-fraca); color: var(--cv-texto); }
+.cv-grafico__vazio { display: grid; min-height: 9rem; place-items: center; color: var(--cv-mudo); font-size: .8125rem; }
+.cv-pizza { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.cv-pizza svg { width: 9.5rem; flex: none; }
+.cv-pizza__fatia { transition: stroke-width .12s ease; cursor: pointer; }
+.cv-pizza__total { fill: var(--cv-texto); font-size: 22px; font-weight: 600; }
+.cv-pizza__rotulo { fill: var(--cv-mudo); font-size: 12px; }
+.cv-legenda { flex: 1 1 10rem; min-width: 0; list-style: none; }
+#main-tab-viewport .cv-legenda button { display: grid; width: 100%; min-height: 1.875rem; grid-template-columns: .5rem 1fr auto 2.5rem; align-items: center; gap: .5rem; border: 0; border-radius: .375rem; background: none; padding: 0 .375rem; color: var(--cv-texto); font-size: .8125rem; text-align: left; }
+.cv-legenda li[data-foco] button { background: var(--cv-linha-fraca); }
+.cv-legenda i { width: .5rem; height: .5rem; border-radius: 50%; }
+.cv-legenda span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-legenda b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cv-legenda small { color: var(--cv-mudo); font-size: .75rem; text-align: right; font-variant-numeric: tabular-nums; }
+.cv-tempo { position: relative; }
+.cv-tempo svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cv-tempo__grade { stroke: var(--cv-linha-fraca); stroke-width: 1; }
+.cv-tempo__eixo { fill: var(--cv-mudo); font-size: 12px; font-variant-numeric: tabular-nums; }
+.cv-tempo__mira { stroke: #c9ced4; stroke-width: 1; stroke-dasharray: 3 3; }
+.cv-dica { position: absolute; top: 0; transform: translateX(-50%); display: flex; gap: .5rem; padding: .25rem .5rem; border: 1px solid var(--cv-linha); border-radius: .375rem; background: #fff; box-shadow: 0 4px 12px rgb(16 24 40 / .08); font-size: .75rem; white-space: nowrap; pointer-events: none; }
+.cv-dica span { color: var(--cv-mudo); }
+.cv-dica b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cv-ranking { display: grid; gap: .5rem; list-style: none; }
+.cv-ranking li { display: grid; grid-template-columns: 5.5rem 1fr 5rem; align-items: center; gap: .75rem; font-size: .8125rem; }
+.cv-ranking span { overflow: hidden; font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.cv-ranking div { height: .5rem; border-radius: 999px; background: var(--cv-linha-fraca); }
+.cv-ranking i { display: block; height: 100%; border-radius: 999px; background: var(--cv-verde); }
+.cv-ranking b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }

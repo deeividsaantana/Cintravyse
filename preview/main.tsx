@@ -16,7 +16,8 @@ import QuadroFrota from '../src/components/quadroFrota/QuadroFrota';
 import ColaboradoresTab from '../src/components/ColaboradoresTab';
 import PluviometroTab from '../src/components/PluviometroTab';
 import DiarioObraTab from '../src/components/DiarioObraTab';
-import { SolicitacoesPreview } from './solicitacoesPreview';
+import { SolicitacoesPreview, exemplo as exemploSolicitacoes } from './solicitacoesPreview';
+import DashboardsTab from '../src/components/DashboardsTab';
 import ContratacaoTab from '../src/components/ContratacaoTab';
 import { ContratacaoPeloLink } from '../src/components/contratacao/ContratacaoPeloLink';
 import DevTab from '../src/components/DevTab';
@@ -626,6 +627,18 @@ const screens: Record<string, React.ReactNode> = {
     />
   ),
   solicitacoes: <SolicitacoesPreview />,
+  dashboards: (
+    <DashboardsTab
+      abastecimentos={[...fx.abastecimentos, ...fx.abastecimentosConsumo] as never[]}
+      equipamentos={fx.equipamentos}
+      controlesEquipamentos={fx.controlesEquipamentos}
+      presencasLink={fx.presencasHistorico}
+      diariosObra={fx.diariosChuva}
+      solicitacoes={exemploSolicitacoes()}
+      podeVer={() => true}
+      onNavigate={noop}
+    />
+  ),
   contratacao: <ContratacaoTab />,
   // Link individual: ?screen=contratacao-link&link=5&papel=gerente_2
   'contratacao-link': <div className="min-h-dvh bg-[#f7f8f6] p-[var(--renea-respiro)]"><ContratacaoPeloLink token={new URLSearchParams(location.search).get('link') || '6'} /></div>,

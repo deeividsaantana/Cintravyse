@@ -5,6 +5,7 @@ import {
   FolderPlus,
   Hammer,
   LayoutDashboard,
+  PieChart,
   Truck,
   Wrench,
   Users,
@@ -27,6 +28,8 @@ export const NAVIGATION_GROUPS = [
     label: 'Visão geral',
     items: [
       { id: 'dashboard', label: 'Visão geral', icon: LayoutDashboard },
+      // Gráficos de pizza, linha e barras numa aba própria (25/11/2026).
+      { id: 'dashboards', label: 'Dashboards', icon: PieChart },
     ],
   },
   {
@@ -74,6 +77,7 @@ export const NAVIGATION_GROUPS = [
  */
 export const PRIMARY_MODULE_IDS = [
   'dashboard',
+  'dashboards',
   'pluviometro',
   'programacao',
   // Controle de Estacas é aba própria: a importação com prévia/lote/lineage
@@ -179,7 +183,7 @@ export const ROLE_ACCESS: Record<UserRole, readonly string[]> = {
   // de antes da limpeza do menu).
   operador: [...PRIMARY_MODULE_IDS.filter(id => id !== 'cadastros' && id !== 'dev'), PRESENCA_PUBLICA],
   // Qualquer login pode pedir contratação; o que vê lá dentro o servidor filtra.
-  leitura: ['dashboard', 'contratacao', PRESENCA_PUBLICA],
+  leitura: ['dashboard', 'dashboards', 'contratacao', PRESENCA_PUBLICA],
 };
 
 /**

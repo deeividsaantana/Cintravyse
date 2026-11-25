@@ -103,6 +103,7 @@ import {
 
 // Subcomponents Imports
 const Dashboard = lazy(() => import('./components/Dashboard'));
+const DashboardsTab = lazy(() => import('./components/DashboardsTab'));
 const CadastrosTab = lazy(() => import('./components/CadastrosTab'));
 const LancamentosTab = lazy(() => import('./components/LancamentosTab'));
 const ControlePresencaTab = lazy(() => import('./components/ControlePresencaTab'));
@@ -4252,6 +4253,19 @@ export default function App() {
                 frentes={frentesServico}
                 diariosObra={diariosObra}
                 solicitacoes={solicitacoes}
+                onNavigate={navigateTo}
+              />
+            )}
+
+            {activeTab === 'dashboards' && (
+              <DashboardsTab
+                abastecimentos={abastecimentosAtivos}
+                equipamentos={equipamentos}
+                controlesEquipamentos={controleEquipamentosDiario}
+                presencasLink={presencasLinkAtivas}
+                diariosObra={diariosObra}
+                solicitacoes={solicitacoes}
+                podeVer={podeAbrir}
                 onNavigate={navigateTo}
               />
             )}

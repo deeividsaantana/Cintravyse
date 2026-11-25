@@ -45,7 +45,8 @@ test('ROLE_ACCESS cleanup', async (suite) => {
 
   await suite.test('leitura should have access to dashboard, contratacao and presenca-publica', () => {
     // 14/11/2026: qualquer login pede contratação; o servidor filtra o resto.
-    assert.deepStrictEqual(ROLE_ACCESS.leitura, ['dashboard', 'contratacao', 'presenca-publica']);
+    // 25/11/2026: Dashboards só mostra gráfico das abas que a pessoa abre.
+    assert.deepStrictEqual(ROLE_ACCESS.leitura, ['dashboard', 'dashboards', 'contratacao', 'presenca-publica']);
   });
 });
 
@@ -53,8 +54,9 @@ test('ALL_NAVIGATION_ITEMS cleanup', async (suite) => {
   // 11: a Programação ganhou aba própria, sem voltar a criar subtelas legadas.
   // 12: Solicitação de Contratação (14/11/2026).
   // 13: painel Dev de acessos (16/11/2026), que só abre para o dev.
-  await suite.test('should contain exactly 13 items from PRIMARY_MODULE_IDS', () => {
-    assert.strictEqual(ALL_NAVIGATION_ITEMS.length, 13, `Expected 13 items, got ${ALL_NAVIGATION_ITEMS.length}`);
+  // 14: Dashboards, os gráficos numa aba própria (25/11/2026).
+  await suite.test('should contain exactly 14 items from PRIMARY_MODULE_IDS', () => {
+    assert.strictEqual(ALL_NAVIGATION_ITEMS.length, 14, `Expected 14 items, got ${ALL_NAVIGATION_ITEMS.length}`);
   });
 
   await suite.test('should contain only primary module IDs', () => {

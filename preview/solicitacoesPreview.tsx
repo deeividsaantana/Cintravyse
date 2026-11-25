@@ -13,7 +13,7 @@ const ator = (nome: string): Ator => ({ nome, papel: pessoas.find(p => p.nome ==
 const dias = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 const quando = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 
-const exemplo = (): Solicitacao[] => {
+export const exemplo = (): Solicitacao[] => {
   const lista: Solicitacao[] = [];
   const abrir = (solicitante: string, frente: string, descricao: string, quantidade: number, unidade: string, n: number) => {
     const r = abrirSolicitacao({ solicitante, frente, estacamento: 'Estaca 1401+0,00', itens: [{ tipo: 'Material', descricao, quantidade, unidade, prazoDesejado: dias(n + 7), permiteParcial: true }] }, ator(solicitante), lista, quando(n), `ex-${lista.length}`);
