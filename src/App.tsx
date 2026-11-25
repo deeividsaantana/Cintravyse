@@ -104,6 +104,7 @@ import {
 // Subcomponents Imports
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const DashboardsTab = lazy(() => import('./components/DashboardsTab'));
+const RelatoriosTab = lazy(() => import('./components/RelatoriosTab'));
 const CadastrosTab = lazy(() => import('./components/CadastrosTab'));
 const LancamentosTab = lazy(() => import('./components/LancamentosTab'));
 const ControlePresencaTab = lazy(() => import('./components/ControlePresencaTab'));
@@ -446,7 +447,11 @@ export default function App() {
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<string>(() => getInitialTabFromUrl());
-  const combustivelUrlView = getCombustivelViewFromUrl();
+  // Relatório escolhido na aba Relatórios: a aba de destino abre direto
+  // nessa parte. Qualquer outra navegação limpa o pedido.
+  const [parteAberta, setParteAberta] = useState<{ tab: string; parte: string } | null>(null);
+  const parteDe = (tab: string) => (parteAberta?.tab === tab ? parteAberta.parte : undefined);
+  const combustivelUrlView = parteDe('lancamentos') === 'relatorios' ? 'relatorios' : getCombustivelViewFromUrl();
   const combustivelListaSomente = isCombustivelListOnlyUrl();
   const combustivelViewInicial = combustivelListaSomente ? 'historico' : combustivelUrlView;
   // A aba fica no endereço (?tab=): o F5 reabre a mesma tela e o voltar do
@@ -4067,6 +4072,7 @@ export default function App() {
 
   const navigateTo = (tab: string, closeMobile = false, options: { explicitRefresh?: boolean } = {}) => {
     setPedidoFrota(atual => (atual.vista ? { vez: atual.vez } : atual));
+    setParteAberta(null);
     setPedidoNovoColaborador(0);
     setPedidoEquipes(0);
     // A busca do menu não fica filtrada depois de escolher a tela (B6).
@@ -4270,6 +4276,17 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'relatorios' && (
+              <RelatoriosTab
+                podeVer={podeAbrir}
+                onAbrir={relatorio => {
+                  navigateTo(relatorio.aba);
+                  if (relatorio.aba === 'controle-equipamentos') setPedidoFrota(atual => ({ vista: relatorio.parte as VistaFrotaManutencao, vez: atual.vez + 1 }));
+                  else setParteAberta({ tab: relatorio.aba, parte: relatorio.parte });
+                }}
+              />
+            )}
+
             {activeTab === 'cadastros' && allowedTabs.includes('cadastros') && (
               <CadastrosTab
                 empresas={empresas}
@@ -4361,6 +4378,7 @@ export default function App() {
                 podeApagar={meuAcesso.ehDev}
                 apagadas={solicitacoesApagadas}
                 onExcluir={handleExcluirSolicitacao}
+                subtelaInicial={parteDe('solicitacoes') === 'relatorio' ? 'relatorio' : undefined}
               />
             )}
 
@@ -4388,6 +4406,7 @@ export default function App() {
                 onSaveProducao={handleSaveProducao}
                 podeApagar={meuAcesso.ehDev}
                 onApagarProducao={handleApagarProducao}
+                abaPedida={parteDe('programacao') === 'avanco' || parteDe('programacao') === 'producao' ? parteDe('programacao') as 'avanco' | 'producao' : undefined}
               />
             )}
 
@@ -4493,6 +4512,7 @@ export default function App() {
                 onGerenciarEquipes={() => { navigateTo('cadastros'); setPedidoEquipes(atual => atual + 1); }}
                 ehAdmin={currentUserRole === 'admin'}
                 onSalvarLinkDaEquipe={grupo => handleSaveGrupoEquipe(grupo, false)}
+                viewInicial={parteDe('presenca') === 'relatorios' ? 'relatorios' : undefined}
               />
             )}
 
@@ -4502,6 +4522,7 @@ export default function App() {
                 obras={obras}
                 onChange={handleChangeControleEstacas}
                 responsavel={activeUserName}
+                secaoInicial={parteDe('estacas') === 'relatorios' ? 'relatorios' : undefined}
               />
             )}
 

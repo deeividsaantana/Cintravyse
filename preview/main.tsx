@@ -18,6 +18,7 @@ import PluviometroTab from '../src/components/PluviometroTab';
 import DiarioObraTab from '../src/components/DiarioObraTab';
 import { SolicitacoesPreview, exemplo as exemploSolicitacoes } from './solicitacoesPreview';
 import DashboardsTab from '../src/components/DashboardsTab';
+import RelatoriosTab from '../src/components/RelatoriosTab';
 import ContratacaoTab from '../src/components/ContratacaoTab';
 import { ContratacaoPeloLink } from '../src/components/contratacao/ContratacaoPeloLink';
 import DevTab from '../src/components/DevTab';
@@ -639,6 +640,7 @@ const screens: Record<string, React.ReactNode> = {
       onNavigate={noop}
     />
   ),
+  relatorios: <RelatoriosTab podeVer={() => true} onAbrir={noop} />,
   contratacao: <ContratacaoTab />,
   // Link individual: ?screen=contratacao-link&link=5&papel=gerente_2
   'contratacao-link': <div className="min-h-dvh bg-[#f7f8f6] p-[var(--renea-respiro)]"><ContratacaoPeloLink token={new URLSearchParams(location.search).get('link') || '6'} /></div>,

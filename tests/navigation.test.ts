@@ -19,7 +19,7 @@ test('perfil administrador mantém acesso a todos os módulos atuais', () => {
 test('perfis preservam restrições e não expõem módulos removidos', () => {
   // Leitura vê só o Painel e a presença pública (Relatórios saiu em 2026-11-10).
   // Leitura também pede contratação (14/11/2026); o que vê lá dentro o servidor filtra pelo login.
-  assert.deepEqual([...ROLE_ACCESS.leitura], ['dashboard', 'dashboards', 'contratacao', 'presenca-publica']);
+  assert.deepEqual([...ROLE_ACCESS.leitura], ['dashboard', 'dashboards', 'relatorios', 'contratacao', 'presenca-publica']);
 
   // Administração saiu em 2026-11-10: nenhum perfil abre essa aba.
   for (const perfil of ['admin', 'gestor', 'operador', 'leitura'] as const) assert.equal(ROLE_ACCESS[perfil].includes('administracao'), false);

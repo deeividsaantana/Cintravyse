@@ -14,7 +14,7 @@ Versão 1, 23/11/2026, no mapa `padrao-abas/mapa-antes-depois.png`.
 
 | Grupo | Abas |
 |---|---|
-| (topo) | Visão geral |
+| Visão geral | Visão geral, Dashboards, Relatórios |
 | Operação | Pluviômetro, Programação, Controle de Estacas |
 | Frota | Frotas e Manutenção, Combustível |
 | Compras | Solicitações e Compras |
@@ -25,6 +25,8 @@ Versão 1, 23/11/2026, no mapa `padrao-abas/mapa-antes-depois.png`.
 - Item aberto: fundo branco com borda fina e ícone verde. Linhas de 32 px.
 - Cada coisa mora **num lugar só**. Cadastro (pessoa, equipe, máquina, empresa) só em **Cadastros**. Quem pode o quê (acessos, quem assina, quem aprova) só no **Dev**.
 - Nada de aba nova no menu sem passar por este guia.
+- **Dashboards** (25/11/2026): gráficos de pizza, linha e barras com o período 7, 30 ou 90 dias. Cada gráfico mostra o número na legenda (não só a cor) e abre a aba de onde vem o dado.
+- **Relatórios** (25/11/2026): a lista de todos os relatórios do site, por área. Cada linha diz o que tem, se sai em PDF e Excel, e abre a aba de origem já na parte do relatório. O relatório continua morando na aba dele; a guia Relatórios só leva até lá.
 
 ## 2. Topo da aba
 

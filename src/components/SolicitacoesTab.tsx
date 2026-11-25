@@ -95,6 +95,8 @@ interface SolicitacoesTabProps {
   /** Ids e números dos pedidos apagados de vez: a planilha não os traz de volta. */
   apagadas?: ReadonlySet<string>;
   onExcluir?: (id: string) => void;
+  /** Tela que abre primeiro (a guia Relatórios abre direto no relatório). */
+  subtelaInicial?: "relatorio";
 }
 
 type ComSituacao = { sol: Solicitacao; situacao: SituacaoSolicitacao };
@@ -192,11 +194,12 @@ export default function SolicitacoesTab({
   podeApagar = false,
   apagadas,
   onExcluir,
+  subtelaInicial,
 }: SolicitacoesTabProps) {
   const escopo = useRef<HTMLElement>(null);
   const arquivo = useRef<HTMLInputElement>(null);
   const hoje = isoDay(new Date());
-  const [subtela, setSubtela] = useState<Subtela>("pedidos");
+  const [subtela, setSubtela] = useState<Subtela>(subtelaInicial ?? "pedidos");
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("abertos");
   const [filtroSolicitante, setFiltroSolicitante] = useState("");
