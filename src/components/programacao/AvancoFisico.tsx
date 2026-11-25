@@ -1,4 +1,4 @@
-import { CalendarClock, FileSpreadsheet, FileText, Gauge, TimerOff, TrendingUp } from 'lucide-react';
+import { FileSpreadsheet, FileText, } from 'lucide-react';
 import type { RegistroProducao } from '../../types';
 import { CartaoIndicador, GradeIndicadores } from '../../shared/ui/CartaoIndicador';
 import { TabelaPadrao, type ColunaTabela } from '../../shared/ui/TabelaPadrao';
@@ -185,17 +185,16 @@ export function AvancoFisico({ resumos, producao, hoje, exportando, onExportar, 
   return (
     <div className="grid min-w-0 gap-4" data-testid="programacao-avanco">
       <GradeIndicadores rotulo="Resumo do avanço físico">
-        <CartaoIndicador rotulo="Avanço físico" valor={porcento(realizado)} detalhe={`Previsto até ontem: ${porcento(previsto)}`} icone={TrendingUp} tom={tomDesvio(desvio)} dados={{ 'data-linha-lista': true }} />
-        <CartaoIndicador rotulo="Desvio" valor={desvioTexto(desvio)} detalhe={desvio < 0 ? 'Abaixo do cronograma' : 'No cronograma ou à frente'} icone={Gauge} tom={tomDesvio(desvio)} dados={{ 'data-linha-lista': true }} />
+        <CartaoIndicador rotulo="Avanço físico" valor={porcento(realizado)} detalhe={`Previsto até ontem: ${porcento(previsto)}`} tom={tomDesvio(desvio)} dados={{ 'data-linha-lista': true }} />
+        <CartaoIndicador rotulo="Desvio" valor={desvioTexto(desvio)} detalhe={desvio < 0 ? 'Abaixo do cronograma' : 'No cronograma ou à frente'} tom={tomDesvio(desvio)} dados={{ 'data-linha-lista': true }} />
         <CartaoIndicador
           rotulo="Término projetado"
           valor={obra?.projetado ? dataCurta(obra.projetado) : 'Sem ritmo'}
           detalhe={obra ? `Planejado ${dataCurta(obra.planejado)} · ${obra.projetado ? textoFolga(obra.folga) : `${obra.semRitmo} sem produção`}` : undefined}
-          icone={CalendarClock}
           tom={tomTermino}
           dados={{ 'data-linha-lista': true }}
         />
-        <CartaoIndicador rotulo="Fora do prazo" valor={foraDoPrazo} detalhe={`Pelo ritmo atual, de ${atividades.length} ${atividades.length === 1 ? 'atividade' : 'atividades'}`} icone={TimerOff} tom={foraDoPrazo ? 'vermelho' : 'verde'} dados={{ 'data-linha-lista': true }} />
+        <CartaoIndicador rotulo="Fora do prazo" valor={foraDoPrazo} detalhe={`Pelo ritmo atual, de ${atividades.length} ${atividades.length === 1 ? 'atividade' : 'atividades'}`} tom={foraDoPrazo ? 'vermelho' : 'verde'} dados={{ 'data-linha-lista': true }} />
       </GradeIndicadores>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

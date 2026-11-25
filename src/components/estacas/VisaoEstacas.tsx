@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CalendarClock, Hammer, Pencil, Ruler, Target, TrendingUp } from 'lucide-react';
+import { CalendarClock, Hammer, Pencil, Target, TrendingUp } from 'lucide-react';
 import type { CravacaoEstaca } from '../../types';
 import {
   estaCravada,
@@ -66,9 +66,9 @@ export default function VisaoEstacas({ hoje, estacas, frentes, frenteAtual, onFr
   }
 
   const cartoes = [
-    { nome: 'Total a cravar', valor: total.previstas, ajuda: 'Estacas previstas em todas as frentes', Icone: Target, tom: 'neutro' as const },
-    { nome: 'Já cravadas', valor: total.cravadas, ajuda: `${numero(total.metrosCravados, 1)} m dentro da terra`, Icone: Hammer, tom: 'verde' as const },
-    { nome: 'Faltam', valor: total.faltam, ajuda: total.metrosACravar ? `${numero(total.metrosACravar, 1)} m de estaca` : 'Estacas ainda a cravar', Icone: Ruler, tom: total.faltam ? 'laranja' as const : 'verde' as const },
+    { nome: 'Total a cravar', valor: total.previstas, ajuda: 'Estacas previstas em todas as frentes', tom: 'neutro' as const },
+    { nome: 'Já cravadas', valor: total.cravadas, ajuda: `${numero(total.metrosCravados, 1)} m dentro da terra`, tom: 'verde' as const },
+    { nome: 'Faltam', valor: total.faltam, ajuda: total.metrosACravar ? `${numero(total.metrosACravar, 1)} m de estaca` : 'Estacas ainda a cravar', tom: total.faltam ? 'laranja' as const : 'verde' as const },
   ];
 
   return (
@@ -84,7 +84,7 @@ export default function VisaoEstacas({ hoje, estacas, frentes, frenteAtual, onFr
             <p className="text-xs text-slate-500">{total.cravadas.toLocaleString('pt-BR')} de {total.previstas.toLocaleString('pt-BR')} estacas</p>
           </div>
         </div>
-        {cartoes.map(({ nome, valor, ajuda, Icone, tom }) => (
+        {cartoes.map(({ nome, valor, ajuda, tom }) => (
           <CartaoIndicador
             key={nome}
             className={`estacas-vivo ${nome === 'Faltam' ? 'max-xl:col-span-2' : ''}`}
@@ -92,7 +92,6 @@ export default function VisaoEstacas({ hoje, estacas, frentes, frenteAtual, onFr
             rotulo={nome}
             valor={<CountUp value={valor} />}
             detalhe={ajuda}
-            icone={Icone}
             tom={tom}
           />
         ))}

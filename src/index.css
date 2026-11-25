@@ -491,13 +491,14 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
    normalmente, na mesma ordem. Na lista do Combustível aberta sozinha
    (sem barra do topo, renea-viewport--solta) a aba é cheia em qualquer
    largura, porque a janela é a própria lista. */
-#main-tab-viewport { --renea-topo: 3.25rem; --renea-respiro: .75rem; }
+#main-tab-viewport { --renea-topo: 3.25rem; --renea-respiro: 1rem; }
 #main-tab-viewport.renea-viewport--solta { --renea-topo: 0px; --renea-respiro: .25rem; }
 @media (min-width: 640px) {
-  #main-tab-viewport { --renea-respiro: 1rem; }
+  #main-tab-viewport { --renea-respiro: 1.25rem; }
   #main-tab-viewport.renea-viewport--solta { --renea-respiro: .5rem; }
 }
 @media (min-width: 1024px) {
+  #main-tab-viewport:not(.renea-viewport--solta) { --renea-respiro: 1.5rem; }
   .renea-tela-cheia {
     height: calc(100dvh - var(--renea-topo) - 2 * var(--renea-respiro));
     min-height: 28rem;
@@ -529,25 +530,6 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
 .renea-tela-cheia__dados--longa > * { flex-shrink: 0; }
 @media (min-width: 1024px) {
   .renea-tela-cheia__dados--longa { margin: -2px; padding: 2px 2px 1rem; }
-}
-
-/* Cabeçalho com subtelas: título curto, abas logo ao lado e a ação
-   principal encostada à direita, numa linha só quando couber. Quando não
-   cabe, as ações descem para a linha de baixo, ainda à direita. No celular
-   cada parte ganha a própria linha, e as ações quebram linha em vez de
-   rolar para o lado (o botão principal nunca fica escondido). */
-#main-tab-viewport .renea-page-header.renea-page-header--com-abas { align-items: center; justify-content: flex-start; }
-#main-tab-viewport .renea-page-header.renea-page-header--com-abas .renea-page-header__copy { flex: 0 1 auto; margin-right: 0; }
-.renea-page-header__abas { display: flex; min-width: 0; max-width: 100%; flex: 0 1 auto; }
-@media (max-width: 767px) {
-  #main-tab-viewport .renea-page-header.renea-page-header--com-abas .renea-page-header__copy,
-  .renea-page-header__abas { flex-basis: 100%; }
-  #main-tab-viewport .renea-page-header.renea-page-header--com-abas .renea-page-actions {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    margin-left: 0;
-    overflow: visible;
-  }
 }
 
 /* RENEA front-end v2 foundation: one calm industrial system for every module. */
@@ -1399,8 +1381,6 @@ h1, h2, h3 { letter-spacing: -.01em; }
 .renea-faixa-numeros { border-color: var(--cv-linha); border-radius: .625rem; background: var(--cv-linha-fraca); }
 @media (max-width: 767px) {
   .renea-page-header__linha { flex-wrap: wrap; min-height: 0; padding-block: .75rem .5rem; }
-  #main-tab-viewport .renea-page-header .renea-page-header__copy { flex-basis: 100%; }
-  #main-tab-viewport .renea-page-header .renea-page-actions { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; margin-left: 0; }
   #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo,
   #main-tab-viewport > .renea-route-motion > :not(.renea-tela-cheia) > .renea-page-header:first-child { padding-inline: 1rem; }
 }
@@ -1464,7 +1444,7 @@ h1, h2, h3 { letter-spacing: -.01em; }
 .cv-relatorios__grupo li + li { border-top: 1px solid var(--cv-linha-fraca); }
 #main-tab-viewport .cv-relatorios__grupo button { display: grid; width: 100%; min-height: 3.75rem; grid-template-columns: 2rem 1fr auto auto; align-items: center; gap: .875rem; padding: .625rem 1rem; border: 0; background: #fff; text-align: left; }
 #main-tab-viewport .cv-relatorios__grupo button:hover { background: #f8faf9; }
-.cv-relatorios__icone { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: .4375rem; background: var(--cv-verde-claro); color: var(--cv-verde); }
+.cv-relatorios__icone { display: grid; width: 2rem; height: 2rem; place-items: center; color: var(--cv-mudo); }
 .cv-relatorios__grupo strong { display: block; color: var(--cv-texto); font-size: .875rem; font-weight: 600; }
 .cv-relatorios__grupo small { display: block; overflow: hidden; color: var(--cv-mudo); font-size: .8125rem; text-overflow: ellipsis; white-space: nowrap; }
 .cv-relatorios__formatos { display: flex; gap: .25rem; }
@@ -1475,4 +1455,33 @@ h1, h2, h3 { letter-spacing: -.01em; }
   .cv-relatorios__grupo small { white-space: normal; }
   .cv-relatorios__formatos { grid-column: 2; }
   .cv-relatorios__abrir { display: none; }
+}
+
+/* ==========================================================================
+   Minimalismo (pedido do Deivid em 25/11/2026, tarde: "minimalista e bonito,
+   tudo mesmo"). Uma regra para o site todo, por cima das telas antigas:
+   peso de letra no máximo 600, nada de MAIÚSCULAS espaçadas, sem sombra
+   nos blocos, cantos de 10 px e mais respiro entre as partes.
+   ========================================================================== */
+#root :is(.font-black, .font-extrabold, .font-bold) { font-weight: 600; }
+#root :is(#main-tab-viewport, [role="dialog"]) :is(.uppercase) { text-transform: none; }
+#root :is(#main-tab-viewport, [role="dialog"]) :is(.tracking-wide, .tracking-wider, .tracking-widest) { letter-spacing: 0; }
+#root :is(#main-tab-viewport, [role="dialog"]) [class*="tracking-[0."] { letter-spacing: 0; }
+#main-tab-viewport :is(.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl):not([role="menu"], [role="listbox"], [role="dialog"], [role="tooltip"]) { --tw-shadow: 0 0 #0000; }
+#main-tab-viewport :is(.rounded-2xl, .rounded-3xl, .rounded-\[1\.5rem\], .rounded-\[2rem\]) { border-radius: .625rem; }
+#main-tab-viewport :is(.active\:scale-95, .active\:scale-\[0\.98\], .active\:scale-\[0\.97\]):active { scale: none; }
+#main-tab-viewport .renea-indicador { border-radius: 0; }
+#main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo,
+#main-tab-viewport > .renea-route-motion > :not(.renea-tela-cheia) > .renea-page-header:first-child,
+#main-tab-viewport > .renea-route-motion > .renea-page-header:first-child { padding-inline: var(--renea-respiro); }
+#main-tab-viewport .renea-page-header__linha { min-height: 4rem; }
+#main-tab-viewport .renea-page-header__copy :is(h1, h2) { font-size: 1.25rem; font-weight: 600; }
+.renea-tela-cheia__faixa:empty { display: none; }
+#root .font-semibold { font-weight: 500; }
+#root :is(h1, h2, h3, strong, b, th) { font-weight: 600; }
+@media (max-width: 767px) {
+  /* Celular: título e ações na mesma linha; as ações só descem quando não cabem. */
+  #main-tab-viewport .renea-page-header .renea-page-header__copy { flex: 1 1 9rem; }
+  #main-tab-viewport .renea-page-header .renea-page-actions { flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+  #main-tab-viewport .renea-page-header__copy :is(h1, h2) { font-size: 1.125rem; }
 }

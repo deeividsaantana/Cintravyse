@@ -105,7 +105,7 @@ export function QuadroProgramacao({ resumos, inicio, dias, hoje, onTrocarInicio,
                       <button
                         type="button"
                         onClick={() => onAbrir(resumo)}
-                        className={`relative z-[1] flex h-7 min-w-0 items-center self-center overflow-hidden rounded-md px-2 text-xs font-bold shadow-sm transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus) ${cor.barra} ${item.dataInicio < inicio ? 'rounded-l-none' : ''} ${item.dataFim > fim ? 'rounded-r-none' : ''}`}
+                        className={`relative z-[1] flex h-7 min-w-0 items-center self-center overflow-hidden rounded-md px-2 text-xs font-semibold transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus) ${cor.barra} ${item.dataInicio < inicio ? 'rounded-l-none' : ''} ${item.dataFim > fim ? 'rounded-r-none' : ''}`}
                         style={{ gridColumn: `${de + 2} / ${ate + 3}`, gridRow: 1 }}
                         aria-label={`${item.servicoDescricao}, ${item.frente || ''}: ${Math.round(resumo.percentual)}% feito, meta ${numeroObra(resumo.meta)} ${item.unidade} por dia`}
                       >

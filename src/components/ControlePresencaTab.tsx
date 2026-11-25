@@ -21,9 +21,6 @@ import {
   RotateCcw,
   Search,
   Undo2,
-  Users,
-  UserX,
-  Clock,
   X,
   PieChart,
   Link2,
@@ -1047,10 +1044,10 @@ export default function ControlePresencaTab({
                 </div>
               </article>
               <div className="renea-faixa-numeros grid-cols-2">
-                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Ausentes" valor={<span data-count={metrics.absent}>0</span>} detalhe="faltaram no dia" icone={UserX} tom={metrics.absent > 0 ? 'vermelho' : 'neutro'} />
-                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Justificados" valor={<span data-count={metrics.justified}>0</span>} detalhe="ausências com motivo" icone={FileText} tom={metrics.justified > 0 ? 'laranja' : 'neutro'} />
-                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Equipes pendentes" valor={<span data-count={metrics.pending}>0</span>} detalhe="ainda não enviaram" icone={Clock} tom={metrics.pending > 0 ? 'laranja' : 'neutro'} />
-                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Equipes ativas" valor={<span data-count={activeGroups.length}>0</span>} detalhe="equipes cadastradas" icone={Users} tom="verde" />
+                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Ausentes" valor={<span data-count={metrics.absent}>0</span>} detalhe="faltaram no dia" tom={metrics.absent > 0 ? 'vermelho' : 'neutro'} />
+                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Justificados" valor={<span data-count={metrics.justified}>0</span>} detalhe="ausências com motivo" tom={metrics.justified > 0 ? 'laranja' : 'neutro'} />
+                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Equipes pendentes" valor={<span data-count={metrics.pending}>0</span>} detalhe="ainda não enviaram" tom={metrics.pending > 0 ? 'laranja' : 'neutro'} />
+                <CartaoIndicador dados={{ 'data-cartao-painel': true }} rotulo="Equipes ativas" valor={<span data-count={activeGroups.length}>0</span>} detalhe="equipes cadastradas" tom="verde" />
               </div>
             </div>
             <div className="space-y-5">
