@@ -32,7 +32,7 @@ test('nenhuma função antiga se perdeu na junção (23/11/2026)', () => {
   for (const tela of ['hoje', 'conferencia', 'ordens', 'relatorio', 'historico']) assert.ok(daManutencao.has(tela as never), `Manutenção perdeu ${tela}`);
   const frota = ler('src/components/ControleEquipamentosDiarioTab.tsx');
   assert.match(frota, /<FleetDailyReference[\s\S]{0,400}<FleetDriverReference/, 'máquinas e operadores faltando na mesma tela');
-  // O antigo Relatório do dia da frota virou botões de baixar em Mais ações.
+  // Imprimir e baixar ficam nos cartões de Relatórios da frota (24/11/2026).
   for (const id of ['frota-relatorio-pdf', 'frota-relatorio-excel', 'frota-faltantes-pdf', 'frota-abrir-motoristas']) assert.match(frota, new RegExp(`data-testid="${id}"`));
   // Motoristas abre por Mais ações e Faltando pela faixa de Lançamentos: nenhuma ocupa lugar no topo.
   const todas = idsDasTelas({ frota: true, manutencao: true });

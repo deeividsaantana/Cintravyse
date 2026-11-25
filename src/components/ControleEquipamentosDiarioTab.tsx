@@ -288,7 +288,7 @@ export default function ControleEquipamentosDiarioTab({
   const [importFileName, setImportFileName] = useState('');
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<'success' | 'error' | 'info'>('info');
-  const [exporting, setExporting] = useState<'pdf' | 'excel' | 'weekly-pdf' | 'weekly-excel' | ''>('');
+  const [exporting, setExporting] = useState<'pdf' | 'excel' | 'weekly-pdf' | 'weekly-excel' | 'faltantes' | ''>('');
   const setActiveView = onVista;
   // A relação da conferência fica no aparelho: a moldura reconta os selos quando ela muda.
   const relacaoMudou = onRelacaoMudou;
@@ -479,7 +479,7 @@ export default function ControleEquipamentosDiarioTab({
   };
   const handleFaltantesPdf = async () => {
     if (exporting) return;
-    setExporting('pdf');
+    setExporting('faltantes');
     setMessageTone('info');
     setMessage('Gerando PDF dos faltantes...');
     try {
@@ -529,7 +529,9 @@ export default function ControleEquipamentosDiarioTab({
       setExporting('');
     }
   };
-  const weeklyReport = useMemo(() => buildWeeklyFleetReport(registros), [registros]);
+  const weeklyReport = useMemo(() => buildWeeklyFleetReport(registros, filters.date), [registros, filters.date]);
+  const diaPorExtenso = new Date(`${filters.date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  const diaCurto = new Date(`${filters.date}T12:00:00`).toLocaleDateString('pt-BR');
   const temLancamentoNoDia = useMemo(() => registros.some(registro => registro.data === filters.date), [registros, filters.date]);
   const handleWeeklyPdf = async () => {
     if (exporting) return;
@@ -712,11 +714,8 @@ export default function ControleEquipamentosDiarioTab({
                   gatilho={abrir => <button type="button" onClick={abrir} className={ITEM_MENU}><Database className="size-4" aria-hidden="true" />Importar apontamento do SGE</button>}
                 />
                 <hr className="my-1 border-slate-100" />
-                {/* O antigo "Relatório do dia" da frota virou estes botões (23/11/2026). */}
-                <p className={ROTULO_GRUPO_MENU}>Baixar o dia</p>
-                <button type="button" disabled={Boolean(exporting) || !temLancamentoNoDia} onClick={() => void handlePdf()} className={ITEM_MENU} data-testid="frota-relatorio-pdf"><Printer className="size-4" aria-hidden="true" />{exporting === 'pdf' ? 'Gerando…' : 'Dia em PDF'}</button>
-                <button type="button" disabled={Boolean(exporting) || !temLancamentoNoDia} onClick={() => void handleExcel()} className={ITEM_MENU} data-testid="frota-relatorio-excel"><FileSpreadsheet className="size-4" aria-hidden="true" />{exporting === 'excel' ? 'Gerando…' : 'Dia em Excel'}</button>
-                <button type="button" disabled={Boolean(exporting)} onClick={() => void handleFaltantesPdf()} className={ITEM_MENU} data-testid="frota-faltantes-pdf"><Printer className="size-4" aria-hidden="true" />Faltantes em PDF</button>
+                {/* Imprimir e baixar ficam juntos em Relatórios (24/11/2026); aqui só o atalho. */}
+                <button type="button" onClick={() => setActiveView('history')} className={ITEM_MENU} data-testid="frota-ir-relatorios"><Printer className="size-4" aria-hidden="true" />Imprimir relatórios</button>
                 <hr className="my-1 border-slate-100" />
                 <p className={ROTULO_GRUPO_MENU}>Cadastro e tela</p>
                 <button type="button" onClick={() => setActiveView('registry')} className={ITEM_MENU} data-testid="frota-abrir-motoristas"><Users className="size-4" aria-hidden="true" />Motoristas</button>
@@ -756,25 +755,51 @@ export default function ControleEquipamentosDiarioTab({
         <FleetDriverReference records={registros} date={filters.date} drivers={operationalDrivers} onAddDrivers={onAddOperationalDrivers} onLancar={openNewRecord} onRelacaoChange={relacaoMudou}/>
       </div>}
       {activeView === 'history' && (
-        <section data-fleet-view className="flex min-h-0 flex-1 flex-col gap-3" aria-labelledby="frota-historico-titulo">
-          <p className="sr-only" id="frota-historico-titulo">Fechamento por dia</p>
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-[#5b6870]">Quantas frotas trabalharam, pararam ou ficaram sem informar em cada dia. Toque no dia para abrir.</p>
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <button type="button" disabled={Boolean(exporting) || !weeklyReport.records.length} onClick={() => void handleWeeklyPdf()} className={BOTAO_SECUNDARIO}><Printer className="size-4" aria-hidden="true"/>{exporting === 'weekly-pdf' ? 'Gerando…' : 'Semana em PDF'}</button>
-              <button type="button" disabled={Boolean(exporting) || !weeklyReport.records.length} onClick={() => void handleWeeklyExcel()} className={BOTAO_SECUNDARIO}><FileSpreadsheet className="size-4" aria-hidden="true"/>{exporting === 'weekly-excel' ? 'Gerando…' : 'Semana em Excel'}</button>
-            </div>
+        <section data-fleet-view className="flex min-h-0 flex-1 flex-col gap-4" aria-labelledby="frota-historico-titulo">
+          {/* Redesign de 24/11/2026: tudo o que se imprime da frota fica aqui,
+              em três cartões com nome claro. O dia é o do topo; tocar num dia
+              da lista troca o dia dos cartões. */}
+          <h2 id="frota-historico-titulo" className="text-base font-bold text-slate-900">Imprimir ou baixar</h2>
+          <div className="grid shrink-0 gap-3 md:grid-cols-3" data-testid="frota-imprimir">
+            <article className={`${CARTAO} flex flex-col gap-3 p-4`}>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Relatório do dia</h3>
+                <p className="mt-0.5 text-sm text-[#5b6870]"><span className="font-semibold text-slate-800 first-letter:uppercase">{diaPorExtenso}</span>: cada máquina, quem operou e a situação. Sai numa folha A4.</p>
+              </div>
+              <div className="mt-auto grid grid-cols-[minmax(0,1fr)_auto] gap-2 [&>button]:whitespace-nowrap">
+                <button type="button" disabled={Boolean(exporting) || !temLancamentoNoDia} onClick={() => void handlePdf()} className={BOTAO_PRIMARIO} data-testid="frota-relatorio-pdf"><Printer className="size-4" aria-hidden="true" />{exporting === 'pdf' ? 'Gerando…' : 'Imprimir (PDF)'}</button>
+                <button type="button" disabled={Boolean(exporting) || !temLancamentoNoDia} onClick={() => void handleExcel()} className={BOTAO_SECUNDARIO} data-testid="frota-relatorio-excel"><FileSpreadsheet className="size-4" aria-hidden="true" />{exporting === 'excel' ? 'Gerando…' : 'Excel'}</button>
+              </div>
+              {!temLancamentoNoDia && <p className="text-xs font-semibold text-[#5b6870]">Nada lançado neste dia. Troque o dia no topo ou toque num dia da lista.</p>}
+            </article>
+            <article className={`${CARTAO} flex flex-col gap-3 p-4`}>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Quem faltou lançar</h3>
+                <p className="mt-0.5 text-sm text-[#5b6870]">Máquinas e operadores da lista sem lançamento em <span className="font-semibold text-slate-800">{diaCurto}</span>.</p>
+              </div>
+              <button type="button" disabled={Boolean(exporting)} onClick={() => void handleFaltantesPdf()} className={`${BOTAO_SECUNDARIO} mt-auto`} data-testid="frota-faltantes-pdf"><Printer className="size-4" aria-hidden="true" />{exporting === 'faltantes' ? 'Gerando…' : 'Imprimir (PDF)'}</button>
+            </article>
+            <article className={`${CARTAO} flex flex-col gap-3 p-4`}>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Resumo da semana</h3>
+                <p className="mt-0.5 text-sm text-[#5b6870]">Sete dias até <span className="font-semibold text-slate-800">{diaCurto}</span>: quantas frotas trabalharam e pararam por dia.</p>
+              </div>
+              <div className="mt-auto grid grid-cols-[minmax(0,1fr)_auto] gap-2 [&>button]:whitespace-nowrap">
+                <button type="button" disabled={Boolean(exporting) || !weeklyReport.records.length} onClick={() => void handleWeeklyPdf()} className={BOTAO_SECUNDARIO} data-testid="frota-semana-pdf"><Printer className="size-4" aria-hidden="true"/>{exporting === 'weekly-pdf' ? 'Gerando…' : 'Imprimir (PDF)'}</button>
+                <button type="button" disabled={Boolean(exporting) || !weeklyReport.records.length} onClick={() => void handleWeeklyExcel()} className={BOTAO_SECUNDARIO} data-testid="frota-semana-excel"><FileSpreadsheet className="size-4" aria-hidden="true"/>{exporting === 'weekly-excel' ? 'Gerando…' : 'Excel'}</button>
+              </div>
+            </article>
           </div>
           <div ref={escopoHistorico} className="flex min-h-[16rem] flex-1 flex-col">
             <TabelaPadrao
-              titulo="Dias lançados"
+              titulo="Dias lançados: toque num dia para imprimir ele"
               testId="frota-historico"
               linhas={historyByDate}
               colunas={COLUNAS_HISTORICO}
               idDaLinha={item => item.date}
               nomeDoItem={{ um: 'dia', varios: 'dias' }}
               ordenacaoInicial={{ chave: 'date', direcao: 'desc' }}
-              onAbrirLinha={item => { updateFilter('date', item.date); setActiveView('today'); }}
+              onAbrirLinha={item => updateFilter('date', item.date)}
               vazio="Nenhum dia lançado ainda."
             />
           </div>
