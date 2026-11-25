@@ -25,7 +25,7 @@ export function FleetDonut({ fleet, onNavigate }: { fleet: FleetCounts; onNaviga
     { label: 'Sem posição', value: fleet.pending + fleet.unknown, color: '#d5ded8' },
   ];
   let offset = 0;
-  return <section className="dashboard-visual dashboard-visual--fleet" data-dashboard-reveal aria-labelledby="dashboard-fleet-title">
+  return <section className="dashboard-visual dashboard-visual--fleet" aria-labelledby="dashboard-fleet-title">
     <div className="dashboard-visual__heading"><div><p className="dashboard-visual__kicker">Frota</p><h2 id="dashboard-fleet-title">Situação dos equipamentos</h2></div><button type="button" onClick={onNavigate} aria-label="Abrir controle de equipamentos" className="dashboard-visual__link"><ArrowUpRight size={18} /></button></div>
     {fleet.total ? <div className="dashboard-donut-layout">
       <div className="dashboard-donut" role="img" aria-label={`Frota: ${entries.map(entry => `${entry.value} ${entry.label.toLowerCase()}`).join(', ')}`}>
@@ -65,7 +65,7 @@ export function AvailabilityTrend({ measure, onNavigate }: { measure: DashboardM
     gsap.fromTo(scope.current.querySelectorAll('.dashboard-trend__point'), { opacity: 0, scale: .3, transformOrigin: 'center center' }, { opacity: 1, scale: 1, duration: .45, ease: 'back.out(1.7)', stagger: .045, delay: .45 });
   }, { scope, dependencies: [measure] });
 
-  return <section ref={scope} className="dashboard-visual dashboard-visual--trend" data-dashboard-reveal aria-labelledby="dashboard-trend-title">
+  return <section ref={scope} className="dashboard-visual dashboard-visual--trend" aria-labelledby="dashboard-trend-title">
     <div className="dashboard-visual__heading"><div><p className="dashboard-visual__kicker">Evolução</p><h2 id="dashboard-trend-title">Disponibilidade da frota</h2></div><TrendingUp size={20} aria-hidden="true" /></div>
     <div className="dashboard-trend__summary"><strong className={measure.value === null ? 'dashboard-trend__vazio' : undefined}>{measure.value === null ? 'Sem posição' : `${measure.value.toFixed(1).replace('.', ',')}%`}</strong><span>{selectedPoint?.value === null || !selectedPoint ? 'Sem registro comparável' : `${selectedPoint.label} · ${selectedPoint.value.toFixed(1).replace('.', ',')}%`}</span></div>
     {runs.length ? <div className="dashboard-trend__plot">

@@ -66,8 +66,9 @@ test('trocar o nome vai para o login e não desbloqueia quem está inativo', asy
   }
 });
 
-test('o topo abre "Meu perfil" e mostra a mesma bolinha do resto do sistema', () => {
-  const topo = readFileSync(new URL('../src/app/shell/DesktopTopBar.tsx', import.meta.url), 'utf8');
+test('o menu abre "Meu perfil" e mostra a mesma bolinha do resto do sistema', () => {
+  // Padrão Cintravyse (25/11/2026): quem entrou fica no rodapé do menu lateral.
+  const topo = readFileSync(new URL('../src/app/shell/DesktopSidebar.tsx', import.meta.url), 'utf8');
   assert.match(topo, /onClick=\{onAbrirPerfil\}/);
   assert.match(topo, /<Avatar /);
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');

@@ -30,6 +30,9 @@ test('a animação de entrada das abas não prende mais os elementos "fixed" den
   // Sem "both": o fill-mode preso fazia qualquer barra position:fixed (como
   // a de seleção em lote e o "Salvar tudo" do Lançar) ficar presa lá embaixo
   // no meio do conteúdo, em vez de grudada no rodapé da tela de verdade.
-  assert.match(css, /#main-tab-viewport > \* \{ animation: renea-v3-enter 360ms cubic-bezier\(\.2,\.8,\.2,1\); \}/);
-  assert.doesNotMatch(css, /#main-tab-viewport > \* \{ animation: renea-v3-enter 360ms cubic-bezier\(\.2,\.8,\.2,1\) both; \}/);
+  // Padrão Cintravyse (25/11/2026): a troca de tela só esmaece (opacidade,
+  // sem transform e sem "both"), então nada fica preso.
+  assert.match(css, /\.renea-route-motion \{ animation: cv-troca 120ms ease-out; \}/);
+  assert.doesNotMatch(css, /@keyframes cv-troca[^\n]*transform/);
+  assert.doesNotMatch(css, /#main-tab-viewport > \* \{ animation:/);
 });

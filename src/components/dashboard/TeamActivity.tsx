@@ -47,7 +47,7 @@ export function TeamActivity({ view, onNavigate }: { view: DashboardGeneralViewM
   }, { scope, dependencies: [todasEquipes] });
 
   return <div ref={scope} className="dashboard-detail-grid">
-    <section className="dashboard-detail-panel" aria-labelledby="dashboard-teams-title" data-dashboard-reveal>
+    <section className="dashboard-detail-panel" aria-labelledby="dashboard-teams-title">
       <div className="dashboard-detail-panel__head"><div><p className="dashboard-detail-panel__kicker">Pessoas em campo</p><h2 id="dashboard-teams-title">Equipes e apontamentos</h2></div><button type="button" className="dashboard-detail-panel__open" onClick={() => onNavigate('presenca')} aria-label="Abrir equipes"><ArrowUpRight size={18} /></button></div>
       <div className="dashboard-team-summary"><div><strong>{view.teams.withRecords}<span> / {view.teams.total}</span></strong><p>equipes com registro no período</p></div><div className="dashboard-team-summary__date"><span>Último envio</span><strong>{formatDate(lastDate)}</strong></div></div>
       {view.teams.items.length ? <div className="dashboard-team-list">{equipesVisiveis.map((team, index) => <button key={team.id} type="button" className="dashboard-team" onClick={() => onNavigate('presenca')} data-team-row data-team-extra={index >= PRIMEIRAS_EQUIPES || undefined}>
@@ -61,7 +61,7 @@ export function TeamActivity({ view, onNavigate }: { view: DashboardGeneralViewM
       </button>}
     </section>
 
-    <section className="dashboard-detail-panel dashboard-detail-panel--activity" aria-labelledby="dashboard-activity-title" data-dashboard-reveal>
+    <section className="dashboard-detail-panel dashboard-detail-panel--activity" aria-labelledby="dashboard-activity-title">
       <div className="dashboard-detail-panel__head"><div><p className="dashboard-detail-panel__kicker">Resumo do período</p><h2 id="dashboard-activity-title">Movimento da operação</h2></div><HardHat size={20} aria-hidden="true" /></div>
       <p className="dashboard-detail-panel__intro">Os valores abaixo vêm dos lançamentos existentes. Abra um módulo para conferir os detalhes.</p>
       <div className="dashboard-activity-list">

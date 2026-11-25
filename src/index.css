@@ -531,69 +531,6 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   .renea-tela-cheia__dados--longa { margin: -2px; padding: 2px 2px 1rem; }
 }
 
-/* Cabeçalho na barra do topo (pedido de 16/11/2026). No computador, o
-   cabeçalho da aba (subtelas, título e ação principal) sobe para a faixa da
-   barra do topo, no lugar do "Projeto atual", e a aba inteira sobe junto
-   para usar o máximo da tela. A barra fica transparente e deixa o clique
-   passar, menos no lado direito (salvamento, sino e pessoa), que o
-   cabeçalho não cobre: --renea-topo-direita é a largura dele, medida pelo
-   DesktopTopBar. O Painel não tem cabeçalho à vista
-   (renea-page-header--vazio) e segue mostrando o projeto atual. Até
-   1023 px a barra do topo some e o cabeçalho fica na própria aba.
-   Quem liga é o PageHeader, com data-topo-na-barra no <html>: o :has()
-   que fazia isso pesava em toda troca de tela (25/11/2026). */
-@media (min-width: 1024px) {
-  :root[data-topo-na-barra] .erp-workspace > .erp-topbar {
-    background: transparent;
-    pointer-events: none;
-  }
-  :root[data-topo-na-barra] .erp-workspace > .erp-topbar .erp-topbar__project { display: none; }
-  .erp-workspace > .erp-topbar .erp-topbar__actions { pointer-events: auto; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz {
-    margin-top: calc(-1 * (var(--renea-topo) + var(--renea-respiro)));
-    height: calc(100dvh - var(--renea-respiro));
-  }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo {
-    display: flex;
-    min-height: var(--renea-topo);
-    flex-direction: column;
-    justify-content: center;
-    gap: .5rem;
-    --renea-topo-reserva: calc(var(--renea-topo-direita, 20rem) + 2.25rem - var(--renea-respiro));
-  }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header {
-    padding-block: 0;
-    row-gap: .5rem;
-  }
-  /* Sempre uma linha só (PageHeader, useLinhaDoTopo): abas e ações lado a
-     lado, antes do canto direito da barra. Quando não cabe, o PageHeader
-     aperta em passos (data-aperto). */
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header {
-    flex-wrap: nowrap;
-    align-items: center;
-    padding-right: var(--renea-topo-reserva);
-  }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header > .renea-page-header__abas { flex: 0 0 auto; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header > .renea-page-actions { flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header .renea-abas-da-tela { flex-direction: row; align-items: center; gap: .5rem; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header .renea-abas { width: auto; max-width: none; flex: 0 0 auto; flex-wrap: nowrap; overflow: visible; }
-  /* Passo 1: some o nome de quem entrou (a foto continua e abre o perfil). */
-  :root[data-topo-apertado] .erp-topbar__user strong { display: none; }
-  /* Passo 2: abas sem ícone; botões secundários só com o ícone (o nome
-     segue para o leitor de tela). Itens de menu aberto ficam com o nome. */
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-abas svg { display: none; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-page-actions :is(button, summary):not([class*="bg-[#176b4d]"], [role="menuitem"]):has(svg) { gap: .25rem; padding-inline: .6rem; font-size: 0; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="2"], [data-aperto="3"], [data-aperto="4"]) .renea-page-actions kbd { display: none; }
-  /* Passo 3: nome curto das abas e dos botões que têm um ("Novo"). */
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-abas [class~="sm:hidden"] { display: inline; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-abas [class~="sm:inline"] { display: none; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-page-actions [class~="max-sm:hidden"] { display: none; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-page-actions [class~="sm:hidden"] { display: inline; }
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header:is([data-aperto="3"], [data-aperto="4"]) .renea-page-actions [class~="sm:inline"] { display: none; }
-  /* Passo 4 (último recurso): as abas rolam de lado na própria faixa. */
-  :root[data-topo-na-barra] #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo .renea-page-header[data-aperto="4"] > .renea-page-header__abas { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: thin; mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent); }
-}
-
 /* Cabeçalho com subtelas: título curto, abas logo ao lado e a ação
    principal encostada à direita, numa linha só quando couber. Quando não
    cabe, as ações descem para a linha de baixo, ainda à direita. No celular
@@ -670,7 +607,6 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
    a animação da transform como ativa pra sempre enquanto ela segura o
    valor final. Sem delay, o começo (opacity 0) já pinta a tempo, então a
    entrada continua igual; só o estado depois do fim volta a ser normal. */
-#main-tab-viewport > * { animation: renea-v3-enter 360ms cubic-bezier(.2,.8,.2,1); }
 .renea-card,
 .renea-card:hover { border-color: #aebbb4; }
 
@@ -714,22 +650,7 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   [class*="bg-[#ed5d24]"]
 ) { color: #fff; }
 
-@keyframes renea-v3-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-
-/* Shared motion and hierarchy across all route modules.
-   `animation: … both` mantém o estado inicial aplicado até a tween começar:
-   com `renea-v3-enter` partindo de opacity 0, cada section/card da tela
-   nascia invisível. Em módulos com dezenas de blocos isso somava dezenas de
-   animações simultâneas e a aba parecia travada ao abrir. Agora só os três
-   primeiros blocos animam, e partindo de conteúdo já visível. */
-#main-tab-viewport > :not(.erp-dashboard) > :is(section, article, .renea-card, [role="region"]):nth-of-type(-n+3) {
-  animation: renea-v3-slide .3s cubic-bezier(.2,.8,.2,1) both;
-}
 #main-tab-viewport .renea-card :is(button, tr) { transition: background-color .18s ease, border-color .18s ease, transform .18s ease; }
-#main-tab-viewport .renea-card button:hover { transform: translateX(2px); }
 
 /* Realce de ponteiro que antes vinha de gsap.quickTo com três listeners por
    cartão (RouteMotion). Em CSS o compositor resolve sozinho, sem custo de JS
@@ -737,14 +658,7 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
 #main-tab-viewport :is(.renea-card, [data-fleet-enter], .dashboard-metric) {
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
-#main-tab-viewport :is(.renea-card, [data-fleet-enter], .dashboard-metric):hover {
-  transform: translateY(-3px);
-}
 
-@keyframes renea-v3-slide {
-  from { transform: translateY(12px); }
-  to { transform: none; }
-}
 
 @media (max-width: 767px) {
   #main-tab-viewport > :not(.erp-dashboard) { padding-inline: .8rem; }
@@ -752,10 +666,6 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
   .renea-page-actions { display: flex; flex-wrap: wrap; width: 100%; }
   .renea-page-actions > * { max-width: 100%; }
   .renea-button { min-height: 3rem; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #main-tab-viewport > * { animation: none; }
 }
 
 /* RENEA white operational system — final approved direction.
@@ -887,25 +797,8 @@ body.folha-imprimindo .ct-imprimir .space-y-4 > * + * { margin-top: 10px !import
 ) :is(span, strong, svg) { color: #fff !important; }
 
 /* Motion is deliberately visible but keeps operational controls steady. */
-@keyframes renea-white-reveal {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: none; }
-}
-#main-tab-viewport > :not(.erp-dashboard) > :is(section, article, div):nth-child(2) { animation-delay: 90ms; }
-#main-tab-viewport > * > :is(header, section, article),
-#main-tab-viewport > * > div > :is(header, section, article) {
-  animation: renea-white-reveal .5s cubic-bezier(.18,.8,.2,1) both;
-}
-#main-tab-viewport > * > :is(header, section, article):nth-child(2),
-#main-tab-viewport > * > div > :is(header, section, article):nth-child(2) { animation-delay: 70ms; }
-#main-tab-viewport > * > :is(header, section, article):nth-child(3),
-#main-tab-viewport > * > div > :is(header, section, article):nth-child(3) { animation-delay: 130ms; }
-#main-tab-viewport > * > :is(header, section, article):nth-child(4),
-#main-tab-viewport > * > div > :is(header, section, article):nth-child(4) { animation-delay: 190ms; }
 #main-tab-viewport button,
 #main-tab-viewport a { transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s cubic-bezier(.2,.8,.2,1); }
-#main-tab-viewport button:active,
-#main-tab-viewport a:active { transform: translateY(1px) scale(.99); }
 #main-tab-viewport :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--renea-focus); outline-offset: 2px; }
 
 
@@ -1384,3 +1277,143 @@ body:has([data-lancamento]) #main-tab-viewport { --renea-topo: 0px; }
   .renea-faixa-numeros.grid-cols-2 > :last-child:nth-child(odd) { grid-column: span 2; }
 }
 .renea-faixa-numeros > [aria-pressed="true"] { background: #fff7ed; box-shadow: inset 0 -3px 0 #f26a2e !important; }
+
+/* ==========================================================================
+   Padrão Cintravyse (aprovado pelo Deivid em 25/11/2026, maquete em
+   /mnt/project-files/frontend-erp/sistema-design-25-11/). Cara de app de
+   ERP: menu lateral cinza-claro fixo, barra do topo fina com o caminho,
+   cabeçalho de tela com título + ação principal e subtelas sublinhadas,
+   uma fonte só, linhas finas, cantos de 7 a 10 px, sem sombra pesada, sem
+   degradê e sem animação de entrada. Fica por último: vence as camadas
+   antigas. Guia: docs/PADRAO_DO_SITE.md.
+   ========================================================================== */
+:root {
+  --cv-menu: #f7f8f9;
+  --cv-linha: #e6e8eb;
+  --cv-linha-fraca: #eef0f2;
+  --cv-texto: #111827;
+  --cv-mudo: #6b7280;
+  --cv-verde: #176b4d;
+  --cv-verde-claro: #ecf5f0;
+  --cv-laranja: #c2410c;
+  --cv-laranja-claro: #fff4ec;
+  --font-sans: "Geist Variable", "Segoe UI Variable", "Aptos", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans);
+}
+body { font-feature-settings: "tnum" 0; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { letter-spacing: -.01em; }
+
+/* Troca de tela: esmaece 120 ms e pronto (app, não site). */
+.renea-route-motion { animation: cv-troca 120ms ease-out; }
+@keyframes cv-troca { from { opacity: .35; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .renea-route-motion { animation: none; } }
+
+/* Menu lateral */
+#app-root .erp-sidebar, .erp-sidebar { background: var(--cv-menu); border-right: 1px solid var(--cv-linha); }
+.erp-sidebar > div:first-child { min-height: 3rem; border-bottom: 0; }
+.erp-sidebar .erp-sidebar__item { min-height: 2rem; transition: background-color .12s ease; }
+.erp-sidebar .erp-sidebar__item--ativo { background: #fff; box-shadow: 0 0 0 1px var(--cv-linha), 0 1px 2px rgb(16 24 40 / .05); }
+.erp-sidebar > div:last-child { border-top-color: var(--cv-linha); }
+.renea-ambiente { display: flex; min-width: 0; align-items: center; gap: .625rem; padding: .4375rem .5rem; border: 1px solid var(--cv-linha); border-radius: .5rem; background: #fff; box-shadow: 0 1px 2px rgb(16 24 40 / .04); }
+.renea-ambiente__selo { display: grid; width: 1.875rem; height: 1.875rem; flex: none; place-items: center; border: 1px solid #dcefe3; border-radius: .4375rem; background: #f1f8f3; }
+.renea-ambiente__selo img { width: 1.125rem; height: 1.125rem; }
+
+/* Barra do topo: caminho à esquerda, salvamento à direita. */
+.erp-topbar { height: 3rem; min-height: 3rem; gap: .75rem; padding-inline: 1.25rem; border-bottom: 1px solid var(--cv-linha); }
+.erp-topbar__trilha { display: flex; min-width: 0; align-items: center; gap: .375rem; color: var(--cv-mudo); font-size: .8125rem; white-space: nowrap; }
+.erp-topbar__trilha strong { color: var(--cv-texto); font-weight: 600; }
+.erp-topbar .erp-topbar__status { gap: .375rem; padding: 0 .25rem; border: 0; background: none; color: var(--cv-mudo); font-size: .75rem; font-weight: 500; }
+.erp-topbar .erp-topbar__status span { width: .4375rem; height: .4375rem; background: #16a34a; }
+.erp-topbar .erp-topbar__status[data-offline] { background: none; color: #9a3412; }
+#main-tab-viewport { --renea-topo: 3rem; }
+#mobile-header { height: 3.25rem; border-bottom-color: var(--cv-linha); }
+
+/* Cabeçalho da tela: faixa de ponta a ponta, título e ação na 1ª linha,
+   subtelas sublinhadas na 2ª, linha fina embaixo. */
+#main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo,
+#main-tab-viewport > .renea-route-motion > :not(.renea-tela-cheia) > .renea-page-header:first-child,
+#main-tab-viewport > .renea-route-motion > .renea-page-header:first-child {
+  margin: calc(-1 * var(--renea-respiro)) calc(-1 * var(--renea-respiro)) 0;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid var(--cv-linha);
+  background: #fff;
+}
+@media (min-width: 1024px) {
+  #main-tab-viewport .renea-tela-cheia.renea-tela-cheia--raiz { height: calc(100dvh - var(--renea-topo) - var(--renea-respiro)); }
+}
+#main-tab-viewport .renea-page-header.renea-page-header,
+.renea-page-header {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+.renea-page-header__linha { display: flex; width: 100%; min-height: 3.75rem; align-items: center; gap: .75rem 1rem; padding-block: .625rem; }
+.renea-page-header--com-abas .renea-page-header__linha { padding-bottom: .25rem; }
+#main-tab-viewport .renea-page-header .renea-page-header__copy { flex: 1 1 auto; min-width: 0; width: auto; margin: 0; }
+#main-tab-viewport .renea-page-header__copy :is(h1, h2) { color: var(--cv-texto); font-size: 1.125rem; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; }
+#main-tab-viewport .renea-page-header__copy p { margin-top: .125rem; color: var(--cv-mudo); font-size: .8125rem; }
+#main-tab-viewport .renea-page-header .renea-page-actions { flex: 0 0 auto; flex-wrap: nowrap; justify-content: flex-end; gap: .5rem; width: auto; margin-left: auto; padding: 0; }
+.renea-page-header__abas { display: flex; min-width: 0; max-width: 100%; margin-bottom: -1px; overflow-x: auto; scrollbar-width: none; }
+.renea-page-header__abas::-webkit-scrollbar { display: none; }
+.renea-page-header .renea-abas-da-tela { flex-wrap: nowrap; gap: 1rem; }
+
+/* Subtelas sublinhadas (AbasDaTela). */
+.renea-abas.renea-abas { gap: 1.25rem; width: auto; padding: 0; border-radius: 0; background: transparent; box-shadow: none; overflow-x: auto; flex-wrap: nowrap; }
+.renea-abas > [role="tab"] { flex: none; min-height: 2.5rem; gap: .375rem; padding: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--cv-mudo); font-size: .8125rem; font-weight: 500; }
+.renea-abas > [role="tab"]:hover { background: transparent; color: var(--cv-texto); }
+.renea-abas > [role="tab"][aria-selected="true"] { border-bottom-color: var(--cv-texto); background: transparent; color: var(--cv-texto); }
+.renea-abas > [role="tab"] svg { display: none; }
+
+/* Botões e campos: 36 px no computador, canto de 7 px, peso 500. */
+@media (min-width: 1024px) {
+  #main-tab-viewport :is(.renea-page-actions, .renea-filter-bar, .renea-tela-cheia__faixa) :is(button, summary, a[role="button"]):not([role="tab"]):not([role="menuitem"]),
+  #main-tab-viewport .renea-button {
+    min-height: 2.25rem;
+    border-radius: .4375rem;
+    font-size: .8125rem;
+    font-weight: 500;
+  }
+  #main-tab-viewport :is(input, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]) { min-height: 2.25rem; }
+}
+#main-tab-viewport :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]) { border-radius: .4375rem; border-color: #dfe2e6 !important; }
+#main-tab-viewport :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):focus { border-color: var(--cv-verde) !important; box-shadow: 0 0 0 3px rgb(23 107 77 / .12); }
+#main-tab-viewport .renea-button { font-weight: 500; }
+#main-tab-viewport kbd { border: 0; border-radius: .25rem; background: rgb(255 255 255 / .18); font: 500 .75rem/1.2 var(--font-sans); padding: .0625rem .3125rem; }
+
+/* Cartões e blocos: linha fina, canto de 10 px, sem sombra. */
+#main-tab-viewport .renea-card { border-color: var(--cv-linha); border-radius: .625rem; box-shadow: none; }
+#main-tab-viewport .renea-card:hover { border-color: #d5d9de; }
+
+/* Tabelas densas: cabeçalho cinza-claro de 34 px, linhas de 40 px. */
+#main-tab-viewport table thead th { height: 2.125rem; background: #fafbfb; color: var(--cv-mudo); font-size: .75rem; font-weight: 500; text-transform: none; letter-spacing: 0; border-bottom: 1px solid var(--cv-linha); }
+#main-tab-viewport table tbody td { border-color: var(--cv-linha-fraca); }
+#main-tab-viewport table tbody tr:hover > td { background: #f8faf9; }
+
+/* Faixa de números no tom do padrão. */
+.renea-faixa-numeros { border-color: var(--cv-linha); border-radius: .625rem; background: var(--cv-linha-fraca); }
+@media (max-width: 767px) {
+  .renea-page-header__linha { flex-wrap: wrap; min-height: 0; padding-block: .75rem .5rem; }
+  #main-tab-viewport .renea-page-header .renea-page-header__copy { flex-basis: 100%; }
+  #main-tab-viewport .renea-page-header .renea-page-actions { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; margin-left: 0; }
+  #main-tab-viewport .renea-tela-cheia--raiz > .renea-tela-cheia__topo,
+  #main-tab-viewport > .renea-route-motion > :not(.renea-tela-cheia) > .renea-page-header:first-child { padding-inline: 1rem; }
+}
+#main-tab-viewport table thead th :is(span, button, div) { text-transform: none; letter-spacing: 0; }
+
+/* Barra de atalhos do celular (MobileBottomNav) e botão principal fixo. */
+.erp-barra-celular { position: fixed; inset: auto 0 0 0; z-index: 45; display: none; grid-auto-columns: 1fr; grid-auto-flow: column; height: calc(3.875rem + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--cv-linha); background: #fff; }
+.erp-barra-celular button { display: flex; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: .1875rem; border: 0; background: none; color: var(--cv-mudo); font-size: .75rem; font-weight: 500; cursor: pointer; }
+.erp-barra-celular button svg { width: 1.25rem; height: 1.25rem; }
+.erp-barra-celular button[data-ativo] { color: var(--cv-verde); }
+#mobile-header .renea-ambiente__selo { width: 2rem; height: 2rem; }
+@media (max-width: 1023px) {
+  .erp-barra-celular { display: grid; }
+  #main-tab-viewport { padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important; }
+  body:has([data-lancamento]) .erp-barra-celular { display: none; }
+}

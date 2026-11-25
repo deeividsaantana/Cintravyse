@@ -16,8 +16,12 @@ test('editores de presença usam o mesmo portal de viewport', () => {
 });
 
 test('animação de entrada não mantém transform no ancestral dos diálogos', () => {
-  const reveal = styles.match(/@keyframes renea-white-reveal\s*\{[\s\S]*?\n\}/)?.[0] || '';
-  assert.match(reveal, /to\s*\{[^}]*transform:\s*none/);
+  // Padrão Cintravyse (25/11/2026): a troca de tela só esmaece, sem
+  // transform, então nenhum ancestral dos diálogos fica com transform.
+  const troca = styles.match(/@keyframes cv-troca\s*\{[^\n]*\}/)?.[0] || '';
+  assert.match(troca, /opacity/);
+  assert.doesNotMatch(troca, /transform/);
+  assert.doesNotMatch(styles, /renea-white-reveal/);
 });
 
 test('digitar num campo do modal não devolve o foco ao primeiro botão', () => {

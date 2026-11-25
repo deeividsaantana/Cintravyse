@@ -207,6 +207,9 @@ import type { VistaFrotaManutencao } from './components/frotaManutencao/abasFrot
 import { navigationSyncTrigger } from './app/navigation/navigationSyncPolicy';
 import { NavigationMenu } from './app/shell/NavigationMenu';
 import { DesktopTopBar } from './app/shell/DesktopTopBar';
+import { MobileBottomNav } from './app/shell/MobileBottomNav';
+import simboloCliente from './assets/images/logo-renea-simbolo.svg';
+import { PERFIS_DE_ACESSO } from './components/perfil/perfisDeAcesso';
 import { usePerfis } from './app/perfil/usePerfis';
 import { PessoasProvider } from './app/perfil/PessoasContext';
 import { MeuPerfilModal } from './components/perfil/MeuPerfilModal';
@@ -238,10 +241,8 @@ import {
 
 // Icons Import
 import {
-  Menu,
   X,
   LogOut,
-  FolderPlus,
   Search,
 } from 'lucide-react';
 
@@ -634,7 +635,6 @@ export default function App() {
   const [presencaPublicaAutenticado, setPresencaPublicaAutenticado] = useState<Funcionario | null>(null);
   const [mostrarModalEscalaSabado, setMostrarModalEscalaSabado] = useState(false);
 
-  const nomeDaTelaAtual = ALL_NAVIGATION_ITEMS.find(item => item.id === activeTab)?.label;
 
   useEffect(() => {
     if (!isLoggedIn || !currentUser || externalPresenceToken) return;
@@ -4096,22 +4096,20 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased font-sans" id="app-root">
       <PularParaConteudo />
 
-      {/* Mobile navigation header */}
-      <header className="lg:hidden flex items-center justify-between h-[4.25rem] bg-white border-b border-slate-200 px-4 text-slate-900 print:hidden shrink-0" id="mobile-header">
-        {/* No celular não há menu nem trilha à vista: o nome da tela embaixo
-            da marca diz onde a pessoa está sem precisar abrir o menu. */}
-        <div className="flex min-w-0 flex-col justify-center gap-1">
-          <MarcaProduto cliente={nomeDaTelaAtual || CLIENTE.nome} />
-        </div>
-
-        <div className="flex items-center gap-1.5">
+      {/* Topo do celular no padrão Cintravyse (25/11/2026): marca à esquerda;
+          à direita o selo do ambiente RENEA, a bolinha do salvamento e a
+          lupa. O menu completo abre pela barra de atalhos de baixo. */}
+      <header className="lg:hidden flex items-center justify-between gap-2 h-[3.25rem] bg-white border-b border-slate-200 px-4 text-slate-900 print:hidden shrink-0" id="mobile-header">
+        <MarcaProduto />
+        <div className="flex items-center gap-1">
+          <span className="renea-ambiente__selo" title={`Ambiente ${CLIENTE.nome}`}><img src={simboloCliente} alt={`Ambiente ${CLIENTE.nome}`} /></span>
           <div
             role="status"
             aria-live="polite"
-            className="flex size-8 items-center justify-center rounded-full border border-slate-200 bg-white"
+            className="grid size-9 place-items-center"
             title={`${salvamento.detalhe} ${lastCloudSync ? `Última sincronização: ${lastCloudSync}` : 'Ainda sem sincronização nesta sessão.'}`}
           >
-            <span aria-hidden="true" className={`size-3 rounded-full shrink-0 ${salvamento.ponto === 'verde' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span aria-hidden="true" className={`size-2.5 rounded-full ${salvamento.ponto === 'verde' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
             <span className="sr-only">{salvamento.rotulo}</span>
           </div>
           {salvamento.tentarNovamente && (
@@ -4119,47 +4117,20 @@ export default function App() {
               Tentar novamente
             </button>
           )}
-        </div>
-        {pendingCount > 0 && (
-          <span
-            className="flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700"
-            title={`${pendingCount} pendência(s) offline aguardando envio`}
-            aria-live="polite"
-          >
-            Pendente: {pendingCount}
-          </span>
-        )}
-
-        <div className="flex items-center gap-1">
+          {pendingCount > 0 && (
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700" title={`${pendingCount} pendência(s) offline aguardando envio`} aria-live="polite">
+              {pendingCount}
+            </span>
+          )}
           {/* No celular não há atalho de teclado: a lupa abre a mesma pesquisa (M8). */}
           <button
             type="button"
             onClick={() => setPesquisaAberta(true)}
             title="Pesquisar em todo o sistema"
             aria-label="Pesquisar em todo o sistema"
-            className="cursor-pointer rounded-xl p-2.5 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
+            className="grid size-11 cursor-pointer place-items-center rounded-lg text-slate-600 hover:bg-slate-100"
           >
             <Search className="w-5 h-5" />
-          </button>
-
-          {allowedTabs.includes('cadastros') && (
-            <button
-              type="button"
-              onClick={() => navigateTo('cadastros', true)}
-              title="Abrir cadastros auxiliares"
-              aria-label="Abrir cadastros auxiliares"
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${activeTab === 'cadastros' ? 'bg-emerald-700 border-emerald-700 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200'}`}
-            >
-              <FolderPlus className="w-5 h-5" />
-            </button>
-          )}
-
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label={isMobileMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
-            className="cursor-pointer rounded-xl p-2.5 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </header>
@@ -4211,12 +4182,14 @@ export default function App() {
           activeTab={activeTab}
           groups={filteredNavigationGroups}
           onNavigate={tab => navigateTo(tab)}
+          pessoa={{ nome: meuNome, foto: meuAvatar?.foto, cor: meuAvatar?.cor, papel: PERFIS_DE_ACESSO.find(perfil => perfil.value === currentUserRole)?.label }}
+          onAbrirPerfil={() => setPerfilAberto(true)}
+          onSair={() => void handleLogout()}
+          onPesquisar={() => setPesquisaAberta(true)}
         />}
         <main className="erp-workspace" id="main-workspace">
         {!combustivelListaSomente && <DesktopTopBar
-          currentUser={currentUser}
-          meuAvatar={meuAvatar}
-          onAbrirPerfil={() => setPerfilAberto(true)}
+          activeTab={activeTab}
           isCloudConnected={isCloudConnected}
           salvamento={salvamento}
           onRetryUpload={tentarNovamenteEnvio}
@@ -4224,7 +4197,6 @@ export default function App() {
           pendingCount={pendingCount}
           isRetryingPending={isRetryingPending}
           onRetryPending={() => void handleRetryPending()}
-          onLogout={() => void handleLogout()}
         />}
         {/* Task 8: Rota presenca-publica fora do padrão de abas */}
         {activeTab === 'presenca-publica' && (
@@ -4252,6 +4224,7 @@ export default function App() {
             <RouteMotion key={activeTab}>
             {activeTab === 'dashboard' && (
               <Dashboard
+                nomePessoa={meuNome}
                 empresas={empresas}
                 obras={obras}
                 equipamentos={equipamentos}
@@ -4525,6 +4498,16 @@ export default function App() {
         )}
         </main>
       </div>
+
+      {isLoggedIn && !combustivelListaSomente && activeTab !== 'presenca-publica' && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          allowedTabs={allowedTabs}
+          onNavigate={tab => navigateTo(tab, true)}
+          onAbrirMenu={() => setIsMobileMenuOpen(aberto => !aberto)}
+          menuAberto={isMobileMenuOpen}
+        />
+      )}
 
       {/* Task 8: Global BuscaColaborador */}
       {isLoggedIn && activeTab !== 'presenca-publica' && (

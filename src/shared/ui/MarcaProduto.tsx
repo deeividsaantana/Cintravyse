@@ -1,6 +1,8 @@
 import { CLIENTE, PRODUTO } from '../../config/marca';
 import logoClienteEscuro from '../../assets/images/logo-renea-dark.svg';
 import logoClienteClaro from '../../assets/images/logo-renea-branco.png';
+import simboloCliente from '../../assets/images/logo-renea-simbolo.svg';
+import { OBRA } from '../../config/obra';
 
 /**
  * Símbolo do produto: o C da Cintravyse recebe uma rota diagonal, como uma
@@ -55,18 +57,19 @@ export function AmbienteCliente({ claro = false, className = '' }: { claro?: boo
 }
 
 /**
- * Identidade do ambiente ativo: só "Ambiente ativo" e a logo da RENEA, num
- * cartão branco de borda cinza, igual aos cartões do Painel. Sem fundo verde
- * nem a palavra RENEA repetida ao lado (pedido de 18/11/2026).
+ * Ambiente ativo no jeito dos ERPs (seletor de empresa, como no Odoo),
+ * aprovado em 25/11/2026: o símbolo da RENEA num quadradinho, o nome da
+ * empresa e embaixo "Ambiente ativo · obra". O cartão antigo (palavra solta e
+ * logo inteira) o Deivid achou feio.
  */
 export function CartaoAmbiente({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-lg border border-slate-200 bg-white px-3 py-2.5 ${className}`} aria-label={`Ambiente ${CLIENTE.nome} ativo`}>
-      <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-        <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-        Ambiente ativo
+    <div className={`renea-ambiente ${className}`} aria-label={`Ambiente ${CLIENTE.nome} ativo, obra ${OBRA.nomeCurto}`}>
+      <span className="renea-ambiente__selo" aria-hidden="true"><img src={simboloCliente} alt="" /></span>
+      <span className="min-w-0 leading-tight">
+        <strong className="block truncate text-[0.8125rem] font-semibold text-slate-900">{CLIENTE.nome}</strong>
+        <span className="block truncate text-xs text-slate-500">Ambiente ativo · {OBRA.nomeCurto}</span>
       </span>
-      <img src={logoClienteEscuro} alt={CLIENTE.nome} className="mt-2 h-6 w-auto max-w-full" />
     </div>
   );
 }

@@ -33,6 +33,7 @@ import { cargosQueFaltam, novosCargos } from '../src/utils/hierarquia';
 import type { Funcionario, GrupoEquipe } from '../src/types';
 import { DesktopSidebar } from '../src/app/shell/DesktopSidebar';
 import { DesktopTopBar } from '../src/app/shell/DesktopTopBar';
+import { MobileBottomNav } from '../src/app/shell/MobileBottomNav';
 import { MeuPerfilModal } from '../src/components/perfil/MeuPerfilModal';
 import type { MeuAvatar } from '../src/app/perfil/usePerfis';
 import { PRIMARY_MODULE_IDS, ROLE_ACCESS, SIDEBAR_NAVIGATION_GROUPS, destinoDaAba } from '../src/app/navigation/navigation';
@@ -506,15 +507,16 @@ function CombustivelVivo() {
 }
 
 /**
- * Topo do preview com "Meu perfil" de verdade: tocar no nome abre o diálogo e
- * salvar troca a bolinha na hora (sem nuvem). ?perfil=1 abre já aberto.
+ * Menu do preview com "Meu perfil" de verdade: tocar no nome (rodapé do menu)
+ * abre o diálogo e salvar troca a bolinha na hora (sem nuvem). ?perfil=1 abre
+ * já aberto.
  */
-function TopoPreview(props: Omit<React.ComponentProps<typeof DesktopTopBar>, 'meuAvatar' | 'onAbrirPerfil'>) {
+function SidebarPreview(props: Omit<React.ComponentProps<typeof DesktopSidebar>, 'pessoa' | 'onAbrirPerfil' | 'onSair' | 'onPesquisar'>) {
   const [aberto, setAberto] = React.useState(new URLSearchParams(location.search).get('perfil') === '1');
   const [avatar, setAvatar] = React.useState<MeuAvatar>({ nome: 'Deivid Santana', cor: '#176b4d', foto: null });
   return (
     <>
-      <DesktopTopBar {...props} meuAvatar={avatar} onAbrirPerfil={() => setAberto(true)} />
+      <DesktopSidebar {...props} pessoa={{ ...avatar, papel: 'Administrador' }} onAbrirPerfil={() => setAberto(true)} onSair={noop} onPesquisar={noop} />
       <MeuPerfilModal
         open={aberto}
         perfil={{ nome: avatar.nome, email: 'deivid@renea.com.br', papel: 'gestor', cor: avatar.cor, foto: avatar.foto }}
@@ -556,24 +558,15 @@ const screens: Record<string, React.ReactNode> = {
   programacao: <ProgramacaoPreview />,
   sidebar: (
     <div className="erp-shell" style={{ height: '100dvh' }}>
-      <DesktopSidebar
-        activeTab="presenca"
-        groups={previewGroups}
-        onNavigate={noop}
-      />
+      <SidebarPreview activeTab="presenca" groups={previewGroups} onNavigate={noop} />
       <main style={{ flex: 1, background: '#fff' }} />
     </div>
   ),
   topbar: (
     <div className="erp-shell" style={{ height: '100dvh' }}>
-      <DesktopSidebar activeTab="dashboard" groups={previewGroups} onNavigate={noop} />
+      <SidebarPreview activeTab="dashboard" groups={previewGroups} onNavigate={noop} />
       <main className="erp-workspace">
-        <TopoPreview
-          currentUser={{ displayName: 'Deivid Santana', email: 'deivid@renea.com.br' } as never}
-          isCloudConnected
-          lastCloudSync="04/09/2026 21:40"
-          onLogout={noop}
-        />
+        <DesktopTopBar activeTab="dashboard" isCloudConnected lastCloudSync="04/09/2026 21:40" />
       </main>
     </div>
   ),
@@ -682,6 +675,7 @@ const screens: Record<string, React.ReactNode> = {
   'manutencao-so': <FrotaManutencaoPreview vistaInicial="parados" soManutencao />,
   painel: (
     <Dashboard
+      nomePessoa={'Deivid Santana'}
       empresas={fx.empresas}
       obras={fx.obras}
       equipamentos={fx.equipamentos}
@@ -767,10 +761,10 @@ createRoot(document.getElementById('app-root')!).render(
     {isPublicScreen ? (screens[key] ?? null) : comShell ? (
       <div className="erp-shell">
         <PularParaConteudo />
-        <DesktopSidebar activeTab={abaAtiva} groups={previewGroups} onNavigate={noop} />
+        <SidebarPreview activeTab={abaAtiva} groups={previewGroups} onNavigate={noop} />
         <main className="erp-workspace" id="main-workspace">
-          <TopoPreview
-            currentUser={{ displayName: 'Deivid Santana', email: 'deivid@renea.com.br' } as never}
+          <DesktopTopBar
+            activeTab={abaAtiva}
             isCloudConnected
             // ?salvamento=falhou|aguardando|enviando|offline mostra cada estado do topo.
             salvamento={descreverSalvamento({
@@ -782,12 +776,12 @@ createRoot(document.getElementById('app-root')!).render(
             })}
             onRetryUpload={noop}
             lastCloudSync="04/09/2026 21:40"
-            onLogout={noop}
           />
           <div id="main-tab-viewport" tabIndex={-1} className="flex-1 overflow-x-clip w-full max-w-none p-[var(--renea-respiro)]">
             <RouteMotion>{screens[key] ?? <p>Tela desconhecida: {key}</p>}</RouteMotion>
           </div>
         </main>
+        <MobileBottomNav activeTab={abaAtiva} allowedTabs={previewGroups.flatMap(grupo => grupo.items.map(item => item.id))} onNavigate={noop} onAbrirMenu={noop} menuAberto={false} />
       </div>
     ) : <div
       id="main-tab-viewport"
