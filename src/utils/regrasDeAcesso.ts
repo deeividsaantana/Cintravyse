@@ -16,6 +16,7 @@ export const ABA_DEV = 'dev';
 /** Abas que o painel deixa ajustar, na ordem do menu. */
 export const ABAS_AJUSTAVEIS: ReadonlyArray<{ id: string; nome: string }> = [
   { id: 'dashboard', nome: 'Visão geral' },
+  { id: 'dashboards', nome: 'Dashboards' },
   { id: 'pluviometro', nome: 'Pluviômetro' },
   { id: 'programacao', nome: 'Programação' },
   { id: 'estacas', nome: 'Controle de Estacas' },

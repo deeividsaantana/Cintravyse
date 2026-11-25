@@ -12,7 +12,9 @@ test('sidebar expõe os módulos primários visíveis do ERP', () => {
   // (permissão e endereço), mas sem botão próprio no menu.
   assert.deepEqual(rendered, [...PRIMARY_MODULE_IDS].filter(id => id !== 'colaboradores' && id !== 'manutencao'));
   // 11: aba Dev (16/11/2026) entrou; Manutenção foi para dentro de Frotas (23/11/2026).
-  assert.equal(rendered.length, 11);
+  // 12: Dashboards (25/11/2026), a pedido do usuário.
+  assert.equal(rendered.length, 12);
+  assert.equal(isPrimaryModule('dashboards'), true);
   // Solicitação de Contratação entrou em 2026-11-14, a pedido do usuário.
   assert.equal(isPrimaryModule('contratacao'), true);
   // Solicitações e Compras entrou em 2026-11-11, a pedido do usuário.
