@@ -120,6 +120,15 @@ app.get('*', (req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`RENEA ERP no ar em http://localhost:${port}`);
+  // Limpeza diária feita pelo próprio servidor (25/11/2026): antes dependia de
+  // um pinger externo com segredo, que não estava ligado, e as janelas do
+  // limite de requisições ficavam no banco para sempre. O UptimeRobot já
+  // mantém o serviço acordado, então o relógio daqui basta.
+  const umDia = 24 * 60 * 60 * 1000;
+  const limpar = () => void Promise.resolve().then(() => cleanupCloudData())
+    .catch(error => console.error('Limpeza diária da nuvem falhou:', error));
+  setTimeout(limpar, 5 * 60 * 1000).unref();
+  setInterval(limpar, umDia).unref();
   if (process.env.PROCUREMENT_SPREADSHEET_URL) {
     const everyThreeHours = 3 * 60 * 60 * 1000;
     void sincronizarUmaVez().catch(error => console.error('Sincronização da planilha de compras falhou:', error));

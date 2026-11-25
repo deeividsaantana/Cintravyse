@@ -21,6 +21,12 @@ test('o servidor da Render atende /api/ e mantém o endereço antigo', () => {
   }
 });
 
+test('o servidor faz a limpeza diária sozinho, sem depender de pinger externo (25/11/2026)', () => {
+  const server = read('server/index.js');
+  assert.match(server, /setInterval\(limpar, umDia\)\.unref\(\)/);
+  assert.match(server, /cleanupCloudData\(\)\)\s*\.catch/);
+});
+
 test('a API de compras usa a função transacional e nunca aceita papel do body', () => {
   const route = read('api/procurement.js');
   assert.match(route, /create_erp_request/);
