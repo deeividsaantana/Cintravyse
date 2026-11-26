@@ -128,8 +128,7 @@ import { PresencaPublicaLink } from './components/presenca/PresencaPublicaLink';
 import { EscalaSabado } from './components/presenca/EscalaSabado';
 
 // Motion and Logo Import
-import { CartaoAmbiente, MarcaProduto } from './shared/ui/MarcaProduto';
-import { CLIENTE } from './config/marca';
+import { MarcaProduto } from './shared/ui/MarcaProduto';
 
 
 
@@ -211,7 +210,6 @@ import { navigationSyncTrigger } from './app/navigation/navigationSyncPolicy';
 import { NavigationMenu } from './app/shell/NavigationMenu';
 import { DesktopTopBar } from './app/shell/DesktopTopBar';
 import { MobileBottomNav } from './app/shell/MobileBottomNav';
-import simboloCliente from './assets/images/logo-renea-simbolo.svg';
 import { PERFIS_DE_ACESSO } from './components/perfil/perfisDeAcesso';
 import { usePerfis } from './app/perfil/usePerfis';
 import { PessoasProvider } from './app/perfil/PessoasContext';
@@ -4108,12 +4106,11 @@ export default function App() {
       <PularParaConteudo />
 
       {/* Topo do celular no padrão Cintravyse (25/11/2026): marca à esquerda;
-          à direita o selo do ambiente RENEA, a bolinha do salvamento e a
-          lupa. O menu completo abre pela barra de atalhos de baixo. */}
+          à direita a bolinha do salvamento e a lupa. A marca RENEA fica só no
+          login e nos PDFs (26/11/2026). O menu completo abre pela barra de baixo. */}
       <header className="lg:hidden flex items-center justify-between gap-2 h-[3.25rem] bg-white border-b border-slate-200 px-4 text-slate-900 print:hidden shrink-0" id="mobile-header">
         <MarcaProduto />
         <div className="flex items-center gap-1">
-          <span className="renea-ambiente__selo" title={`Ambiente ${CLIENTE.nome}`}><img src={simboloCliente} alt={`Ambiente ${CLIENTE.nome}`} /></span>
           {(activeTab === 'dev' || salvamento.ponto !== 'verde') && <div
             role="status"
             aria-live="polite"
@@ -4161,7 +4158,6 @@ export default function App() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <CartaoAmbiente />
             <button
               type="button"
               onClick={() => { setIsMobileMenuOpen(false); setPerfilAberto(true); }}
