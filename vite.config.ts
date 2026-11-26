@@ -60,8 +60,19 @@ const lerIconesSeparados = (lerModulo: LerModulo, ids: Iterable<string>) => {
   return iconesSeparados;
 };
 
+/**
+ * Carimbo do build (26/11/2026): commit e hora em que a Render montou o site.
+ * Aparece no rodapé do menu, para saber na hora se o site no ar é o mais novo.
+ */
+const carimboDoBuild = () => {
+  const commit = (process.env.RENDER_GIT_COMMIT || process.env.COMMIT_REF || '').slice(0, 7);
+  const quando = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date());
+  return commit ? `${quando} · ${commit}` : quando;
+};
+
 export default defineConfig(() => {
   return {
+    define: { __CARIMBO_DO_BUILD__: JSON.stringify(carimboDoBuild()) },
     plugins: [react(), tailwindcss()],
     resolve: {
       dedupe: ['react', 'react-dom'],

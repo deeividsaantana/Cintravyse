@@ -3,7 +3,7 @@ import { ChevronsLeft, ChevronsRight, LogOut, Search } from 'lucide-react';
 import { Avatar } from '../../shared/ui/Avatar';
 import type { NavigationGroupView } from './NavigationMenu';
 import { MarcaProduto, SimboloProduto } from '../../shared/ui/MarcaProduto';
-import { APP_VERSION_LABEL } from '../version';
+import { APP_VERSION_LABEL, CARIMBO_DO_BUILD } from '../version';
 import { FOCO } from '../../components/cadastros/estilos';
 
 interface DesktopSidebarProps {
@@ -56,7 +56,8 @@ export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirP
     }
   };
 
-  const versao = APP_VERSION_LABEL.split(' — ')[0];
+  // Versão e a hora do build à vista: diz na hora se o site no ar é o mais novo.
+  const versao = `${APP_VERSION_LABEL.split(' — ')[0]}${CARIMBO_DO_BUILD ? ` · ${CARIMBO_DO_BUILD.split(' · ')[0]}` : ''}`;
 
   return (
     <aside
@@ -135,7 +136,7 @@ export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirP
         )}
       </nav>
 
-      <div className={`flex items-center gap-2 border-t border-slate-200 py-2 ${collapsed ? 'flex-col px-2' : 'px-3'}`} title={APP_VERSION_LABEL}>
+      <div className={`flex items-center gap-2 border-t border-slate-200 py-2 ${collapsed ? 'flex-col px-2' : 'px-3'}`} title={CARIMBO_DO_BUILD ? `${APP_VERSION_LABEL} — montado em ${CARIMBO_DO_BUILD}` : APP_VERSION_LABEL}>
         {pessoa && (
           <button type="button" onClick={onAbrirPerfil} title="Meu perfil: trocar nome e foto" className={`flex min-w-0 flex-1 items-center gap-2 rounded-md p-1 text-left hover:bg-[#eef0f2] ${FOCO}`}>
             <Avatar nome={pessoa.nome} foto={pessoa.foto ?? undefined} cor={pessoa.cor ?? undefined} />
