@@ -79,11 +79,13 @@ interface LancamentosTabProps {
   gruposEquipe?: GrupoEquipe[];
   usuario?: string;
   onOpenControle?: () => void;
-  combustivelInicial?: 'novo' | 'historico' | 'relatorios';
+  combustivelInicial?: 'novo' | 'historico';
   combustivelListaSomente?: boolean;
-  /** A aba Relatórios abre o Combustível já no consumo por máquina. */
-  combustivelPorMaquina?: boolean;
+  /** Aberta pela guia Relatórios: mostra só o relatório de diesel pedido. */
+  relatorio?: RelatorioDiesel;
 }
+
+type RelatorioDiesel = NonNullable<React.ComponentProps<typeof CombustivelOperacionalTab>['relatorio']>;
 
 type Mode = 'abastecimentos' | 'lubrificacoes';
 
@@ -111,7 +113,7 @@ export default function LancamentosTab({
   onOpenControle,
   combustivelInicial,
   combustivelListaSomente = false,
-  combustivelPorMaquina = false,
+  relatorio,
 }: LancamentosTabProps) {
 
   const [mode, setMode] = useState<Mode>('abastecimentos');
@@ -888,7 +890,7 @@ export default function LancamentosTab({
           openHistorySignal={openFuelHistorySignal}
           initialView={combustivelInicial}
           listaSomente={combustivelListaSomente}
-          porMaquinaInicial={combustivelPorMaquina}
+          relatorio={relatorio}
         />
         <input
           ref={fileInputRef}

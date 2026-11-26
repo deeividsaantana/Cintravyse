@@ -9,7 +9,9 @@ import { readFileSync } from 'node:fs';
  *   `lancamento` ou formulário marcado com `data-lancamento`);
  * - atalhoNovo: a tecla N abre um lançamento novo (useAtalhoNovo);
  * - ctrlS: Ctrl+S salva (o Modal com `lancamento` e `onSubmit` já faz);
- * - relatorios: a aba tem a subaba "Relatórios".
+ * - relatorios: o relatório da aba abre na guia Relatórios, com o voltar
+ *   (VoltarAosRelatorios), e a aba não tem mais subaba "Relatórios"
+ *   (pedido do Deivid em 26/11/2026).
  *
  * PENDENCIAS guarda o que cada aba ainda deve. A lista só diminui: quando a
  * aba passa a cumprir um item, o teste pede para tirar o item da lista.
@@ -21,10 +23,10 @@ const ABAS_COM_LANCAMENTO: Record<string, readonly string[]> = {
   programacao: ['ProgramacaoTab.tsx', 'programacao/AtividadeForm.tsx'],
   solicitacoes: ['SolicitacoesTab.tsx', 'solicitacoes/NovaSolicitacao.tsx'],
   estacas: ['EstacasTab.tsx', 'estacas/FormCravacao.tsx', 'estacas/abasEstacas.ts'],
-  // Frotas e Manutenção numa aba só (23/11/2026): as subtelas (e o grupo
-  // Relatórios) moram em frotaManutencao/abasFrotaManutencao.ts.
-  manutencao: ['ManutencaoTab.tsx', 'frotaManutencao/abasFrotaManutencao.ts'],
-  frotas: ['ControleEquipamentosDiarioTab.tsx', 'fleet/DailyRecordForm.tsx', 'frotaManutencao/abasFrotaManutencao.ts'],
+  // Frotas e Manutenção numa aba só (23/11/2026): as subtelas moram em
+  // frotaManutencao/abasFrotaManutencao.ts e o modo relatório na moldura.
+  manutencao: ['ManutencaoTab.tsx', 'frotaManutencao/abasFrotaManutencao.ts', 'FrotaManutencao.tsx'],
+  frotas: ['ControleEquipamentosDiarioTab.tsx', 'fleet/DailyRecordForm.tsx', 'frotaManutencao/abasFrotaManutencao.ts', 'FrotaManutencao.tsx'],
   pluviometro: ['PluviometroTab.tsx'],
   presenca: ['ControlePresencaTab.tsx'],
   contratacao: ['ContratacaoTab.tsx', 'contratacao/FolhaContratacao.tsx'],
@@ -41,7 +43,7 @@ const regrasQueFaltam = (arquivos: readonly string[]): Regra[] => {
   if (!modalDeLancamento && !source.includes('data-lancamento')) faltam.push('telaCheia');
   if (!source.includes('useAtalhoNovo(') && !/key(?:\.toLowerCase\(\))? === ['"]n['"]/.test(source)) faltam.push('atalhoNovo');
   if (!(modalDeLancamento && source.includes('onSubmit=')) && !/=== ['"]s['"]/.test(source)) faltam.push('ctrlS');
-  if (!/rotulo: ['"]Relatórios/.test(source)) faltam.push('relatorios');
+  if (!source.includes('<VoltarAosRelatorios') || /rotulo: ['"]Relatórios/.test(source)) faltam.push('relatorios');
   return faltam;
 };
 

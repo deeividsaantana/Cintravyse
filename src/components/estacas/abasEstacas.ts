@@ -1,4 +1,4 @@
-import { FileBarChart, LayoutDashboard, ListOrdered, PackageCheck } from 'lucide-react';
+import { LayoutDashboard, ListOrdered, PackageCheck } from 'lucide-react';
 import type { ItemDasAbas } from '../../shared/ui/AbasDaTela';
 
 /** Subtela aberta no Controle de Estacas. */
@@ -20,7 +20,8 @@ interface Numeros {
  * o que se usa todo dia: ver como está e a lista. Lançar não é aba: é o botão
  * "Lançar cravação" do topo (e a tecla N), um só no sistema todo (pedido de
  * 16/11/2026), e abre a folha que ocupa a área inteira da aba. Padrão de
- * 23/11/2026: quatro opções, Relatórios por último, sem segunda linha; Importar
+ * 23/11/2026: até quatro opções, sem segunda linha (o relatório só abre pela
+ * guia Relatórios desde 25/11/2026); Importar
  * planilha fica em "Mais ações" (EstacasTab). O selo
  * laranja diz o que pede atenção (estacas que faltam, notas a conferir); o
  * cinza, só quantas há.
@@ -31,5 +32,4 @@ export const abasEstacas = ({ faltam, estacas, notasPendentes, lotes }: Numeros)
   notasPendentes > 0
     ? { id: 'recebimentos', rotulo: 'Recebimentos', icone: PackageCheck, contador: notasPendentes, contadorRotulo: 'notas para conferir' }
     : { id: 'recebimentos', rotulo: 'Recebimentos', icone: PackageCheck, contador: lotes, contadorRotulo: 'lotes', tom: 'neutro' },
-  { id: 'relatorios', rotulo: 'Relatórios', icone: FileBarChart },
 ];

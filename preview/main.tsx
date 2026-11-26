@@ -76,7 +76,7 @@ const noopImportAbastecimentos = (items: unknown[] = []) => ({
  * Frotas e Manutenção com estado (aba única, 23/11/2026): liberar, entrar,
  * conferir e abrir OS voltam para a tela, como no app.
  */
-function FrotaManutencaoPreview({ vistaInicial, soManutencao = false }: { vistaInicial?: VistaFrotaManutencao; soManutencao?: boolean }) {
+function FrotaManutencaoPreview({ vistaInicial, soManutencao = false, relatorio }: { vistaInicial?: VistaFrotaManutencao; soManutencao?: boolean; relatorio?: React.ComponentProps<typeof FrotaManutencao>['relatorio'] }) {
   const [registros, setRegistros] = React.useState(() => {
     const base = [...fx.controlesEquipamentos, ...fx.controlesBasculantes, ...fx.controlesManutencao];
     // ?muitos=60: repete a frota por 60 dias, perto do volume real (uns 2 mil lançamentos).
@@ -100,6 +100,7 @@ function FrotaManutencaoPreview({ vistaInicial, soManutencao = false }: { vistaI
   };
   return (
     <FrotaManutencao
+      relatorio={relatorio}
       vistaInicial={vistaInicial ?? (buscaDaUrl ? 'quadro' : undefined)}
       manutencao={{
         ordensServico: ordens,
@@ -641,6 +642,29 @@ const screens: Record<string, React.ReactNode> = {
     />
   ),
   relatorios: <RelatoriosTab podeVer={() => true} onAbrir={noop} />,
+  // Relatório aberto dentro da guia Relatórios (26/11/2026).
+  'rel-chuva': <PluviometroTab diarios={fx.diariosChuva} obras={fx.obras} responsavel="Deivid Santana" podeEditar onSave={noop} relatorio={{ nome: 'Mapa de chuvas do mês', onVoltar: noop }} />,
+  'rel-contratacao': <ContratacaoTab relatorio={{ nome: 'Resumo de contratações', onVoltar: noop }} />,
+  'rel-frota': <FrotaManutencaoPreview relatorio={{ nome: 'Relatórios da frota', parte: 'fechamento', onVoltar: noop }} />,
+  'rel-manutencao': <FrotaManutencaoPreview relatorio={{ nome: 'Manutenção do dia', parte: 'manutencao-dia', onVoltar: noop }} />,
+  'rel-diesel': (
+    <LancamentosTab
+      empresas={fx.empresas}
+      comboios={fx.comboios}
+      combustiveis={fx.combustiveis}
+      lubrificantes={fx.lubrificantes}
+      abastecimentos={fx.abastecimentosConsumo}
+      lubrificacoes={fx.lubrificacoes}
+      equipamentos={fx.equipamentosQuadro}
+      registrosFrota={fx.controlesQuadro}
+      usuario="Deivid"
+      onOpenControle={noop}
+      onSaveAbastecimento={noop}
+      onImportAbastecimentos={noopImportAbastecimentos}
+      onSaveLubrificacao={noop}
+      relatorio={{ nome: 'Fornecimento de diesel', parte: 'resumo', onVoltar: noop }}
+    />
+  ),
   contratacao: <ContratacaoTab />,
   // Link individual: ?screen=contratacao-link&link=5&papel=gerente_2
   'contratacao-link': <div className="min-h-dvh bg-[#f7f8f6] p-[var(--renea-respiro)]"><ContratacaoPeloLink token={new URLSearchParams(location.search).get('link') || '6'} /></div>,
@@ -759,7 +783,7 @@ const estadoSalvamentoPreview = new URLSearchParams(location.search).get('salvam
 const comShell = new URLSearchParams(location.search).get('shell') === '1';
 const ABA_DO_PREVIEW: Record<string, string> = {
   painel: 'dashboard', combustivel: 'lancamentos', 'combustivel-operador': 'lancamentos', 'combustivel-consumo': 'lancamentos',
-  frotas: 'controle-equipamentos', 'presenca-admin': 'presenca', 'colaboradores-lote': 'colaboradores',
+  frotas: 'controle-equipamentos', 'presenca-admin': 'presenca', 'rel-chuva': 'relatorios', 'rel-contratacao': 'relatorios', 'rel-frota': 'relatorios', 'rel-manutencao': 'relatorios', 'rel-diesel': 'relatorios', 'colaboradores-lote': 'colaboradores',
 };
 const abaAtiva = ABA_DO_PREVIEW[key] || key;
 const previewQueryClient = new QueryClient();

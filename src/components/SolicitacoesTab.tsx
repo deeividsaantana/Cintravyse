@@ -18,7 +18,6 @@ import {
   FileSpreadsheet,
   Filter,
   History,
-  PieChart,
   LayoutGrid,
   List,
   PackagePlus,
@@ -29,6 +28,7 @@ import {
 import { Modal, PageHeader, isoDay } from "../shared/ui";
 import { TelaCheia } from "../shared/ui/TelaCheia";
 import { AbasDaTela, idDaAba, type ItemDasAbas } from "../shared/ui/AbasDaTela";
+import { VoltarAosRelatorios, type ModoRelatorio } from "../shared/ui/RelatorioNaAba";
 import { MaisAcoes } from "../shared/ui/MaisAcoes";
 import { TabelaPadrao, type ColunaTabela } from "../shared/ui/TabelaPadrao";
 import {
@@ -95,8 +95,8 @@ interface SolicitacoesTabProps {
   /** Ids e números dos pedidos apagados de vez: a planilha não os traz de volta. */
   apagadas?: ReadonlySet<string>;
   onExcluir?: (id: string) => void;
-  /** Tela que abre primeiro (a guia Relatórios abre direto no relatório). */
-  subtelaInicial?: "relatorio";
+  /** Aberta pela guia Relatórios: mostra só o relatório do período. */
+  relatorio?: ModoRelatorio;
 }
 
 type ComSituacao = { sol: Solicitacao; situacao: SituacaoSolicitacao };
@@ -194,12 +194,12 @@ export default function SolicitacoesTab({
   podeApagar = false,
   apagadas,
   onExcluir,
-  subtelaInicial,
+  relatorio,
 }: SolicitacoesTabProps) {
   const escopo = useRef<HTMLElement>(null);
   const arquivo = useRef<HTMLInputElement>(null);
   const hoje = isoDay(new Date());
-  const [subtela, setSubtela] = useState<Subtela>(subtelaInicial ?? "pedidos");
+  const [subtela, setSubtela] = useState<Subtela>(relatorio ? "relatorio" : "pedidos");
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("abertos");
   const [filtroSolicitante, setFiltroSolicitante] = useState("");
@@ -616,20 +616,7 @@ export default function SolicitacoesTab({
       contador: itensComFalta,
       contadorRotulo: "itens com falta",
     },
-    {
-      grupo: "relatorios",
-      rotulo: "Relatórios",
-      icone: History,
-      abas: [
-        {
-          id: "relatorio",
-          rotulo: "Relatório do período",
-          curto: "Período",
-          icone: PieChart,
-        },
-        { id: "historico", rotulo: "Histórico", icone: History },
-      ],
-    },
+    { id: "historico", rotulo: "Histórico", icone: History },
   ];
 
   const colunas: ColunaTabela<ComSituacao>[] = [
@@ -893,7 +880,7 @@ export default function SolicitacoesTab({
       rotulo="Solicitações e compras"
       longa={!comTabela || Boolean(aberta)}
       // Planilha não é aba (padrão de 23/11/2026): abre por "Mais ações".
-      idAbaAtiva={subtela === "planilha" ? undefined : idDaAba("solicitacoes", subtela)}
+      idAbaAtiva={subtela === "planilha" || relatorio ? undefined : idDaAba("solicitacoes", subtela)}
       idDados="solicitacoes-dados"
       chaveRolagem={`${subtela}-${abertaId ?? ""}`}
       // Lançando, a folha ocupa a área inteira da aba (padrão do Combustível).
@@ -901,7 +888,7 @@ export default function SolicitacoesTab({
         <PageHeader
           eyebrow="Suprimentos"
           title="Solicitações e compras"
-          abas={
+          abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : (
             <AbasDaTela<Subtela>
               id="solicitacoes"
               rotulo="Subtelas de solicitações"
@@ -914,8 +901,8 @@ export default function SolicitacoesTab({
               idPainel="solicitacoes-dados"
               testId="solicitacoes-aba"
             />
-          }
-          actions={
+          )}
+          actions={relatorio ? undefined : (
             <>
               <MaisAcoes
                 testId="solicitacoes-mais-acoes"
@@ -943,7 +930,7 @@ export default function SolicitacoesTab({
                 </button>
               )}
             </>
-          }
+          )}
         />
       }
       faixa={
@@ -1271,7 +1258,7 @@ export default function SolicitacoesTab({
               >
                 Nenhum pedido neste filtro.
                 {solicitacoes.length === 0 &&
-                  ' Abra uma solicitação ou traga a planilha de controle em Relatórios > "Relatório do período".'}
+                  ' Abra uma solicitação ou traga a planilha de controle na guia Relatórios > "Pedidos de compra do período".'}
               </p>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col gap-3">

@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, LayoutGrid, Wrench } from 'lucide-react';
+import { ClipboardList, LayoutGrid, Wrench } from 'lucide-react';
 import type { AbaDaTela, GrupoDeAbas, ItemDasAbas } from '../../shared/ui/AbasDaTela';
 import type { FleetView } from '../ControleEquipamentosDiarioTab';
 import type { Subtela as SubtelaManutencao } from '../ManutencaoTab';
@@ -60,8 +60,9 @@ export const vistaPermitida = (vista: VistaFrotaManutencao, acesso: Acesso) =>
 
 /**
  * O topo, no padrão do site (docs/PADRAO_DO_SITE.md): no máximo quatro
- * opções, Relatórios por último. Manutenção e Relatórios são grupos: a tela
- * se escolhe na caixinha "Ver" do próprio AbasDaTela, na mesma linha.
+ * opções. Manutenção é grupo: a tela se escolhe na caixinha "Ver" do
+ * próprio AbasDaTela, na mesma linha. Os relatórios (fechamento da frota e
+ * manutenção do dia) abrem só pela guia Relatórios (26/11/2026).
  * Lançamentos é a lista do dia; quem falta abre pela faixa "Falta lançar".
  * Quem não tem a permissão de uma parte não vê as telas dela.
  */
@@ -79,10 +80,6 @@ export const abasFrotaManutencao = (
       { id: 'parados', rotulo: 'Paradas de hoje', contador: contadores.paradosAgora, contadorRotulo: 'parados agora', tom: 'neutro' },
       { id: 'ordens', rotulo: 'Ordens de serviço' },
       { id: 'conferir-10h', rotulo: 'Conferir 10 h', contador: contadores.paraConferir10h, contadorRotulo: 'para conferir' },
-    ] }),
-    grupo({ grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-      { id: 'fechamento', rotulo: 'Relatórios da frota' },
-      { id: 'manutencao-dia', rotulo: 'Manutenção do dia' },
       { id: 'historico-os', rotulo: 'Histórico das OS' },
     ] }),
   ];
@@ -96,6 +93,11 @@ export const telasDoTopo = (itens: readonly ItemDasAbas<VistaFrotaManutencao>[])
 /** Faltando é parte de Lançamentos: no topo, a aba Lançamentos segue marcada. */
 export const abaMarcada = (vista: VistaFrotaManutencao): VistaFrotaManutencao =>
   (vista === 'faltando' || vista === 'motoristas' ? 'dia' : vista);
+
+/** Vistas que são relatório: abrem só pela guia Relatórios. */
+export type ParteRelatorioFrota = 'fechamento' | 'manutencao-dia';
+export const ehRelatorioDaFrota = (vista: VistaFrotaManutencao): vista is ParteRelatorioFrota =>
+  vista === 'fechamento' || vista === 'manutencao-dia';
 
 /** Primeira vista que a pessoa pode abrir. */
 export const vistaPadrao = (acesso: Acesso): VistaFrotaManutencao =>

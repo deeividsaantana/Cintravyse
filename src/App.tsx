@@ -205,7 +205,8 @@ import {
   roleFromMembership,
   type UserRole,
 } from './app/navigation/navigation';
-import type { VistaFrotaManutencao } from './components/frotaManutencao/abasFrotaManutencao';
+import type { ParteRelatorioFrota, VistaFrotaManutencao } from './components/frotaManutencao/abasFrotaManutencao';
+import type { RelatorioDoCatalogo } from './components/RelatoriosTab';
 import { navigationSyncTrigger } from './app/navigation/navigationSyncPolicy';
 import { NavigationMenu } from './app/shell/NavigationMenu';
 import { DesktopTopBar } from './app/shell/DesktopTopBar';
@@ -404,12 +405,11 @@ const getInitialTabFromUrl = () => {
   return params.get('tab') || params.get('aba') || 'dashboard';
 };
 
-const getCombustivelViewFromUrl = (): 'novo' | 'historico' | 'relatorios' | undefined => {
+const getCombustivelViewFromUrl = (): 'novo' | 'historico' | undefined => {
   if (typeof window === 'undefined') return undefined;
   const view = new URLSearchParams(window.location.search).get('combustivel');
   if (view === 'novo') return 'novo';
-  if (view === 'relatorios' || view === 'relatorio') return 'relatorios';
-  // Endereços antigos (resumo, por máquina) caem na lista.
+  // Endereços antigos (relatórios, resumo, por máquina) caem na lista.
   return view ? 'historico' : undefined;
 };
 
@@ -447,11 +447,15 @@ export default function App() {
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<string>(() => getInitialTabFromUrl());
-  // Relatório escolhido na aba Relatórios: a aba de destino abre direto
-  // nessa parte. Qualquer outra navegação limpa o pedido.
-  const [parteAberta, setParteAberta] = useState<{ tab: string; parte: string } | null>(null);
-  const parteDe = (tab: string) => (parteAberta?.tab === tab ? parteAberta.parte : undefined);
-  const combustivelUrlView = parteDe('lancamentos') === 'relatorios' ? 'relatorios' : getCombustivelViewFromUrl();
+  // Relatório escolhido na guia Relatórios: abre ali mesmo, com filtros, PDF
+  // e Excel (pedido do Deivid em 26/11/2026). Qualquer navegação fecha.
+  const [relatorioAberto, setRelatorioAberto] = useState<RelatorioDoCatalogo | null>(null);
+  const relAberto = activeTab === 'relatorios' ? relatorioAberto : null;
+  /** Modo relatório da tela (undefined fora da guia Relatórios). */
+  const modoRelatorio = <P extends string>(tab: string) => (relAberto?.aba === tab
+    ? { nome: relAberto.nome, parte: relAberto.parte as P, onVoltar: () => setRelatorioAberto(null) }
+    : undefined);
+  const combustivelUrlView = getCombustivelViewFromUrl();
   const combustivelListaSomente = isCombustivelListOnlyUrl();
   const combustivelViewInicial = combustivelListaSomente ? 'historico' : combustivelUrlView;
   // A aba fica no endereço (?tab=): o F5 reabre a mesma tela e o voltar do
@@ -4072,7 +4076,7 @@ export default function App() {
 
   const navigateTo = (tab: string, closeMobile = false, options: { explicitRefresh?: boolean } = {}) => {
     setPedidoFrota(atual => (atual.vista ? { vez: atual.vez } : atual));
-    setParteAberta(null);
+    setRelatorioAberto(null);
     setPedidoNovoColaborador(0);
     setPedidoEquipes(0);
     // A busca do menu não fica filtrada depois de escolher a tela (B6).
@@ -4276,15 +4280,8 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'relatorios' && (
-              <RelatoriosTab
-                podeVer={podeAbrir}
-                onAbrir={relatorio => {
-                  navigateTo(relatorio.aba);
-                  if (relatorio.aba === 'controle-equipamentos') setPedidoFrota(atual => ({ vista: relatorio.parte as VistaFrotaManutencao, vez: atual.vez + 1 }));
-                  else setParteAberta({ tab: relatorio.aba, parte: relatorio.parte });
-                }}
-              />
+            {activeTab === 'relatorios' && !relAberto && (
+              <RelatoriosTab podeVer={podeAbrir} onAbrir={setRelatorioAberto} />
             )}
 
             {activeTab === 'cadastros' && allowedTabs.includes('cadastros') && (
@@ -4338,7 +4335,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'lancamentos' && (
+            {(activeTab === 'lancamentos' || relAberto?.aba === 'lancamentos') && (
               <LancamentosTab
                 empresas={empresas}
                 equipamentos={equipamentos}
@@ -4363,10 +4360,11 @@ export default function App() {
                 onOpenControle={allowedTabs.includes('controle-equipamentos') ? () => navigateTo('controle-equipamentos') : undefined}
                 combustivelInicial={combustivelViewInicial}
                 combustivelListaSomente={combustivelListaSomente}
+                relatorio={modoRelatorio<'resumo' | 'consumo'>('lancamentos')}
               />
             )}
 
-            {activeTab === 'solicitacoes' && (
+            {(activeTab === 'solicitacoes' || relAberto?.aba === 'solicitacoes') && (
               <SolicitacoesTab
                 solicitacoes={solicitacoes}
                 pessoas={pessoasSuprimentos}
@@ -4378,24 +4376,25 @@ export default function App() {
                 podeApagar={meuAcesso.ehDev}
                 apagadas={solicitacoesApagadas}
                 onExcluir={handleExcluirSolicitacao}
-                subtelaInicial={parteDe('solicitacoes') === 'relatorio' ? 'relatorio' : undefined}
+                relatorio={modoRelatorio('solicitacoes')}
               />
             )}
 
-            {activeTab === 'contratacao' && <ContratacaoTab />}
+            {(activeTab === 'contratacao' || relAberto?.aba === 'contratacao') && <ContratacaoTab relatorio={modoRelatorio('contratacao')} />}
             {activeTab === 'dev' && allowedTabs.includes('dev') && <DevTab pessoasCompras={pessoasSuprimentos} onSalvarPessoasCompras={handleSavePessoasSuprimentos} />}
 
-            {activeTab === 'pluviometro' && (
+            {(activeTab === 'pluviometro' || relAberto?.aba === 'pluviometro') && (
               <PluviometroTab
                 diarios={diariosObra}
                 obras={obras}
                 responsavel={activeUserName}
                 podeEditar={pode(currentUserRole, 'diario-obra', 'editar') || pode(currentUserRole, 'pluviometro', 'editar')}
                 onSave={handleSaveDiarioObra}
+                relatorio={modoRelatorio('pluviometro')}
               />
             )}
 
-            {activeTab === 'programacao' && (
+            {(activeTab === 'programacao' || relAberto?.aba === 'programacao') && (
               <ProgramacaoTab
                 planejamento={planejamentoItens}
                 producao={producaoRegistros}
@@ -4406,7 +4405,7 @@ export default function App() {
                 onSaveProducao={handleSaveProducao}
                 podeApagar={meuAcesso.ehDev}
                 onApagarProducao={handleApagarProducao}
-                abaPedida={parteDe('programacao') === 'avanco' || parteDe('programacao') === 'producao' ? parteDe('programacao') as 'avanco' | 'producao' : undefined}
+                relatorio={modoRelatorio<'avanco' | 'producao' | 'lista'>('programacao')}
               />
             )}
 
@@ -4426,9 +4425,10 @@ export default function App() {
               />
             )}
 
-            {(activeTab === 'controle-equipamentos' || activeTab === 'manutencao') && (
+            {(activeTab === 'controle-equipamentos' || activeTab === 'manutencao' || relAberto?.aba === 'controle-equipamentos' || relAberto?.aba === 'manutencao') && (
               <FrotaManutencao
-                key={`frota-${pedidoFrota.vez}`}
+                key={relAberto ? `relatorio-${relAberto.id}` : `frota-${pedidoFrota.vez}`}
+                relatorio={modoRelatorio<ParteRelatorioFrota>('controle-equipamentos') ?? modoRelatorio<ParteRelatorioFrota>('manutencao')}
                 vistaInicial={activeTab === 'manutencao' ? 'ordens' : pedidoFrota.vista}
                 manutencao={podeAbrir('manutencao') ? {
                   ordensServico,
@@ -4492,7 +4492,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'presenca' && (
+            {(activeTab === 'presenca' || relAberto?.aba === 'presenca') && (
               <ControlePresencaTab
                 funcionarios={funcionarios}
                 empresas={empresas}
@@ -4512,17 +4512,17 @@ export default function App() {
                 onGerenciarEquipes={() => { navigateTo('cadastros'); setPedidoEquipes(atual => atual + 1); }}
                 ehAdmin={currentUserRole === 'admin'}
                 onSalvarLinkDaEquipe={grupo => handleSaveGrupoEquipe(grupo, false)}
-                viewInicial={parteDe('presenca') === 'relatorios' ? 'relatorios' : undefined}
+                relatorio={modoRelatorio('presenca')}
               />
             )}
 
-            {activeTab === 'estacas' && (
+            {(activeTab === 'estacas' || relAberto?.aba === 'estacas') && (
               <EstacasTab
                 controle={controleEstacas}
                 obras={obras}
                 onChange={handleChangeControleEstacas}
                 responsavel={activeUserName}
-                secaoInicial={parteDe('estacas') === 'relatorios' ? 'relatorios' : undefined}
+                relatorio={modoRelatorio('estacas')}
               />
             )}
 

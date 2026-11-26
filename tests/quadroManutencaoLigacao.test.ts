@@ -18,7 +18,8 @@ const idsDasTelas = (acesso: { frota: boolean; manutencao: boolean }) =>
   telasDoTopo(abasFrotaManutencao(acesso, CONTADORES));
 
 test('Frotas e Manutenção é uma aba só: Controle de Frotas e Manutenção abrem a mesma moldura (23/11/2026)', () => {
-  assert.match(app, /\(activeTab === 'controle-equipamentos' \|\| activeTab === 'manutencao'\) && \(\s*<FrotaManutencao/);
+  // A mesma moldura abre os relatórios da frota dentro da guia Relatórios (26/11/2026).
+  assert.match(app, /\(activeTab === 'controle-equipamentos' \|\| activeTab === 'manutencao' \|\| relAberto\?\.aba === 'controle-equipamentos' \|\| relAberto\?\.aba === 'manutencao'\) && \(\s*<FrotaManutencao/);
   assert.doesNotMatch(app, /<ManutencaoTab|<ControleEquipamentosDiarioTab/);
   // Quem tem as duas permissões e chega pelo endereço da Manutenção cai nas ordens dentro da aba única.
   assert.match(app, /activeTab === 'manutencao' && allowedTabs\.includes\('controle-equipamentos'\)[\s\S]{0,200}vista: 'ordens'/);
@@ -35,16 +36,18 @@ test('nenhuma função antiga se perdeu na junção (23/11/2026)', () => {
   // Imprimir e baixar ficam nos cartões de Relatórios da frota (24/11/2026).
   for (const id of ['frota-relatorio-pdf', 'frota-relatorio-excel', 'frota-faltantes-pdf', 'frota-abrir-motoristas']) assert.match(frota, new RegExp(`data-testid="${id}"`));
   // Motoristas abre por Mais ações e Faltando pela faixa de Lançamentos: nenhuma ocupa lugar no topo.
+  // Fechamento e Manutenção do dia são relatórios: abrem só pela guia Relatórios (26/11/2026).
   const todas = idsDasTelas({ frota: true, manutencao: true });
-  assert.ok(!todas.includes('motoristas') && !todas.includes('faltando'));
-  assert.equal(todas.length, Object.keys(VISTA_DA_FROTA).length + Object.keys(VISTA_DA_MANUTENCAO).length - 2);
+  for (const fora of ['motoristas', 'faltando', 'fechamento', 'manutencao-dia']) assert.ok(!todas.includes(fora as never), `${fora} no topo`);
+  assert.equal(todas.length, Object.keys(VISTA_DA_FROTA).length + Object.keys(VISTA_DA_MANUTENCAO).length - 4);
+  assert.match(moldura, /const pedida = relatorio\?\.parte \?\? vistaInicial/);
 });
 
 test('padrão do site: sem segunda fileira, a escolha da tela é a caixinha Ver do AbasDaTela', () => {
   const itens = abasFrotaManutencao({ frota: true, manutencao: true }, CONTADORES);
-  assert.deepEqual(itens.map(item => item.rotulo), ['Quadro', 'Lançamentos', 'Manutenção', 'Relatórios']);
-  // Manutenção e Relatórios são grupos do componente comum, que mostra o "Ver" na mesma linha.
-  assert.deepEqual(itens.filter(item => 'grupo' in item).map(item => item.rotulo), ['Manutenção', 'Relatórios']);
+  assert.deepEqual(itens.map(item => item.rotulo), ['Quadro', 'Lançamentos', 'Manutenção']);
+  // Manutenção é grupo do componente comum, que mostra o "Ver" na mesma linha.
+  assert.deepEqual(itens.filter(item => 'grupo' in item).map(item => item.rotulo), ['Manutenção']);
   assert.match(moldura, /<AbasDaTela<VistaFrotaManutencao>/);
   assert.doesNotMatch(moldura, /SeletorDaSecao/);
   // Lançamentos: a lista do dia é a tela; quem falta abre pela faixa e volta por um botão.

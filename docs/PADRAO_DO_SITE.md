@@ -26,24 +26,24 @@ Versão 1, 23/11/2026, no mapa `padrao-abas/mapa-antes-depois.png`.
 - Cada coisa mora **num lugar só**. Cadastro (pessoa, equipe, máquina, empresa) só em **Cadastros**. Quem pode o quê (acessos, quem assina, quem aprova) só no **Dev**.
 - Nada de aba nova no menu sem passar por este guia.
 - **Dashboards** (25/11/2026): gráficos de pizza, linha e barras com o período 7, 30 ou 90 dias. Cada gráfico mostra o número na legenda (não só a cor) e abre a aba de onde vem o dado.
-- **Relatórios** (25/11/2026): a lista de todos os relatórios do site, por área. Cada linha diz o que tem, se sai em PDF e Excel, e abre a aba de origem já na parte do relatório. O relatório continua morando na aba dele; a guia Relatórios só leva até lá.
+- **Relatórios** (25/11/2026, refeito em 26/11/2026): a lista de todos os relatórios do site, por área. Cada linha diz o que tem e se sai em PDF e Excel. O relatório abre **ali mesmo**, com filtros, PDF e Excel, e um "‹ Relatórios / nome" no topo para voltar à lista. Nenhuma outra aba tem subaba ou botão de relatório.
 
 ## 2. Topo da aba
 
 ```
 Grupo / Nome da aba                                              ● Tudo salvo     ← barra do topo (48 px)
 Nome da aba                                               [⋮] [+ Ação principal N]
-Opção 1   Opção 2 (3)   Opção 3   Relatórios   [Ver: ▾]                           ← subabas sublinhadas
+Opção 1   Opção 2 (3)   Opção 3   [Ver: ▾]                           ← subabas sublinhadas
 ──────────────────────────────────────────────────────────────────────────────
 ```
 
 - A barra do topo só mostra o **caminho** e se está **tudo salvo**. O cabeçalho é da própria tela: título de 18 px, ação principal à direita e as subabas sublinhadas embaixo, com uma linha fina separando dos dados.
 
-1. **No máximo 4 opções.** **Relatórios é sempre a última** (quando a aba tem relatório).
-2. **Nada de segunda fileira de abas ou de botões.** Se uma opção tem mais de uma tela (ex.: Relatórios → Resumo, Histórico), a escolha aparece numa caixinha **"Ver"** ao lado, na mesma linha.
+1. **No máximo 4 opções.** Relatório não é opção do topo: mora na guia Relatórios (26/11/2026).
+2. **Nada de segunda fileira de abas ou de botões.** Se uma opção tem mais de uma tela (ex.: Manutenção → Paradas, Ordens, Histórico), a escolha aparece numa caixinha **"Ver"** ao lado, na mesma linha.
 3. **Lançar nunca é aba.** É o **botão principal** (verde, à direita, com a tecla **N**) e abre em tela cheia.
 4. Coisa rara (importar planilha, lixeira, link, planilha de compras, motoristas) fica no **⋮ Mais ações**, à esquerda do botão principal.
-5. Nomes curtos e iguais em todo o site: **Lançamentos** (lista do que foi lançado), **Relatórios**, **Histórico**, **Pedidos**. Nada de nome técnico.
+5. Nomes curtos e iguais em todo o site: **Lançamentos** (lista do que foi lançado), **Histórico**, **Pedidos**. Nada de nome técnico.
 
 Componentes: `TelaCheia` + `PageHeader` + `AbasDaTela` + `MaisAcoes`.
 
@@ -101,7 +101,7 @@ Componentes: `TelaCheia` + `PageHeader` + `AbasDaTela` + `MaisAcoes`.
 
 ## 8. Checklist de toda tela nova ou alterada
 
-- [ ] Até 4 opções no topo, Relatórios por último, sem segunda fileira
+- [ ] Até 4 opções no topo, sem subaba de relatório, sem segunda fileira
 - [ ] Lançar é botão (tecla N), não aba
 - [ ] Busca + 1 filtro + Filtros; Excel/PDF à direita
 - [ ] Nada repetido em outra aba

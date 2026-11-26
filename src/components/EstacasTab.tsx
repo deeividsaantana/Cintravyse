@@ -11,7 +11,7 @@ import type { ControleEstacas, CravacaoEstaca, LoteEstaca, ObraLocal } from '../
 import { estacasPorFrente, estaCravada, frenteDaEstaca, nomeDaEstaca, resumirEstacas } from '../modules/estacas/avancoEstacas';
 import { reconcileStakeInvoice } from '../utils/stakeOperations';
 import { inativar, somenteAtivos } from '../utils/inativacao';
-import { PageHeader, isoDay } from '../shared/ui';
+import { PageHeader, VoltarAosRelatorios, isoDay, type ModoRelatorio } from '../shared/ui';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { MaisAcoes } from '../shared/ui/MaisAcoes';
@@ -33,13 +33,13 @@ type Props = {
   onChange: (next: ControleEstacas, description: string) => void;
   /** Quem fica registrado no lançamento e na inativação. */
   responsavel?: string;
-  /** Parte que abre primeiro; a aba Relatórios pede 'relatorios'. */
-  secaoInicial?: SecaoEstacas;
+  /** Aberto pela guia Relatórios: mostra só o relatório de estacas. */
+  relatorio?: ModoRelatorio;
 };
 
-export default function EstacasTab({ controle, obras, onChange, responsavel = 'Sistema', secaoInicial = 'visao' }: Props) {
+export default function EstacasTab({ controle, obras, onChange, responsavel = 'Sistema', relatorio }: Props) {
   const hoje = isoDay(new Date());
-  const [secao, setSecao] = useState<SecaoEstacas>(secaoInicial);
+  const [secao, setSecao] = useState<SecaoEstacas>(relatorio ? 'relatorios' : 'visao');
   const [pedido, setPedido] = useState<PedidoDeCravacao>({});
   const [frenteAtual, setFrenteAtual] = useState('');
   const [planejando, setPlanejando] = useState<{ frente?: string } | null>(null);
@@ -139,8 +139,8 @@ export default function EstacasTab({ controle, obras, onChange, responsavel = 'S
             className="estacas-header"
             eyebrow="Operação"
             title="Estacas prancha"
-            abas={<AbasDaTela id="estacas" rotulo="Subtelas de estacas" abas={abas} ativa={secao} onTrocar={escolherSecao} idPainel="estacas-dados" testId="estacas-secao" />}
-            actions={(
+            abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : <AbasDaTela id="estacas" rotulo="Subtelas de estacas" abas={abas} ativa={secao} onTrocar={escolherSecao} idPainel="estacas-dados" testId="estacas-secao" />}
+            actions={relatorio ? undefined : (
               <>
                 {/* Na Visão geral o cartão da frente já traz Total previsto. */}
                 {secao !== 'visao' && (

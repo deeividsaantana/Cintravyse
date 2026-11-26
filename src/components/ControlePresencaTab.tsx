@@ -22,11 +22,11 @@ import {
   Search,
   Undo2,
   X,
-  PieChart,
   Link2,
 } from 'lucide-react';
 import { CartaoIndicador, ConfirmDialog, Modal, PageHeader } from '../shared/ui';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
+import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import LinkPresenca from './cadastros/LinkPresenca';
@@ -138,8 +138,8 @@ interface ControlePresencaTabProps {
    * retrato consolidado sem apagar nada que já esteja presente.
    */
   onRestorePresenceHistory?: () => Promise<{ success: boolean; message: string }>;
-  /** Parte que abre primeiro; a aba Relatórios pede 'relatorios'. */
-  viewInicial?: View;
+  /** Aberta pela guia Relatórios: só o resumo, com o voltar. */
+  relatorio?: ModoRelatorio;
   /** Link geral de presença (só o administrador), aberto por "Mais ações". */
   ehAdmin?: boolean;
   /** Grava só o token do link numa equipe que já existe; equipe nova ou excluída só em Cadastros (A29). */
@@ -235,7 +235,7 @@ export default function ControlePresencaTab({
   onResetPresencaDia,
   pendingPublicSubmissionsCount = 0,
   onRestorePresenceHistory,
-  viewInicial,
+  relatorio,
   onGerenciarEquipes,
   ehAdmin = false,
   onSalvarLinkDaEquipe,
@@ -253,7 +253,7 @@ export default function ControlePresencaTab({
   ), [gruposEquipe, safeFuncionarios, safeRecords]);
   const safeHistory = useMemo(() => (Array.isArray(historicoPresencas) ? historicoPresencas : []).filter(Boolean), [historicoPresencas]);
 
-  const [view, setView] = useState<View>(viewInicial ?? 'ao-vivo');
+  const [view, setView] = useState<View>(relatorio ? 'relatorios' : 'ao-vivo');
   const [referenceDate, setReferenceDate] = useState(today);
   const [dashboardCompany, setDashboardCompany] = useState('todas');
   const [dashboardGroup, setDashboardGroup] = useState('todos');
@@ -763,18 +763,12 @@ export default function ControlePresencaTab({
     setSelectedRecordIds([]);
   };
 
-  // Duas opções no topo: o dia e um grupo com tudo que é consulta. Equipes moram só em Cadastros.
-  // Padrão do site (23/11/2026): o dia, a lista do que foi lançado e
-  // Relatórios por último. O Link de presença fica em "Mais ações".
+  // O dia, a lista do que foi lançado e o histórico. O resumo é relatório:
+  // abre pela guia Relatórios (26/11/2026). O Link de presença fica em "Mais ações".
   const navItems: ReadonlyArray<ItemDasAbas<View>> = [
     { id: 'ao-vivo', rotulo: 'Ao vivo', icone: Radio },
     { id: 'registros', rotulo: 'Registros', icone: FileSpreadsheet },
-    {
-      grupo: 'consulta', rotulo: 'Relatórios', icone: PieChart, abas: [
-        { id: 'relatorios', rotulo: 'Resumo', icone: PieChart },
-        { id: 'historico', rotulo: 'Histórico', icone: History },
-      ],
-    },
+    { id: 'historico', rotulo: 'Histórico', icone: History },
   ];
 
   // Registros e Histórico são tabelas: a área de dados fica do tamanho da tela
@@ -987,12 +981,12 @@ export default function ControlePresencaTab({
 
   return (
     <TelaCheia ref={tabRef} id="presenca-tab" rotulo="Presença" className="text-slate-900"
-      longa={!telaDeTabela} idAbaAtiva={view === 'link' ? undefined : idDaAba('presenca', view)} idDados="presenca-dados" chaveRolagem={view}
+      longa={!telaDeTabela} idAbaAtiva={view === 'link' || relatorio ? undefined : idDaAba('presenca', view)} idDados="presenca-dados" chaveRolagem={view}
       cabecalho={<PageHeader
         eyebrow="Pessoas"
         title="Presença"
-        abas={<AbasDaTela<View> id="presenca" rotulo="Seções do controle de presença" abas={navItems} ativa={view} onTrocar={setView} idPainel="presenca-dados" testId="presenca-aba" />}
-        actions={acaoPrincipal}
+        abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : <AbasDaTela<View> id="presenca" rotulo="Seções do controle de presença" abas={navItems} ativa={view} onTrocar={setView} idPainel="presenca-dados" testId="presenca-aba" />}
+        actions={relatorio ? undefined : acaoPrincipal}
       />}
       faixa={aviso || faixaDaVista ? <>{aviso}{faixaDaVista && <div className={aviso ? 'mt-2' : undefined}>{faixaDaVista}</div>}</> : undefined}
     >

@@ -21,10 +21,13 @@ import {
   VISTA_DE_MANUTENCAO,
   abaMarcada,
   abasFrotaManutencao,
+  ehRelatorioDaFrota,
   vistaPadrao,
   vistaPermitida,
+  type ParteRelatorioFrota,
   type VistaFrotaManutencao,
 } from './frotaManutencao/abasFrotaManutencao';
+import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { AtalhoFaltando } from './frotaManutencao/AtalhoFaltando';
 
 type FixasDaFrota = 'vista' | 'onVista' | 'abas' | 'idAbaAtiva' | 'diaInicial' | 'onDia' | 'onRelacaoMudou' | 'quadro' | 'quadroBusca' | 'onOpenMaintenance';
@@ -38,6 +41,8 @@ interface FrotaManutencaoProps {
   quadro?: (dia: string, verSituacao: () => void, busca: string, verOrdens?: (prefixo: string) => void) => ReactNode;
   /** Vista pedida por outra tela (Painel, link antigo da Manutenção). */
   vistaInicial?: VistaFrotaManutencao;
+  /** Aberta pela guia Relatórios: só o relatório pedido, com o voltar. */
+  relatorio?: ModoRelatorio & { parte: ParteRelatorioFrota };
 }
 
 const CHAVE_VISTA = 'renea_frota_manutencao_vista';
@@ -46,20 +51,21 @@ const ID_ABAS = 'frota';
 const vistaGuardada = (): VistaFrotaManutencao | null => {
   try {
     const salva = window.localStorage.getItem(CHAVE_VISTA) as VistaFrotaManutencao | null;
-    return salva && (VISTA_DA_FROTA[salva] || VISTA_DA_MANUTENCAO[salva]) ? salva : null;
+    return salva && !ehRelatorioDaFrota(salva) && (VISTA_DA_FROTA[salva] || VISTA_DA_MANUTENCAO[salva]) ? salva : null;
   } catch {
     return null;
   }
 };
 
-export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicial }: FrotaManutencaoProps) {
+export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicial, relatorio }: FrotaManutencaoProps) {
   const acesso = useMemo(() => ({ frota: Boolean(frota), manutencao: Boolean(manutencao) }), [frota, manutencao]);
   const [vista, setVistaState] = useState<VistaFrotaManutencao>(() => {
-    const pedida = vistaInicial ?? vistaGuardada();
+    const pedida = relatorio?.parte ?? vistaInicial ?? vistaGuardada();
     return pedida && vistaPermitida(pedida, acesso) ? pedida : vistaPadrao(acesso);
   });
   const setVista = useCallback((proxima: VistaFrotaManutencao) => {
     setVistaState(proxima);
+    if (ehRelatorioDaFrota(proxima)) return;
     try {
       window.localStorage.setItem(CHAVE_VISTA, proxima);
     } catch {
@@ -109,7 +115,7 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
   // caixinha "Ver" do próprio AbasDaTela, na mesma linha, e voltar a um grupo
   // abre a última tela usada nele.
   const itensDoTopo = abasFrotaManutencao(acesso, contadores);
-  const abas = (
+  const abas = relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : (
     <AbasDaTela<VistaFrotaManutencao>
       id={ID_ABAS}
       rotulo="Subtelas de frotas e manutenção"
@@ -124,7 +130,7 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
   const grupoDaVista = itensDoTopo.find(item => 'grupo' in item && item.abas.length > 1 && item.abas.some(aba => aba.id === vista));
   const idAbaAtiva = grupoDaVista && 'grupo' in grupoDaVista ? `${ID_ABAS}-grupo-${grupoDaVista.grupo}` : idDaAba(ID_ABAS, abaMarcada(vista));
   // Lançamentos: quem falta aparece numa faixa, sem segunda fileira de botões.
-  const seletor = (
+  const seletor = relatorio ? undefined : (
     <AtalhoFaltando
       vista={vista}
       maquinas={conferencia?.equipamentos.missing ?? 0}
@@ -151,7 +157,8 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
         onVista={(proxima: FleetView) => trocar(VISTA_DE_FROTA[proxima])}
         abas={abas}
         seletor={seletor}
-        idAbaAtiva={idAbaAtiva}
+        idAbaAtiva={relatorio ? undefined : idAbaAtiva}
+        emRelatorio={Boolean(relatorio)}
         diaInicial={dia}
         onDia={setDia}
         onRelacaoMudou={relacaoMudou}
@@ -171,7 +178,8 @@ export default function FrotaManutencao({ frota, manutencao, quadro, vistaInicia
         onSubtela={(proxima: Subtela) => trocar(VISTA_DE_MANUTENCAO[proxima])}
         abas={abas}
         seletor={seletor}
-        idAbaAtiva={idAbaAtiva}
+        idAbaAtiva={relatorio ? undefined : idAbaAtiva}
+        emRelatorio={Boolean(relatorio)}
         buscaInicial={pedidoOrdens.prefixo}
         onVerNoQuadro={verNoQuadro}
       />
