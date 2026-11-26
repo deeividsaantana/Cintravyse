@@ -120,7 +120,7 @@ export default function VisaoEstacas({ hoje, estacas, frentes, frenteAtual, onFr
                   type="button"
                   aria-pressed={item.frente === frente.frente}
                   onClick={() => { onFrente(item.frente); setEscolhidaId(null); }}
-                  className={`min-h-10 shrink-0 rounded-full border px-4 text-sm font-semibold transition duration-200 ${FOCO} ${item.frente === frente.frente ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`}
+                  className={`min-h-10 shrink-0 rounded-full border px-4 text-sm font-semibold transition duration-200 ${FOCO} ${item.frente === frente.frente ? 'border-slate-400 bg-slate-100 text-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`}
                 >
                   {item.frente} <span className="tabular-nums opacity-80">{numero(item.porcentagem, 0)}%</span>
                 </button>

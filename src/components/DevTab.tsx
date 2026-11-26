@@ -508,7 +508,7 @@ export default function DevTab({ pessoasCompras, onSalvarPessoasCompras }: DevTa
         <div className={`${selecionada ? 'max-lg:hidden' : ''} min-h-0 min-w-0 lg:h-full`}>{listaDePessoas}</div>
         <div className={`${selecionada ? '' : 'max-lg:hidden'} min-h-0 min-w-0 overflow-y-auto`}>
           {selecionada ? detalhe(selecionada) : (
-            <div className={`${CARTAO} grid h-full place-items-center p-8 text-center text-sm text-slate-600`} data-dev-reveal>
+            <div className="grid h-full place-items-center rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500" data-dev-reveal>
               Escolha uma pessoa na lista para ver e mudar o que ela vê e faz.
             </div>
           )}

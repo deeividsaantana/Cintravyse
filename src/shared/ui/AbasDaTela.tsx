@@ -219,7 +219,9 @@ export function AbasDaTela<T extends string>({ abas, ativa, onTrocar, rotulo, id
   });
 
   return (
-    <div className={cn('renea-abas-da-tela flex min-w-0 max-w-full flex-wrap items-center gap-2', className)}>
+    // Uma aba só não é escolha: fica para o leitor de tela, some da vista
+    // (o nome já está no caminho do topo; padrão Cintravyse, 26/11/2026).
+    <div className={cn('renea-abas-da-tela flex min-w-0 max-w-full flex-wrap items-center gap-2', primeiraLinha.length === 1 && 'renea-abas-da-tela--unica', className)}>
       <LinhaDeAbas botoes={primeiraLinha} rotulo={rotulo} testId={testId} />
       {grupoAtivo && grupoAtivo.abas.length > 1 && (
         <SeletorVer abas={grupoAtivo.abas} ativa={ativa} onTrocar={onTrocar} rotulo={`${rotulo}: ${grupoAtivo.rotulo}`} testId={testId ? `${testId}-grupo` : undefined} />

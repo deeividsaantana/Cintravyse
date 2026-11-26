@@ -150,7 +150,7 @@ export default function RelatoriosEstacas({ hoje, estacas }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div role="group" aria-label="Tipo de relatório" className="flex gap-2 overflow-x-auto pb-1">
             {RELATORIOS.map(({ id, nome, Icone }) => (
-              <button key={id} type="button" aria-pressed={relatorio === id} onClick={() => setRelatorio(id)} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition duration-200 ${FOCO} ${relatorio === id ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`}>
+              <button key={id} type="button" aria-pressed={relatorio === id} onClick={() => setRelatorio(id)} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition duration-200 ${FOCO} ${relatorio === id ? 'border-slate-400 bg-slate-100 text-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`}>
                 <Icone className="size-4" aria-hidden="true" /> {nome}
               </button>
             ))}

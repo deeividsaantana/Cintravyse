@@ -151,15 +151,20 @@ export default function PluviometroTab({ diarios, obras, responsavel, podeEditar
         ) : (
           <section className={`${CARTAO} min-w-0 p-3`}>
             <div className="mb-2 flex items-center justify-between gap-3 border-b border-slate-200 pb-2">
-              <h2 className="text-base font-black text-slate-900">Lançamentos do mês</h2>
+              <h2 className="text-[15px] font-semibold text-slate-900">Lançamentos do mês</h2>
               <span className="shrink-0 text-xs font-semibold text-slate-500">{resumo.diasComChuva} com chuva · {resumo.diasSemDiario} sem registro</span>
             </div>
             <div className="divide-y divide-slate-100">
               {registrosDoMes.length === 0 && <p className="p-5 text-sm text-slate-600">Nenhum lançamento neste mês.{podeEditar ? ' Toque em "Novo lançamento" ou aperte N.' : ''}</p>}
               {[...registrosDoMes].sort((a, b) => b.data.localeCompare(a.data)).map(item => (
-                <button key={item.id} type="button" onClick={() => abrir(item.data, item.obraId || '')} className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-emerald-50">
-                  <span className="font-semibold text-slate-800">{new Date(`${item.data}T12:00:00`).toLocaleDateString('pt-BR')}{item.obraId ? ` · ${obras.find(obra => obra.id === item.obraId)?.nome ?? 'Obra'}` : ''}</span>
-                  <span className="text-slate-600">{item.precipitacaoMm ?? 0} mm · {item.climaManha}</span>
+                // Linha de tabela: dia, tempo com o pontinho da cor e a chuva à direita (26/11/2026).
+                <button key={item.id} type="button" onClick={() => abrir(item.data, item.obraId || '')} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_4.5rem] items-center gap-4 px-4 py-2 text-left text-sm hover:bg-slate-50">
+                  <span className="truncate font-medium tabular-nums text-slate-800">{new Date(`${item.data}T12:00:00`).toLocaleDateString('pt-BR')}{item.obraId ? <span className="font-normal text-slate-500"> · {obras.find(obra => obra.id === item.obraId)?.nome ?? 'Obra'}</span> : ''}</span>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                    <span aria-hidden="true" className={`size-2 rounded-full ${/impratic/i.test(item.climaManha ?? '') ? 'bg-rose-500' : Number(item.precipitacaoMm) > 0 ? 'bg-sky-500' : 'bg-slate-300'}`} />
+                    {item.climaManha}
+                  </span>
+                  <span className="text-right font-semibold tabular-nums text-slate-900">{item.precipitacaoMm ?? 0} <span className="font-normal text-slate-500">mm</span></span>
                 </button>
               ))}
             </div>
