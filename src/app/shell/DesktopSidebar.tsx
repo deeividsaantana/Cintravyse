@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronsLeft, ChevronsRight, LogOut, Search } from 'lucide-react';
 import { Avatar } from '../../shared/ui/Avatar';
 import type { NavigationGroupView } from './NavigationMenu';
-import { CartaoAmbiente, MarcaProduto, SimboloProduto } from '../../shared/ui/MarcaProduto';
+import { MarcaProduto, SimboloProduto } from '../../shared/ui/MarcaProduto';
 import { APP_VERSION_LABEL } from '../version';
 import { FOCO } from '../../components/cadastros/estilos';
 
@@ -90,7 +90,6 @@ export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirP
         </button>
       ) : (
         <div className="space-y-2 px-2.5 pt-2.5">
-          <CartaoAmbiente />
           {onPesquisar && (
             <button type="button" onClick={onPesquisar} className={`flex h-8 w-full items-center gap-2 rounded-md border border-[#e6e8eb] bg-white px-2.5 text-[0.8125rem] text-slate-500 hover:border-slate-300 ${FOCO}`}>
               <Search className="size-3.5 shrink-0" strokeWidth={ICON_STROKE} aria-hidden="true" />

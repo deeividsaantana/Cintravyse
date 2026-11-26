@@ -1,8 +1,6 @@
 import { CLIENTE, PRODUTO } from '../../config/marca';
 import logoClienteEscuro from '../../assets/images/logo-renea-dark.svg';
 import logoClienteClaro from '../../assets/images/logo-renea-branco.png';
-import simboloCliente from '../../assets/images/logo-renea-simbolo.svg';
-import { OBRA } from '../../config/obra';
 
 /**
  * Símbolo do produto: o C da Cintravyse recebe uma rota diagonal, como uma
@@ -53,23 +51,5 @@ export function AmbienteCliente({ claro = false, className = '' }: { claro?: boo
       <span className={`text-xs font-semibold ${claro ? 'text-[#8dc4ad]' : 'text-slate-600'}`}>Ambiente</span>
       <img src={claro ? logoClienteClaro : logoClienteEscuro} alt={CLIENTE.nome} className="h-5 w-auto" />
     </span>
-  );
-}
-
-/**
- * Ambiente ativo no jeito dos ERPs (seletor de empresa, como no Odoo),
- * aprovado em 25/11/2026: o símbolo da RENEA num quadradinho, o nome da
- * empresa e embaixo "Ambiente ativo · obra". O cartão antigo (palavra solta e
- * logo inteira) o Deivid achou feio.
- */
-export function CartaoAmbiente({ className = '' }: { className?: string }) {
-  return (
-    <div className={`renea-ambiente ${className}`} aria-label={`Ambiente ${CLIENTE.nome} ativo, obra ${OBRA.nomeCurto}`}>
-      <span className="renea-ambiente__selo" aria-hidden="true"><img src={simboloCliente} alt="" /></span>
-      <span className="min-w-0 leading-tight">
-        <strong className="block truncate text-[0.8125rem] font-semibold text-slate-900">{CLIENTE.nome}</strong>
-        <span className="block truncate text-xs text-slate-500">Ambiente ativo · {OBRA.nomeCurto}</span>
-      </span>
-    </div>
   );
 }

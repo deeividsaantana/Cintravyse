@@ -21,7 +21,7 @@ Versão 1, 23/11/2026, no mapa `padrao-abas/mapa-antes-depois.png`.
 | Pessoas | Presença, Contratação |
 | Administração | Cadastros, Dev |
 
-- Menu cinza-claro (`#f7f8f9`), sempre à vista no computador: logo Cintravyse em cima, o **seletor de ambiente** (símbolo da RENEA num quadradinho, "RENEA Infraestrutura", "Ambiente ativo · obra"), a busca **Buscar ou ir para… Ctrl K**, os grupos e, no rodapé, quem entrou (abre Meu perfil) e o botão de sair.
+- Menu cinza-claro (`#f7f8f9`), sempre à vista no computador: logo Cintravyse em cima (a marca RENEA não aparece no menu: só na tela de entrada e nos PDFs, 26/11/2026), a busca **Buscar ou ir para… Ctrl K**, os grupos e, no rodapé, quem entrou (abre Meu perfil) e o botão de sair.
 - Item aberto: fundo branco com borda fina e ícone verde. Linhas de 32 px.
 - Cada coisa mora **num lugar só**. Cadastro (pessoa, equipe, máquina, empresa) só em **Cadastros**. Quem pode o quê (acessos, quem assina, quem aprova) só no **Dev**.
 - Nada de aba nova no menu sem passar por este guia.
