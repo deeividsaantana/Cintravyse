@@ -425,28 +425,6 @@ export default function ControlePresencaTab({
     };
   }, [activeGroups, dashboardBranch, dashboardCompany, dashboardGroup, dashboardPendingGroups.length, dashboardRecords, dashboardRole, dashboardSite, employeeById]);
 
-  /** Ultimos 7 dias com movimento, do mais antigo para o mais recente. */
-  const tendencia = useMemo(() => {
-    const parsed = new Date(`${referenceDate}T12:00:00`);
-    const base = Number.isNaN(parsed.getTime()) ? new Date(`${today}T12:00:00`) : parsed;
-    return Array.from({ length: 7 }, (_, index) => {
-      const dia = new Date(base);
-      dia.setDate(dia.getDate() - (6 - index));
-      const iso = dia.toISOString().slice(0, 10);
-      const doDia = safeRecords.filter(record => record.data === iso && recordMatchesDashboard(record));
-      return {
-        iso,
-        rotulo: iso.slice(8, 10) + '/' + iso.slice(5, 7),
-        presentes: doDia.filter(record => record.status === 'Presente').length,
-        total: doDia.length,
-      };
-    });
-  }, [dashboardBranch, dashboardCompany, dashboardGroup, dashboardRole, dashboardSite, dashboardStatus, employeeById, referenceDate, safeRecords, today]);
-
-  const picoTendencia = useMemo(
-    () => Math.max(1, ...tendencia.map(item => item.presentes)),
-    [tendencia],
-  );
 
   /** Distribuicao completa das situacoes do dia, nao so presente/ausente. */
   const distribuicao = useMemo(() => STATUS_OPTIONS
@@ -483,7 +461,6 @@ export default function ControlePresencaTab({
     dashboardRecords.forEach(record => mapa.set(record.funcao || 'Função não informada', (mapa.get(record.funcao || 'Função não informada') || 0) + 1));
     return [...mapa.entries()].map(([funcao, total]) => ({ funcao, total })).sort((a, b) => b.total - a.total);
   }, [dashboardRecords]);
-  const picoFuncoes = Math.max(1, ...funcoesDoDia.map(item => item.total));
 
   /** Quanta gente cada equipe confirmou no recorte, da maior para a menor. */
   const equipesDoDia = useMemo(() => {
@@ -495,7 +472,6 @@ export default function ControlePresencaTab({
     });
     return [...mapa.entries()].map(([nome, dados]) => ({ nome, ...dados })).sort((a, b) => b.total - a.total);
   }, [dashboardRecords]);
-  const picoEquipes = Math.max(1, ...equipesDoDia.map(item => item.total));
 
   /** Quem esta ausente hoje, para o administrativo agir sem trocar de aba. */
   const ausentesDoDia = useMemo(
@@ -523,25 +499,6 @@ export default function ControlePresencaTab({
       });
     });
 
-    // As barras crescem por escala, não por altura/largura. Animar tamanho
-    // obriga o navegador a refazer o layout a cada quadro — no celular da obra
-    // isso engasga. Escala roda na GPU e é o que as regras do projeto pedem.
-    const trendBars = scope.querySelectorAll<HTMLElement>('[data-trend-bar]');
-    trendBars.forEach(bar => { bar.style.height = `${bar.dataset.pct}%`; bar.style.transformOrigin = 'bottom'; });
-    if (!reduceMotion) {
-      gsap.fromTo(trendBars, { scaleY: 0.02 }, {
-        scaleY: 1, duration: 0.6, ease: 'power3.out', stagger: 0.05, delay: 0.15,
-      });
-    }
-
-    const distBars = scope.querySelectorAll<HTMLElement>('[data-dist-bar]');
-    distBars.forEach(bar => { bar.style.width = `${bar.dataset.pct}%`; bar.style.transformOrigin = 'left'; });
-    if (!reduceMotion) {
-      gsap.fromTo(distBars, { scaleX: 0 }, {
-        scaleX: 1, duration: 0.7, ease: 'power3.out', stagger: 0.06, delay: 0.1,
-      });
-    }
-
     // A barra do efetivo confirmado enche da esquerda, junto com o número.
     const barraEfetivo = scope.querySelector<HTMLElement>('[data-barra-efetivo]');
     if (barraEfetivo && !reduceMotion) {
@@ -560,7 +517,7 @@ export default function ControlePresencaTab({
         },
       );
     }
-  }, { scope: liveViewRef, dependencies: [view, metrics.present, tendencia, distribuicao] });
+  }, { scope: liveViewRef, dependencies: [view, metrics.present, distribuicao] });
 
   // Registros e histórico são listas longas de conferência. A mesma cascata
   // curta do painel ao vivo dá referência de ordem sem atrasar a leitura.
@@ -1071,33 +1028,13 @@ export default function ControlePresencaTab({
             </div>
           </div>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <article data-cartao-painel className={`renea-card ${PANEL} flex flex-col p-5 md:col-span-2`}>
-                <p className="text-xs font-bold text-slate-500">Confirmados nos últimos 7 dias</p>
-                <div className="mt-5 flex min-h-28 flex-1 items-end gap-2">
-                  {tendencia.map(item => (
-                    <button type="button" key={item.iso} onClick={() => setReferenceDate(item.iso)} className="group flex h-full flex-1 flex-col items-center gap-1" title={`Ver ${item.presentes} presente(s) em ${item.rotulo}`}>
-                      <span className="text-xs font-bold tabular-nums text-slate-500">{item.presentes || ''}</span>
-                      <div className="flex w-full flex-1 items-end">
-                        <div
-                          data-trend-bar
-                          data-pct={Math.max(3, (item.presentes / picoTendencia) * 100)}
-                          className={`w-full cursor-pointer rounded-t-md transition-colors duration-200 ${item.iso === referenceDate ? 'bg-[#176b4d]' : 'bg-emerald-200 group-hover:bg-emerald-300'}`}
-                        />
-                      </div>
-                      <span className="text-xs font-bold tabular-nums text-slate-500">{item.rotulo}</span>
-                    </button>
-                  ))}
-                </div>
-              </article>
-
+            <div className="grid gap-3 md:grid-cols-3">
               <article data-cartao-painel className={`renea-card ${PANEL} p-5`}>
                 <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold text-slate-500">Efetivo por função</p><span className="text-xs font-black text-emerald-800">{referenceDate.split('-').reverse().join('/')}</span></div>
                 {funcoesDoDia.length === 0 ? <p className="mt-6 text-sm text-slate-500">Nenhuma função registrada neste recorte.</p> : (
-                  <div className="mt-4 space-y-3">
-                    {funcoesDoDia.slice(0, 7).map(item => <button type="button" key={item.funcao} onClick={() => setDashboardRole(item.funcao)} className="group block w-full text-left" aria-label={`Filtrar ${item.funcao}: ${item.total}`}>
+                  <div className="mt-3 divide-y divide-slate-100">
+                    {funcoesDoDia.slice(0, 7).map(item => <button type="button" key={item.funcao} onClick={() => setDashboardRole(item.funcao)} className="group block w-full py-2 text-left" aria-label={`Filtrar ${item.funcao}: ${item.total}`}>
                       <div className="flex items-center justify-between gap-3 text-xs"><span className="truncate font-bold text-slate-700 group-hover:text-emerald-800">{item.funcao}</span><strong className="tabular-nums text-slate-900">{item.total}</strong></div>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><span data-dist-bar data-pct={(item.total / picoFuncoes) * 100} className="block h-full rounded-full bg-emerald-500" /></div>
                     </button>)}
                   </div>
                 )}
@@ -1108,9 +1045,9 @@ export default function ControlePresencaTab({
                 {distribuicao.length === 0 ? (
                   <p className="mt-6 text-sm text-slate-500">Nenhum envio recebido para {referenceDate.split('-').reverse().join('/')}.</p>
                 ) : (
-                  <ul className="mt-4 space-y-3">
+                  <ul className="mt-3 divide-y divide-slate-100">
                     {distribuicao.map(item => (
-                      <li key={item.status}><button type="button" onClick={() => setDashboardStatus(item.status)} className="group block w-full text-left">
+                      <li key={item.status}><button type="button" onClick={() => setDashboardStatus(item.status)} className="group block w-full py-2 text-left">
                         <div className="flex items-center justify-between gap-3 text-xs font-bold">
                           <span className="flex items-center gap-1.5 text-slate-700 group-hover:text-emerald-800">
                             {item.status}
@@ -1122,23 +1059,19 @@ export default function ControlePresencaTab({
                           </span>
                           <span className="tabular-nums text-slate-500">{item.total}</span>
                         </div>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                          <div data-dist-bar data-pct={(item.total / Math.max(1, dashboardRecords.length)) * 100} className="h-full rounded-full bg-[#176b4d]" />
-                        </div>
                       </button></li>
                     ))}
                   </ul>
                 )}
               </article>
 
-              <article data-cartao-painel className={`renea-card ${PANEL} p-5 md:col-span-2`}>
+              <article data-cartao-painel className={`renea-card ${PANEL} p-5`}>
                 <p className="text-xs font-bold text-slate-500">Efetivo por equipe</p>
                 {equipesDoDia.length === 0 ? <p className="mt-6 text-sm text-slate-500">Nenhuma equipe com envio neste recorte.</p> : (
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-3 divide-y divide-slate-100">
                     {equipesDoDia.slice(0, 7).map(item => (
-                      <button type="button" key={item.nome} onClick={() => setDashboardGroup(item.id || 'todos')} className="group block w-full text-left" aria-label={`Filtrar ${item.nome}: ${item.total} pessoa(s)`}>
+                      <button type="button" key={item.nome} onClick={() => setDashboardGroup(item.id || 'todos')} className="group block w-full py-2 text-left" aria-label={`Filtrar ${item.nome}: ${item.total} pessoa(s)`}>
                         <div className="flex items-center justify-between gap-3 text-xs"><span className="truncate font-bold text-slate-700 group-hover:text-emerald-800">{item.nome}</span><strong className="tabular-nums text-slate-900">{item.total}</strong></div>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><span data-dist-bar data-pct={(item.total / picoEquipes) * 100} className="block h-full rounded-full bg-[#176b4d]" /></div>
                       </button>
                     ))}
                   </div>
