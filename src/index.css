@@ -1483,3 +1483,31 @@ h1, h2, h3 { letter-spacing: -.01em; }
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
+
+/* Rodada 4 (26/11/2026): casca de ERP profissional, fundo branco.
+   Menu branco com grupos em caixa-alta e item ativo marcado por barra verde. */
+#app-root .erp-sidebar, .erp-sidebar { background: #fff; border-right: 1px solid var(--cv-linha); }
+.erp-sidebar > div:first-child { min-height: 3.5rem; border-bottom: 1px solid var(--cv-linha); }
+.erp-sidebar nav section > p { color: #6b7280; font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.erp-sidebar .erp-sidebar__item { min-height: 2.125rem; color: #374151; }
+.erp-sidebar .erp-sidebar__item:hover { background: #f4f6f5; color: var(--cv-texto); }
+.erp-sidebar .erp-sidebar__item--ativo, .erp-sidebar .erp-sidebar__item--ativo:hover { background: var(--cv-verde-claro); box-shadow: inset 3px 0 0 var(--cv-verde); color: var(--cv-texto); font-weight: 600; }
+#main-tab-viewport, #app-root { background: #fff; }
+.erp-topbar { background: #fff; }
+
+/* Faixa do título da tela: nome do módulo grande e firme. */
+#main-tab-viewport .renea-page-header__copy :is(h1, h2) { font-size: 1.25rem; font-weight: 650; letter-spacing: -.015em; }
+.renea-page-header__linha { min-height: 4rem; }
+.renea-abas > [role="tab"] { font-size: .8125rem; font-weight: 550; }
+.renea-abas > [role="tab"][aria-selected="true"] { border-bottom-color: var(--cv-verde); color: var(--cv-texto); }
+
+/* Tabelas de sistema: cabeçalho em caixa-alta pequena, linhas de 38 px, zebra leve. */
+#main-tab-viewport table { background: #fff; }
+#main-tab-viewport table thead th { height: 2.25rem; background: #f6f7f7; color: #4b5563; font-size: .75rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+#main-tab-viewport table tbody tr:nth-child(even) > td { background: #fbfcfc; }
+#main-tab-viewport table tbody tr:hover > td { background: #eef6f2; }
+#main-tab-viewport table tbody td { font-size: .8125rem; }
+
+/* Cartões e blocos: branco sobre o cinza, linha nítida e sombra mínima. */
+#main-tab-viewport .renea-card, #main-tab-viewport .cv-bloco { border-color: #dde1e4; background: #fff; box-shadow: 0 1px 2px rgb(16 24 40 / .04); }
+.renea-faixa-numeros { border-color: #dde1e4; background: #dde1e4; }

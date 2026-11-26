@@ -25,28 +25,16 @@ export type NavigationItem = {
 };
 
 export const NAVIGATION_GROUPS = [
-  {
-    label: 'Visão geral',
-    items: [
-      { id: 'dashboard', label: 'Visão geral', icon: LayoutDashboard },
-      // Gráficos de pizza, linha e barras numa aba própria (25/11/2026).
-      { id: 'dashboards', label: 'Dashboards', icon: PieChart },
-      // Todos os relatórios num lugar só (25/11/2026).
-      { id: 'relatorios', label: 'Relatórios', icon: FileText },
-    ],
-  },
+  // Menu na ordem do guia do ERP (26/11/2026): Operação, Frotas, Suprimentos,
+  // Pessoas, Gestão e Desenvolvimento.
   {
     label: 'Operação',
     items: [
-      { id: 'pluviometro', label: 'Pluviômetro', icon: CloudRain },
+      { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
+      { id: 'presenca', label: 'Presença e Controle', icon: Users },
       { id: 'programacao', label: 'Programação', icon: CalendarRange },
       { id: 'estacas', label: 'Controle de Estacas', icon: Hammer },
-    ],
-  },
-  {
-    label: 'Suprimentos',
-    items: [
-      { id: 'solicitacoes', label: 'Solicitações e Compras', icon: ShoppingCart },
+      { id: 'pluviometro', label: 'Pluviômetro', icon: CloudRain },
     ],
   },
   {
@@ -59,16 +47,29 @@ export const NAVIGATION_GROUPS = [
     ],
   },
   {
-    label: 'Pessoas',
+    label: 'Suprimentos',
     items: [
-      { id: 'presenca', label: 'Presença e Controle', icon: Users },
-      { id: 'contratacao', label: 'Solicitação de Contratação', icon: FileSignature },
+      { id: 'solicitacoes', label: 'Solicitações e Compras', icon: ShoppingCart },
     ],
   },
   {
-    label: 'Administração',
+    label: 'Pessoas',
     items: [
+      { id: 'contratacao', label: 'Solicitação de Contratação', icon: FileSignature },
       { id: 'cadastros', label: 'Cadastros', icon: FolderPlus },
+    ],
+  },
+  {
+    label: 'Gestão',
+    items: [
+      // Todos os relatórios num lugar só e os gráficos numa aba própria (25/11/2026).
+      { id: 'relatorios', label: 'Relatórios', icon: FileText },
+      { id: 'dashboards', label: 'Dashboards', icon: PieChart },
+    ],
+  },
+  {
+    label: 'Desenvolvimento',
+    items: [
       { id: 'dev', label: 'Dev', icon: ShieldCheck },
     ],
   },
@@ -79,31 +80,29 @@ export const NAVIGATION_GROUPS = [
  * ROLE_ACCESS; endereço antigo passa por MODULE_REDIRECTS.
  */
 export const PRIMARY_MODULE_IDS = [
+  // Mesma ordem do menu (guia do ERP, 26/11/2026).
   'dashboard',
-  'dashboards',
-  'relatorios',
-  'pluviometro',
+  'presenca',
   'programacao',
   // Controle de Estacas é aba própria: a importação com prévia/lote/lineage
   // vive dentro dela (decisão confirmada com o usuário em 2026-09-22).
   'estacas',
-  // Solicitações de campo → Suprimentos → aprovação → entrega, pedido em
-  // 11/11/2026. Quem faz o quê dentro dela é por pessoa (utils/solicitacoes).
-  'solicitacoes',
+  'pluviometro',
   'controle-equipamentos',
   'manutencao',
   'lancamentos',
+  // Solicitações de campo → Suprimentos → aprovação → entrega, pedido em
+  // 11/11/2026. Quem faz o quê dentro dela é por pessoa (utils/solicitacoes).
+  'solicitacoes',
   'colaboradores',
-  'presenca',
   // Solicitação de Contratação assinável (14/11/2026): quem pede assina, o RH
   // assina e o gerente assina. Quem assina o quê é conferido no servidor
   // (api/contratacao.js), não pelo perfil do menu.
   'contratacao',
-  // Cadastros ficou sem caminho na limpeza de 2026-09-24: o atalho dentro de
-  // Administração levava a uma aba que nenhum perfil tinha em ROLE_ACCESS, e
-  // o App devolvia a pessoa ao Painel. Voltou ao menu lateral como aba
-  // própria.
+  // Cadastros voltou ao menu lateral como aba própria (2026-09-24).
   'cadastros',
+  'relatorios',
+  'dashboards',
   // Painel Dev de acessos (16/11/2026): é teto do administrador, mas só abre
   // para quem o banco marca como dev (erp_dev_owners). Quem decide é
   // abasLiberadas em src/utils/regrasDeAcesso.ts, e a API confere de novo.
@@ -139,7 +138,7 @@ export const MODULE_REDIRECTS: Readonly<Record<string, string>> = {
 };
 
 const SIDEBAR_GROUP_LABELS: Record<string, string> = {
-  Equipamentos: 'Frota',
+  Equipamentos: 'Frotas',
   Análise: 'Gestão',
 };
 
@@ -149,6 +148,9 @@ const SIDEBAR_GROUP_LABELS: Record<string, string> = {
 // com o menu mais estreito.
 const SIDEBAR_ITEM_LABELS: Record<string, string> = {
   'controle-equipamentos': 'Frotas e Manutenção',
+  presenca: 'Presença',
+  estacas: 'Estacas',
+  solicitacoes: 'Solicitações e Compras',
   contratacao: 'Contratação',
 };
 
