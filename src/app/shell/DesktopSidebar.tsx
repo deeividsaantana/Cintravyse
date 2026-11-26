@@ -65,7 +65,7 @@ export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirP
       aria-label="Navegação principal"
     >
       <div className={`flex min-h-[3.25rem] items-center border-b border-slate-200 ${collapsed ? 'justify-center px-2' : 'justify-between pl-4 pr-2'}`}>
-        {collapsed ? <SimboloProduto className="size-8" claro /> : <MarcaProduto claro />}
+        {collapsed ? <SimboloProduto className="size-8" /> : <MarcaProduto />}
         {!collapsed && (
           <button
             type="button"
