@@ -1485,10 +1485,10 @@ h1, h2, h3 { letter-spacing: -.01em; }
 }
 
 /* Rodada 4 (26/11/2026): casca de ERP profissional, fundo branco.
-   Menu branco com grupos em caixa-alta e item ativo marcado por barra verde. */
+   Menu branco com grupos e item ativo marcado por barra verde. */
 #app-root .erp-sidebar, .erp-sidebar { background: #fff; border-right: 1px solid var(--cv-linha); }
 .erp-sidebar > div:first-child { min-height: 3.5rem; border-bottom: 1px solid var(--cv-linha); }
-.erp-sidebar nav section > p { color: #6b7280; font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.erp-sidebar nav section > p { color: #6b7280; font-size: .75rem; font-weight: 600; }
 .erp-sidebar .erp-sidebar__item { min-height: 2.125rem; color: #374151; }
 .erp-sidebar .erp-sidebar__item:hover { background: #f4f6f5; color: var(--cv-texto); }
 .erp-sidebar .erp-sidebar__item--ativo, .erp-sidebar .erp-sidebar__item--ativo:hover { background: var(--cv-verde-claro); box-shadow: inset 3px 0 0 var(--cv-verde); color: var(--cv-texto); font-weight: 600; }
@@ -1501,9 +1501,9 @@ h1, h2, h3 { letter-spacing: -.01em; }
 .renea-abas > [role="tab"] { font-size: .8125rem; font-weight: 550; }
 .renea-abas > [role="tab"][aria-selected="true"] { border-bottom-color: var(--cv-verde); color: var(--cv-texto); }
 
-/* Tabelas de sistema: cabeçalho em caixa-alta pequena, linhas de 38 px, zebra leve. */
+/* Tabelas de sistema: cabeçalho firme de 12 px (sem caixa-alta, regra de 25/11), zebra leve. */
 #main-tab-viewport table { background: #fff; }
-#main-tab-viewport table thead th { height: 2.25rem; background: #f6f7f7; color: #4b5563; font-size: .75rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+#main-tab-viewport table thead th { height: 2.25rem; background: #f6f7f7; color: #4b5563; font-size: .75rem; font-weight: 600; }
 #main-tab-viewport table tbody tr:nth-child(even) > td { background: #fbfcfc; }
 #main-tab-viewport table tbody tr:hover > td { background: #eef6f2; }
 #main-tab-viewport table tbody td { font-size: .8125rem; }
