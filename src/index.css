@@ -1484,14 +1484,28 @@ h1, h2, h3 { letter-spacing: -.01em; }
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
-/* Rodada 4 (26/11/2026): casca de ERP profissional, fundo branco.
-   Menu branco com grupos e item ativo marcado por barra verde. */
-#app-root .erp-sidebar, .erp-sidebar { background: #fff; border-right: 1px solid var(--cv-linha); }
-.erp-sidebar > div:first-child { min-height: 3.5rem; border-bottom: 1px solid var(--cv-linha); }
-.erp-sidebar nav section > p { color: #6b7280; font-size: .75rem; font-weight: 600; }
-.erp-sidebar .erp-sidebar__item { min-height: 2.125rem; color: #374151; }
-.erp-sidebar .erp-sidebar__item:hover { background: #f4f6f5; color: var(--cv-texto); }
-.erp-sidebar .erp-sidebar__item--ativo, .erp-sidebar .erp-sidebar__item--ativo:hover { background: var(--cv-verde-claro); box-shadow: inset 3px 0 0 var(--cv-verde); color: var(--cv-texto); font-weight: 600; }
+/* Rodada 4 (26/11/2026): casca de ERP profissional. Menu lateral escuro
+   (grafite esverdeado) que emoldura a área de trabalho branca. */
+:root { --cv-menu-escuro: #12201b; --cv-menu-linha: rgb(255 255 255 / .08); --cv-menu-texto: #cfd8d4; --cv-menu-mudo: #95a59e; }
+#app-root .erp-sidebar, .erp-sidebar { background: var(--cv-menu-escuro); border-right: 0; color: var(--cv-menu-texto); }
+.erp-sidebar > div:first-child { min-height: 3.5rem; border-bottom: 1px solid var(--cv-menu-linha); }
+.erp-sidebar > div:last-child { border-top: 1px solid var(--cv-menu-linha); }
+.erp-sidebar nav section > p { color: var(--cv-menu-mudo); font-size: .75rem; font-weight: 600; }
+.erp-sidebar nav section + section { border-top-color: var(--cv-menu-linha); }
+.erp-sidebar .erp-sidebar__item { min-height: 2.125rem; color: var(--cv-menu-texto); }
+.erp-sidebar .erp-sidebar__item svg { color: var(--cv-menu-mudo); }
+.erp-sidebar .erp-sidebar__item:hover { background: rgb(255 255 255 / .06); color: #fff; }
+.erp-sidebar .erp-sidebar__item--ativo, .erp-sidebar .erp-sidebar__item--ativo:hover { background: rgb(255 255 255 / .1); box-shadow: inset 3px 0 0 #3fbf8a; color: #fff; font-weight: 600; }
+.erp-sidebar .erp-sidebar__item--ativo svg { color: #6fdaa9; }
+.erp-sidebar button[class*="border-[#e6e8eb]"] { border-color: var(--cv-menu-linha); background: rgb(255 255 255 / .05); color: var(--cv-menu-mudo); }
+.erp-sidebar button[class*="border-[#e6e8eb]"]:hover { border-color: rgb(255 255 255 / .18); color: #fff; }
+.erp-sidebar kbd { border-color: var(--cv-menu-linha); color: var(--cv-menu-mudo); }
+.erp-sidebar > div:first-child button, .erp-sidebar > button { color: var(--cv-menu-mudo); }
+.erp-sidebar > div:first-child button:hover, .erp-sidebar > button:hover { background: rgb(255 255 255 / .08); color: #fff; }
+.erp-sidebar > div:last-child strong { color: #fff; }
+.erp-sidebar > div:last-child span, .erp-sidebar > div:last-child button { color: var(--cv-menu-mudo); }
+.erp-sidebar > div:last-child button:hover { background: rgb(255 255 255 / .06); color: #fff; }
+.erp-sidebar nav > p { color: var(--cv-menu-mudo); }
 #main-tab-viewport, #app-root { background: #fff; }
 .erp-topbar { background: #fff; }
 
@@ -1511,3 +1525,5 @@ h1, h2, h3 { letter-spacing: -.01em; }
 /* Cartões e blocos: branco sobre o cinza, linha nítida e sombra mínima. */
 #main-tab-viewport .renea-card, #main-tab-viewport .cv-bloco { border-color: #dde1e4; background: #fff; box-shadow: 0 1px 2px rgb(16 24 40 / .04); }
 .renea-faixa-numeros { border-color: #dde1e4; background: #dde1e4; }
+/* Presença: listas de efetivo como linhas de tabela, sem altura de botão. */
+#main-tab-viewport [data-cartao-painel] .divide-y > button, #main-tab-viewport [data-cartao-painel] .divide-y > li > button { min-height: 2.25rem; }
