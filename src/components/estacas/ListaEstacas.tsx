@@ -107,7 +107,7 @@ export default function ListaEstacas({ estacas, frentes, onCravar, onEditar, onI
           </label>
           <div role="group" aria-label="Mostrar só" className="flex gap-2 overflow-x-auto max-lg:basis-full">
             {FILTROS.map(item => (
-              <button key={item.id} type="button" aria-pressed={filtro === item.id} onClick={() => setFiltro(item.id)} className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition duration-200 ${FOCO} ${filtro === item.id ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`}>{item.nome}</button>
+              <button key={item.id} type="button" aria-pressed={filtro === item.id} onClick={() => setFiltro(item.id)} className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition duration-200 ${FOCO} ${filtro === item.id ? 'border-slate-400 bg-slate-100 text-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`}>{item.nome}</button>
             ))}
           </div>
         </FilterBar>

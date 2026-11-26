@@ -658,7 +658,7 @@ export default function CadastrosTab(props: CadastrosTabProps) {
           }}
         />
       )}
-      <FilterBar label="Filtros de cadastros" className="rounded-2xl border border-slate-200 bg-white p-3">
+      <FilterBar label="Filtros de cadastros" className="py-0.5">
         <div className="w-full space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-0 basis-full sm:min-w-56 sm:flex-1 sm:basis-auto">
@@ -686,10 +686,10 @@ export default function CadastrosTab(props: CadastrosTabProps) {
                     role="radio"
                     aria-checked={situacao === valor}
                     onClick={() => setSituacao(valor)}
-                    className={`flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap border-r border-slate-200 px-3 transition-colors duration-150 last:border-0 ${FOCO} ${situacao === valor ? 'bg-[#176b4d] text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                    className={`flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap border-r border-slate-200 px-3 transition-colors duration-150 last:border-0 ${FOCO} ${situacao === valor ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}
                   >
                     {rotulo}
-                    <span className={`text-xs tabular-nums ${situacao === valor ? 'text-white' : 'text-slate-600'}`}>{total}</span>
+                    <span className="text-xs tabular-nums text-slate-500">{total}</span>
                   </button>
                 ))}
               </div>

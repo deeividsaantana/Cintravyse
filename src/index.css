@@ -1533,3 +1533,9 @@ h1, h2, h3 { letter-spacing: -.01em; }
 #main-tab-viewport .cv-voltar-relatorios button:hover { background: var(--cv-linha-fraca); color: var(--cv-texto); }
 .cv-voltar-relatorios svg { width: 1rem; height: 1rem; }
 .cv-voltar-relatorios strong { color: var(--cv-texto); font-weight: 600; }
+
+/* Uma aba só não é escolha: some da vista, fica para o leitor de tela (26/11/2026). */
+.renea-abas-da-tela--unica {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}

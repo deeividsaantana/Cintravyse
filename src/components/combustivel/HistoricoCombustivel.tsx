@@ -379,7 +379,7 @@ export default function HistoricoCombustivel({
   return (
     <div className={`flex min-h-0 flex-1 flex-col gap-2 xl:flex-row ${compacto ? 'bg-slate-50' : ''}`} data-testid="combustivel-historico">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-        <section data-comb-reveal aria-label="Filtros do histórico" className={`${CARTAO} shrink-0 p-2`}>
+        <section data-comb-reveal aria-label="Filtros do histórico" className="shrink-0 py-0.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="relative min-w-[12rem] flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />

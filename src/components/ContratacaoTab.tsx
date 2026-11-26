@@ -28,7 +28,7 @@ import { TelaCheia } from '../shared/ui/TelaCheia';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
-import { BOTAO_PERIGO_LEVE, BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CAMPO_SELECT, CARTAO } from './cadastros/estilos';
+import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CAMPO_SELECT, CARTAO, FOCO } from './cadastros/estilos';
 import { ETAPAS, SITUACOES, SOLICITACOES, emAberto, etapaPendente, nomeDaEtapa, podeDecidir, resumoDoPedido } from '../../api/_shared/contratacao-regras.js';
 import {
   apagarContratacao,
@@ -65,6 +65,9 @@ const lerBlocos = (): Bloco[] => {
   return Object.keys(BLOCOS) as Bloco[];
 };
 
+/** Ações da linha: discretas, como em ERP (26/11/2026); o vermelho só no passar o mouse. */
+const ACAO_LINHA = `inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 lg:min-h-9 ${FOCO}`;
+const ACAO_APAGAR = `grid min-h-11 min-w-11 place-items-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 lg:min-h-9 lg:min-w-9 ${FOCO}`;
 const PAINEL = `renea-card ${CARTAO} p-4 sm:p-5`;
 const diasDesde = (iso: string) => Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
 
@@ -195,20 +198,20 @@ export default function ContratacaoTab({ relatorio }: { relatorio?: ModoRelatori
     { chave: 'situacao', titulo: 'Assinaturas', render: p => (p.status === 'concluido' || p.status === 'recusada' ? <SeloSituacaoContratacao situacao={p.status} /> : <SelosDasEtapas pedido={p} />), valorOrdenacao: p => p.status, valorExportacao: p => SITUACOES[p.status] ?? p.status, larguraMinima: 180, cartaoInteiro: true },
     { chave: 'acoes', titulo: 'Ações', valorExportacao: () => '', larguraMinima: 204, cartaoInteiro: true, render: p => (
       // Copiar Link só com o pedido correndo; Baixar só depois da 3ª assinatura.
-      <span className="flex flex-wrap gap-2 lg:flex-nowrap" onClick={evento => evento.stopPropagation()} onKeyDown={evento => evento.stopPropagation()}>
+      <span className="flex flex-wrap items-center gap-1 lg:flex-nowrap" onClick={evento => evento.stopPropagation()} onKeyDown={evento => evento.stopPropagation()}>
         {emAberto(p.status) && p.link_token && (
-          <button type="button" onClick={() => void copiarLink(p)} className={`${BOTAO_SECUNDARIO} whitespace-nowrap`} data-testid="copiar-link-pedido">
-            <Link2 className="size-4" aria-hidden="true" /> Copiar Link
+          <button type="button" onClick={() => void copiarLink(p)} className={ACAO_LINHA} data-testid="copiar-link-pedido">
+            <Link2 className="size-4" aria-hidden="true" /> Copiar link
           </button>
         )}
         {p.status === 'concluido' && (
-          <button type="button" onClick={() => baixar(p)} className={`${BOTAO_SECUNDARIO} whitespace-nowrap`} data-testid="baixar-pedido" title="Baixar o documento assinado em PDF">
+          <button type="button" onClick={() => baixar(p)} className={ACAO_LINHA} data-testid="baixar-pedido" title="Baixar o documento assinado em PDF">
             <Download className="size-4" aria-hidden="true" /> Baixar PDF
           </button>
         )}
         {me?.dev && (
           // Só o ícone, para caber ao lado de Copiar Link; o nome vem no aviso de confirmação.
-          <button type="button" onClick={() => setApagando(p)} className={`${BOTAO_PERIGO_LEVE} min-w-11 px-3`} data-testid="apagar-pedido" aria-label={`Apagar de vez o pedido ${p.request_number}`} title="Apagar de vez">
+          <button type="button" onClick={() => setApagando(p)} className={ACAO_APAGAR} data-testid="apagar-pedido" aria-label={`Apagar de vez o pedido ${p.request_number}`} title="Apagar de vez">
             <Trash2 className="size-4" aria-hidden="true" />
           </button>
         )}
@@ -379,7 +382,7 @@ export default function ContratacaoTab({ relatorio }: { relatorio?: ModoRelatori
       );
     }
     if (subtela === 'nova') {
-      return <FolhaContratacao leitor={me} onVoltar={() => trocar('pedidos')} onCriado={pedido => { void carregar(true).then(() => setAbertoId(pedido.id)); setAviso(`Pedido ${pedido.request_number} salvo e link gerado. Use "Copiar Link" e mande para Recursos Humanos, que faz a 1ª assinatura.`); window.setTimeout(() => setAviso(''), 8000); }} />;
+      return <FolhaContratacao leitor={me} onVoltar={() => trocar('pedidos')} onCriado={pedido => { void carregar(true).then(() => setAbertoId(pedido.id)); setAviso(`Pedido ${pedido.request_number} salvo e link gerado. Use "Copiar link" e mande para Recursos Humanos, que faz a 1ª assinatura.`); window.setTimeout(() => setAviso(''), 8000); }} />;
     }
     if (subtela === 'fila') {
       return fila.length === 0

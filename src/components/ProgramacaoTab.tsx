@@ -255,7 +255,7 @@ export default function ProgramacaoTab({ planejamento: planejamentoSalvo, produc
       {aba !== 'producao' && (
         <div className="flex items-center gap-2">
           <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5" role="group" aria-label="Filtrar pela situação">
-            <button type="button" aria-pressed={situacao === ''} onClick={() => setSituacao('')} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-bold ${situacao === '' ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'}`}>
+            <button type="button" aria-pressed={situacao === ''} onClick={() => setSituacao('')} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-bold ${situacao === '' ? 'border-slate-400 bg-slate-100 text-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'}`}>
               Todas <span className="tabular-nums opacity-80">{semSituacao.length - (contagem.find(opcao => opcao.id === 'cancelada')?.total ?? 0)}</span>
             </button>
             {contagem.filter(opcao => opcao.total > 0 || situacao === opcao.id).map(opcao => (

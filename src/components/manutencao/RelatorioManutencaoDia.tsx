@@ -55,7 +55,7 @@ export function RelatorioManutencaoDia({ relatorio, hoje, onData, motivos }: Pro
         : `Dia aberto: falta conferir ${relatorio.aConferir}.`;
   const maiorTipo = relatorio.porTipo[0]?.totalMin || 1;
   const maiorMotivo = motivos[0]?.totalMin || 1;
-  const atalho = (ativo: boolean) => `inline-flex min-h-11 items-center rounded-xl border px-3 text-sm font-bold transition ${FOCO} ${ativo ? 'border-[#176b4d] bg-[#176b4d] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`;
+  const atalho = (ativo: boolean) => `inline-flex min-h-11 items-center rounded-xl border px-3 text-sm font-bold transition ${FOCO} ${ativo ? 'border-slate-400 bg-slate-100 text-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500'}`;
 
   return (
     <>

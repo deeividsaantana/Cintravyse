@@ -3,16 +3,22 @@ import { CARGO_DA_ETAPA, ETAPAS, SITUACOES, etapaPendente } from '../../../api/_
 import type { Etapa, PedidoContratacao, SituacaoContratacao } from '../../services/contratacaoApi';
 import { dataHoraBr } from './formatos';
 
+/** Cor do pontinho; o texto fica neutro (padrão Cintravyse, 26/11/2026). */
 const TOM: Record<SituacaoContratacao, string> = {
-  etapa_1: 'bg-amber-50 text-amber-800 ring-amber-200',
-  etapa_2: 'bg-amber-50 text-amber-800 ring-amber-200',
-  etapa_3: 'bg-amber-50 text-amber-800 ring-amber-200',
-  concluido: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-  recusada: 'bg-rose-50 text-rose-800 ring-rose-200',
+  etapa_1: 'bg-amber-500',
+  etapa_2: 'bg-amber-500',
+  etapa_3: 'bg-amber-500',
+  concluido: 'bg-[#176b4d]',
+  recusada: 'bg-rose-600',
 };
 
 export function SeloSituacaoContratacao({ situacao }: { situacao: SituacaoContratacao }) {
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset ${TOM[situacao] ?? TOM.etapa_1}`}>{SITUACOES[situacao] ?? situacao}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium ${situacao === 'recusada' ? 'text-rose-700' : 'text-slate-700'}`}>
+      <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${TOM[situacao] ?? TOM.etapa_1}`} />
+      {SITUACOES[situacao] ?? situacao}
+    </span>
+  );
 }
 
 /**
@@ -27,15 +33,16 @@ export function SelosDasEtapas({ pedido }: { pedido: PedidoContratacao }) {
         const feito = pedido.signatures.some(item => item.stage === etapa);
         const daVez = vez === etapa;
         const recusou = pedido.status === 'recusada' && pedido.rejected_stage === etapa;
-        const tom = recusou ? 'bg-rose-50 text-rose-800 ring-rose-200'
-          : feito ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
-            : daVez ? 'bg-amber-50 text-amber-900 ring-amber-300'
-              : 'bg-slate-50 text-[#5b6870] ring-slate-200';
+        // Só texto e um sinal pequeno: verde assinou, âmbar é a vez, cinza ainda não chegou.
+        const tom = recusou ? 'text-rose-700'
+          : feito ? 'text-emerald-700'
+            : daVez ? 'font-semibold text-amber-800'
+              : 'text-slate-500';
         return (
           <li key={etapa} className="flex items-center gap-1">
             {indice > 0 && <span aria-hidden="true" className="text-[#5b6870]">›</span>}
-            <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${tom}`}>
-              {feito && <Check className="size-3" aria-hidden="true" />}
+            <span className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium ${tom}`}>
+              {feito ? <Check className="size-3" aria-hidden="true" /> : <span aria-hidden="true" className={`size-1.5 rounded-full ${daVez ? 'bg-amber-500' : recusou ? 'bg-rose-600' : 'bg-slate-300'}`} />}
               {indice + 1}ª {CARGO_DA_ETAPA[etapa]}
               <span className="sr-only">{recusou ? ' (recusou)' : feito ? ' (assinou)' : daVez ? ' (é a vez)' : ' (aguardando)'}</span>
             </span>
