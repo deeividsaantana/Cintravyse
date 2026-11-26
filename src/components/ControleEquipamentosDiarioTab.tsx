@@ -98,7 +98,9 @@ export interface ControleFrotaProps {
   abas: React.ReactNode;
   /** Escolha da tela dentro da seção (Lançados / Faltando...), no começo da tela. */
   seletor?: React.ReactNode;
-  idAbaAtiva: string;
+  idAbaAtiva?: string;
+  /** Aberta pela guia Relatórios: só o dia; sem Mais ações nem Novo. */
+  emRelatorio?: boolean;
   /** Dia aberto na moldura: volta o mesmo dia ao trocar de Manutenção para Frotas. */
   diaInicial?: string;
   onDia?: (dia: string) => void;
@@ -238,6 +240,7 @@ export default function ControleEquipamentosDiarioTab({
   abas,
   seletor,
   idAbaAtiva,
+  emRelatorio = false,
   diaInicial,
   onDia,
   onRelacaoMudou,
@@ -429,7 +432,7 @@ export default function ControleEquipamentosDiarioTab({
     setFormOpen(true);
   };
   useEffect(() => {
-    if (atalhosAberto) return undefined;
+    if (atalhosAberto || emRelatorio) return undefined;
     const handleShortcut = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isTyping = target?.matches('input, textarea, select, [contenteditable="true"]');
@@ -450,7 +453,7 @@ export default function ControleEquipamentosDiarioTab({
     };
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
-  }, [atalhosAberto, activeView]);
+  }, [atalhosAberto, activeView, emRelatorio]);
   const openEdit = (state: FleetCurrentState) => {
     const raw = registros.find(record => record.id === state.recordId) as FleetPersistedRecord | undefined;
     if (!raw) {
@@ -693,6 +696,7 @@ export default function ControleEquipamentosDiarioTab({
               <button type="button" onClick={() => updateFilter('date', shiftIsoDate(filters.date, 1))} aria-label="Próximo dia" title="Próximo dia" className={`${BOTAO_SECUNDARIO} shrink-0 px-0 min-w-11 lg:min-w-10`} data-testid="frota-dia-seguinte"><ChevronRight className="size-5" aria-hidden="true" /></button>
               {filters.date !== hoje && <button type="button" onClick={() => updateFilter('date', hoje)} className={`${BOTAO_SECUNDARIO} shrink-0 px-3`} data-testid="frota-hoje">Hoje</button>}
             </div>
+            {!emRelatorio && <>
             <input ref={inputRef} type="file" accept=".xlsx,.xlsm,.xls" className="hidden" onChange={readImport}/>
             {/* ⋮ Mais ações, igual ao de toda aba (padrão do site, seção 2). */}
             <details className="erp-fleet-menu group relative shrink-0" data-testid="frota-relatorios">
@@ -714,9 +718,6 @@ export default function ControleEquipamentosDiarioTab({
                   gatilho={abrir => <button type="button" onClick={abrir} className={ITEM_MENU}><Database className="size-4" aria-hidden="true" />Importar apontamento do SGE</button>}
                 />
                 <hr className="my-1 border-slate-100" />
-                {/* Imprimir e baixar ficam juntos em Relatórios (24/11/2026); aqui só o atalho. */}
-                <button type="button" onClick={() => setActiveView('history')} className={ITEM_MENU} data-testid="frota-ir-relatorios"><Printer className="size-4" aria-hidden="true" />Imprimir relatórios</button>
-                <hr className="my-1 border-slate-100" />
                 <p className={ROTULO_GRUPO_MENU}>Cadastro e tela</p>
                 <button type="button" onClick={() => setActiveView('registry')} className={ITEM_MENU} data-testid="frota-abrir-motoristas"><Users className="size-4" aria-hidden="true" />Motoristas</button>
                 <button type="button" onClick={handleRefresh} className={ITEM_MENU}><RefreshCw className="size-4" aria-hidden="true" />Limpar filtros e seleção</button>
@@ -728,6 +729,7 @@ export default function ControleEquipamentosDiarioTab({
               <span className="max-sm:hidden">Novo lançamento</span><span className="sm:hidden">Novo</span>
               <kbd className="hidden rounded-md bg-white/15 px-1.5 font-mono text-xs xl:inline">N</kbd>
             </button>
+            </>}
           </>}
         />
       </div>}

@@ -11,12 +11,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { BarChart3, CheckCircle2, Droplets, Gauge, History, Plus, Undo2 } from 'lucide-react';
+import { CheckCircle2, Droplets, History, Plus, Undo2 } from 'lucide-react';
 import type { Abastecimento, Comboio, ControleEquipamentoDiario, Empresa, Equipamento, GrupoEquipe, TipoCombustivel } from '../types';
 import type { FuelImportedMasterData } from '../utils/fuelMasterDataImport';
 import { ConfirmDialog, isoDay } from '../shared/ui';
 import { PageHeader } from '../shared/ui/PageHeader';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
+import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, FOCO } from './cadastros/estilos';
@@ -57,16 +58,15 @@ interface Props {
   onOpenSpreadsheetImport: () => void;
   isParsingSpreadsheet: boolean;
   openHistorySignal?: number;
-  initialView?: View;
+  initialView?: Exclude<View, 'relatorios'>;
   listaSomente?: boolean;
-  /** Abre já no consumo por máquina (pedido pela aba Relatórios). */
-  porMaquinaInicial?: boolean;
+  /** Aberta pela guia Relatórios: só o relatório pedido, com o voltar. */
+  relatorio?: ModoRelatorio & { parte: ParteRelatorio };
 }
 
-/** Três telas: lançar, ver os lançamentos e os relatórios (com o consumo por máquina dentro). */
+/** Telas: lançar e ver os lançamentos; os relatórios abrem pela guia Relatórios. */
 type View = 'novo' | 'historico' | 'relatorios';
-/** As abas do topo: Relatórios se abre em Resumo e Consumo por máquina. */
-type AbaCombustivel = Exclude<View, 'relatorios'> | ParteRelatorio;
+type AbaCombustivel = Exclude<View, 'relatorios'>;
 
 const hoje = () => isoDay(new Date());
 const dataCurta = (dia: string) => dia ? new Date(`${dia}T12:00:00`).toLocaleDateString('pt-BR') : 'Sem data';
@@ -76,13 +76,11 @@ const numeroTexto = (valor: number) => valor.toLocaleString('pt-BR', { maximumFr
 export default function CombustivelOperacionalTab({
   empresas, equipamentos, comboios, combustiveis, abastecimentos, registros = [], gruposEquipe = [], usuario = '',
   onSaveAbastecimento, onSaveAbastecimentos, onDeleteAbastecimento, onDeleteAbastecimentos, onRestaurarAbastecimentos, onOpenLubrificacao, onOpenSpreadsheetImport, isParsingSpreadsheet,
-  openHistorySignal = 0, initialView = 'historico', listaSomente = false, porMaquinaInicial = false,
+  openHistorySignal = 0, initialView = 'historico', listaSomente = false, relatorio,
 }: Props) {
   const escopo = useRef<HTMLElement>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
-  const [view, setView] = useState<View>(listaSomente ? 'historico' : porMaquinaInicial ? 'relatorios' : initialView);
-  /** Subtela de Relatórios: resumo ou consumo por máquina (segunda linha de abas). */
-  const [parteRelatorio, setParteRelatorio] = useState<ParteRelatorio>(porMaquinaInicial ? 'consumo' : 'resumo');
+  const [view, setView] = useState<View>(relatorio ? 'relatorios' : listaSomente ? 'historico' : initialView);
   /** Filtro pedido pelo relatório; a lista aplica quando a chave muda. */
   const [pedidoFiltro, setPedidoFiltro] = useState<PedidoFiltro | undefined>();
   const [trocandoData, setTrocandoData] = useState<Abastecimento[]>([]);
@@ -269,9 +267,6 @@ export default function CombustivelOperacionalTab({
         event.preventDefault();
         setView('historico');
         window.setTimeout(() => buscaRef.current?.focus(), 60);
-      } else if (event.key.toLowerCase() === 'r' && !listaSomente) {
-        event.preventDefault();
-        setView('relatorios');
       }
     };
     document.addEventListener('keydown', teclar);
@@ -301,18 +296,10 @@ export default function CombustivelOperacionalTab({
 
   const vistas = [
     { id: 'historico' as const, rotulo: 'Lançamentos', icone: History, testId: 'combustivel-vista-historico' },
-    // Relatórios tem duas subtelas: o grupo abre a segunda linha de abas (AbasDaTela).
-    {
-      grupo: 'relatorios', rotulo: 'Relatórios', icone: BarChart3, abas: [
-        { id: 'resumo' as const, rotulo: 'Resumo', icone: BarChart3, testId: 'combustivel-vista-resumo' },
-        { id: 'consumo' as const, rotulo: 'Consumo por máquina', curto: 'Por máquina', icone: Gauge, testId: 'combustivel-vista-consumo' },
-      ],
-    },
   ];
-  const abaAtiva: AbaCombustivel = view === 'relatorios' ? parteRelatorio : view;
+  const abaAtiva: AbaCombustivel = view === 'relatorios' ? 'historico' : view;
   // Lançar não é aba (padrão de 23/11/2026): é o botão principal do topo e a tecla N.
   const trocarVista = (id: AbaCombustivel) => {
-    if (id === 'resumo' || id === 'consumo') { setParteRelatorio(id); setView('relatorios'); return; }
     if (id === 'historico') setPedidoFiltro(undefined);
     setView(id);
   };
@@ -324,12 +311,12 @@ export default function CombustivelOperacionalTab({
 
   return (
     <TelaCheia ref={escopo} id="combustivel-tab" testId="combustivel-tab" rotulo="Combustível"
-      idAbaAtiva={listaSomente ? undefined : idDaAba('combustivel', abaAtiva)} idDados="combustivel-dados" chaveRolagem={abaAtiva}
+      idAbaAtiva={listaSomente || relatorio ? undefined : idDaAba('combustivel', abaAtiva)} idDados="combustivel-dados" chaveRolagem={abaAtiva}
       classeDados={view === 'novo' ? 'h-full' : undefined}
       cabecalho={listaSomente || view === 'novo' ? undefined : <div data-comb-reveal>
         <PageHeader compact eyebrow="Frota" title="Combustível"
-          abas={<AbasDaTela id="combustivel" rotulo="Área de combustível" abas={vistas} ativa={abaAtiva} onTrocar={trocarVista} idPainel="combustivel-dados" />}
-          actions={<>
+          abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : <AbasDaTela id="combustivel" rotulo="Área de combustível" abas={vistas} ativa={abaAtiva} onTrocar={trocarVista} idPainel="combustivel-dados" />}
+          actions={relatorio ? undefined : <>
             {view === 'historico' && <ul className="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex" data-testid="combustivel-numeros">
               {cartoes.filter(cartao => cartao.mostrar).map(cartao => <li key={cartao.titulo} title={cartao.detalhe} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold ring-1 ring-inset ${cartao.alerta ? 'bg-amber-50 text-amber-900 ring-amber-200' : 'bg-white text-slate-600 ring-slate-200'}`}>
                 {cartao.titulo} <strong className="tabular-nums text-slate-950">{cartao.valor}</strong>
@@ -376,14 +363,14 @@ export default function CombustivelOperacionalTab({
         />
       </div>}
 
-      {view === 'relatorios' && (
+      {view === 'relatorios' && relatorio && (
         <RelatorioDiesel
           abastecimentos={ativos}
           equipamentos={equipamentos}
           empresas={empresas}
           comboios={comboios}
           combustiveis={combustiveis}
-          parte={parteRelatorio}
+          parte={relatorio.parte}
           onAbrirLista={abrirLista}
           onErro={setErro}
           onAviso={setAviso}

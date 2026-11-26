@@ -14,10 +14,13 @@ test('Pedidos: sem botão "Mostrar mais", todos os cards na tela', () => {
   assert.match(fonte, /pedidos\.map\(\(\{ sol \}\)/);
 });
 
-test('Pedidos: Excel, PDF e Importar só dentro de Relatórios', () => {
+test('Pedidos: Excel, PDF e Importar só no relatório, que abre pela guia Relatórios', () => {
   const topo = fonte.slice(fonte.indexOf('actions={'), fonte.indexOf('faixa={'));
   assert.doesNotMatch(topo, /exportar\(|gerarPdf|arquivo\.current/);
-  assert.match(fonte, /id: "relatorio",\s+rotulo: "Relatório do período"/);
+  // 26/11/2026: o relatório do período não é mais subaba; abre na guia Relatórios.
+  assert.doesNotMatch(fonte, /id: "relatorio",\s+rotulo:/);
+  assert.match(fonte, /useState<Subtela>\(relatorio \? "relatorio" : "pedidos"\)/);
+  assert.match(fonte, /<VoltarAosRelatorios relatorio=\{relatorio\} \/>/);
 });
 
 test('Pedidos: Filtros abre e fecha no lugar, sem trocar de tela', () => {

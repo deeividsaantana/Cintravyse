@@ -20,12 +20,14 @@ test('Estacas e Cadastros têm no máximo quatro opções no topo', () => {
 
 // Padrão do site (23/11/2026): Lançar é o botão principal (tecla N), nunca
 // uma aba, e Relatórios é sempre a última opção do topo.
-test('Lançar nunca é aba e Relatórios vem por último', () => {
+test('Lançar nunca é aba e relatório só abre pela guia Relatórios', () => {
+  // 26/11/2026: o relatório é gerado na guia Relatórios; nenhuma tela tem subaba de relatório.
   const estacas = abasEstacas({ faltam: 3, estacas: 10, notasPendentes: 2, lotes: 1 });
-  assert.equal(estacas.at(-1)?.rotulo, 'Relatórios');
-  for (const arquivo of ['CombustivelOperacionalTab.tsx', 'PluviometroTab.tsx', 'EstacasTab.tsx', 'ProgramacaoTab.tsx', 'ContratacaoTab.tsx', 'SolicitacoesTab.tsx']) {
+  assert.ok(!estacas.some(aba => aba.rotulo === 'Relatórios'), 'Estacas voltou a ter subaba Relatórios');
+  for (const arquivo of ['CombustivelOperacionalTab.tsx', 'PluviometroTab.tsx', 'EstacasTab.tsx', 'ProgramacaoTab.tsx', 'ContratacaoTab.tsx', 'SolicitacoesTab.tsx', 'ControlePresencaTab.tsx', 'frotaManutencao/abasFrotaManutencao.ts']) {
     const fonte = readFileSync(new URL(`../src/components/${arquivo}`, import.meta.url), 'utf8');
     assert.doesNotMatch(fonte, /rotulo: ['"]Lançar['"]/, `${arquivo}: Lançar virou aba`);
+    assert.doesNotMatch(fonte, /rotulo: ['"]Relatórios['"]/, `${arquivo}: relatório voltou a ser subaba`);
   }
 });
 

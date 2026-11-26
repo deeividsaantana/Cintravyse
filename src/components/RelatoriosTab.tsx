@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { CalendarRange, ClipboardList, CloudRain, FileSignature, Fuel, Hammer, Search, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
+import { CalendarRange, ClipboardList, CloudRain, FileSignature, Fuel, Gauge, Hammer, Search, ShoppingCart, Truck, Users, Wrench, type LucideIcon } from 'lucide-react';
 import { PageHeader, TextInput } from '../shared/ui';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 
@@ -12,18 +12,17 @@ export interface RelatorioDoCatalogo {
   descricao: string;
   area: string;
   icone: LucideIcon;
-  /** Aba onde o relatório é gerado. */
+  /** Tela dona dos dados (e da permissão de ver). */
   aba: string;
-  /** Subtela da aba que abre direto no relatório. */
+  /** Qual relatório da tela abre aqui. */
   parte: string;
   formatos: string[];
 }
 
 /**
  * Todos os relatórios do sistema num lugar só (pedido do Deivid em
- * 25/11/2026: "tudo que for relatório numa guia Relatórios no menu"). Cada
- * linha abre a aba já na parte do relatório, com os filtros e os botões de
- * PDF e Excel de lá. A ordem segue o menu.
+ * 25/11/2026). Desde 26/11 o relatório abre aqui mesmo, com filtros, PDF e
+ * Excel: as outras telas não têm mais aba de relatório. A ordem segue o menu.
  */
 export const CATALOGO_DE_RELATORIOS: RelatorioDoCatalogo[] = [
   { id: 'chuva-mensal', nome: 'Mapa de chuvas do mês', descricao: 'Chuva de cada dia, dias impraticáveis e horas paradas. Serve para pedir prorrogação de prazo.', area: 'Operação', icone: CloudRain, aba: 'pluviometro', parte: 'resumo', formatos: ['PDF'] },
@@ -32,7 +31,9 @@ export const CATALOGO_DE_RELATORIOS: RelatorioDoCatalogo[] = [
   { id: 'estacas', nome: 'Relatório de estacas', descricao: 'Estacas cravadas, faltantes e metros por cortina.', area: 'Operação', icone: Hammer, aba: 'estacas', parte: 'relatorios', formatos: ['PDF', 'Excel'] },
   { id: 'compras-periodo', nome: 'Pedidos de compra do período', descricao: 'Pedidos abertos, entregues e atrasados, com prazo e valor.', area: 'Suprimentos', icone: ShoppingCart, aba: 'solicitacoes', parte: 'relatorio', formatos: ['PDF', 'Excel'] },
   { id: 'frota-dia', nome: 'Relatórios da frota', descricao: 'Relatório do dia, quem faltou lançar e resumo da semana das máquinas.', area: 'Frota', icone: Truck, aba: 'controle-equipamentos', parte: 'fechamento', formatos: ['PDF', 'Excel'] },
-  { id: 'diesel', nome: 'Fornecimento de diesel', descricao: 'Litros por máquina, comboio e dia, com o total do mês.', area: 'Frota', icone: Fuel, aba: 'lancamentos', parte: 'relatorios', formatos: ['PDF', 'Excel'] },
+  { id: 'manutencao-dia', nome: 'Manutenção do dia', descricao: 'Máquinas paradas, horas paradas e ordens de serviço do dia.', area: 'Frota', icone: Wrench, aba: 'manutencao', parte: 'manutencao-dia', formatos: ['Excel'] },
+  { id: 'diesel', nome: 'Fornecimento de diesel', descricao: 'Litros por comboio e por dia, com o total do período.', area: 'Frota', icone: Fuel, aba: 'lancamentos', parte: 'resumo', formatos: ['PDF', 'Excel'] },
+  { id: 'consumo-maquina', nome: 'Consumo por máquina', descricao: 'Litros e média de consumo de cada máquina no período.', area: 'Frota', icone: Gauge, aba: 'lancamentos', parte: 'consumo', formatos: ['Excel'] },
   { id: 'presenca', nome: 'Relatório de presença', descricao: 'Presentes, faltas e atestados por equipe e por pessoa.', area: 'Pessoas', icone: Users, aba: 'presenca', parte: 'relatorios', formatos: ['PDF', 'Excel'] },
   { id: 'contratacao', nome: 'Resumo de contratações', descricao: 'Pedidos de contratação, promoção e desligamento por etapa de assinatura.', area: 'Pessoas', icone: FileSignature, aba: 'contratacao', parte: 'painel', formatos: ['PDF'] },
 ];
@@ -63,7 +64,7 @@ export default function RelatoriosTab({ podeVer, onAbrir }: RelatoriosTabProps) 
 
   return (
     <TelaCheia ref={telaRef} id="relatorios-tab" rotulo="Relatórios" longa rotuloDados="Lista de relatórios"
-      cabecalho={<PageHeader title="Relatórios" description="Escolha o relatório: ele abre com os filtros e os botões de PDF e Excel." />}
+      cabecalho={<PageHeader title="Relatórios" description="Escolha o relatório: ele abre aqui, com filtros, PDF e Excel." />}
       faixa={(
         <TextInput type="search" icon={Search} value={busca} onChange={evento => setBusca(evento.target.value)}
           placeholder="Buscar relatório" aria-label="Buscar relatório" className="max-w-md" />

@@ -16,7 +16,6 @@ import {
   FilePlus2,
   Download,
   Inbox,
-  LayoutDashboard,
   Link2,
   Search,
   Settings2,
@@ -27,6 +26,7 @@ import { MaisAcoes } from '../shared/ui/MaisAcoes';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
+import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
 import { BOTAO_PERIGO_LEVE, BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CAMPO_SELECT, CARTAO } from './cadastros/estilos';
 import { ETAPAS, SITUACOES, SOLICITACOES, emAberto, etapaPendente, nomeDaEtapa, podeDecidir, resumoDoPedido } from '../../api/_shared/contratacao-regras.js';
@@ -68,12 +68,13 @@ const lerBlocos = (): Bloco[] => {
 const PAINEL = `renea-card ${CARTAO} p-4 sm:p-5`;
 const diasDesde = (iso: string) => Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
 
-export default function ContratacaoTab() {
+/** Aberta pela guia Relatórios: só o resumo, com o voltar. */
+export default function ContratacaoTab({ relatorio }: { relatorio?: ModoRelatorio } = {}) {
   const escopo = useRef<HTMLElement>(null);
   const [dados, setDados] = useState<DadosContratacao | null>(null);
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
-  const [subtela, setSubtela] = useState<Subtela>('painel');
+  const [subtela, setSubtela] = useState<Subtela>(relatorio ? 'painel' : 'pedidos');
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [baixarAoAbrir, setBaixarAoAbrir] = useState(false);
   const [busca, setBusca] = useState('');
@@ -148,7 +149,7 @@ export default function ContratacaoTab() {
 
   const trocar = (proxima: Subtela) => { setAbertoId(null); setBaixarAoAbrir(false); setSubtela(proxima); };
   // N abre uma nova solicitação (padrão de lançamento, 15/11/2026).
-  useAtalhoNovo(() => trocar('nova'), Boolean(me) && subtela !== 'nova' && !abertoId);
+  useAtalhoNovo(() => trocar('nova'), !relatorio && Boolean(me) && subtela !== 'nova' && !abertoId);
   const verSituacao = (situacao: SituacaoContratacao | '') => { setFiltroSituacao(situacao); trocar('pedidos'); };
 
   const copiarLink = async (pedido: PedidoContratacao) => {
@@ -181,11 +182,8 @@ export default function ContratacaoTab() {
   const subtelas: ReadonlyArray<ItemDasAbas<Subtela>> = [
     ...(assina ? [{ id: 'fila' as const, rotulo: 'Minha fila', curto: 'Fila', icone: Inbox, contador: fila.length, contadorRotulo: 'para assinar' }] : []),
     { id: 'pedidos', rotulo: 'Pedidos', icone: ClipboardList, contador: pedidos.length, tom: 'neutro' as const },
-    // Relatórios no mesmo padrão das outras abas que lançam (15/11/2026). A
-    // Nova solicitação abre pelo botão ou pela tecla N, na área inteira.
-    { grupo: 'relatorios', rotulo: 'Relatórios', icone: LayoutDashboard, abas: [
-      { id: 'painel', rotulo: 'Resumo', icone: LayoutDashboard },
-    ] },
+    // O resumo é relatório: abre pela guia Relatórios (26/11/2026). A Nova
+    // solicitação abre pelo botão ou pela tecla N, na área inteira.
   ];
 
   const colunas: ColunaTabela<PedidoContratacao>[] = [
@@ -430,7 +428,7 @@ export default function ContratacaoTab() {
       id="contratacao-tab"
       rotulo="Solicitação de contratação"
       longa={!comTabela}
-      idAbaAtiva={lancando ? undefined : idDaAba('contratacao', subtela)}
+      idAbaAtiva={lancando || relatorio ? undefined : idDaAba('contratacao', subtela)}
       idDados="contratacao-dados"
       chaveRolagem={`${subtela}-${abertoId ?? ''}`}
       // Lançando, a folha ocupa a área inteira da aba (padrão do Combustível).
@@ -438,15 +436,15 @@ export default function ContratacaoTab() {
         <PageHeader
           eyebrow="Pessoas"
           title="Contratação"
-          abas={<AbasDaTela<Subtela> id="contratacao" rotulo="Subtelas da contratação" abas={subtelas} ativa={subtela} onTrocar={trocar} idPainel="contratacao-dados" testId="contratacao-aba" />}
+          abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : <AbasDaTela<Subtela> id="contratacao" rotulo="Subtelas da contratação" abas={subtelas} ativa={subtela} onTrocar={trocar} idPainel="contratacao-dados" testId="contratacao-aba" />}
           actions={
             <>
               {subtela === 'painel' && !aberto && (
                 <MaisAcoes testId="contratacao-mais-acoes" acoes={[{ rotulo: moldando ? 'Pronto, fechar personalizar' : 'Personalizar o painel', icone: Settings2, onClick: () => setMoldando(atual => !atual) }]} />
               )}
-              <button type="button" onClick={() => trocar('nova')} className={BOTAO_PRIMARIO} data-testid="contratacao-nova">
+              {!relatorio && <button type="button" onClick={() => trocar('nova')} className={BOTAO_PRIMARIO} data-testid="contratacao-nova">
                 <FilePlus2 className="size-4" aria-hidden="true" /> <span className="sm:hidden">Nova</span><span className="hidden sm:inline">Nova Solicitação</span>
-              </button>
+              </button>}
             </>
           }
         />

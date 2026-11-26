@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { CalendarDays, ClipboardList, Download, FileSpreadsheet, FileText, GanttChartSquare, List, MessageCircle, PieChart, Plus, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { CalendarDays, FileSpreadsheet, FileText, GanttChartSquare, List, MessageCircle, Plus, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import type { PlanejamentoItem, RegistroProducao, ServicoObra } from '../types';
 import { PageHeader } from '../shared/ui/PageHeader';
+import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import { AbasDaTela, idDaAba } from '../shared/ui/AbasDaTela';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
@@ -43,7 +44,8 @@ interface Props {
   podeApagar?: boolean;
   onApagarProducao?: (id: string) => void;
   /** Aba que abre primeiro (a guia Relatórios abre direto no avanço ou na produção). */
-  abaPedida?: 'avanco' | 'producao';
+  /** Aberto pela guia Relatórios: a parte do relatório e o caminho de volta. */
+  relatorio?: ModoRelatorio & { parte: 'avanco' | 'producao' | 'lista' };
 }
 
 type Aba = 'hoje' | 'quadro' | 'lista' | 'avanco' | 'producao';
@@ -51,11 +53,11 @@ const DIAS_NO_QUADRO = 14;
 const ordenarTexto = (lista: Iterable<string>) => [...new Set(lista)].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
 const abaInicial = (): Aba => (typeof window !== 'undefined' && window.innerWidth < 768 ? 'hoje' : 'quadro');
 
-export default function ProgramacaoTab({ planejamento: planejamentoSalvo, producao, servicos, responsavel, podeEditar, onSavePlanejamento, onSaveProducao, podeApagar = false, onApagarProducao, abaPedida }: Props) {
+export default function ProgramacaoTab({ planejamento: planejamentoSalvo, producao, servicos, responsavel, podeEditar, onSavePlanejamento, onSaveProducao, podeApagar = false, onApagarProducao, relatorio }: Props) {
   const escopo = useRef<HTMLElement>(null);
   const planejamento = useMemo(() => planejamentoSalvo.map(completarEstacasDaCarga), [planejamentoSalvo]);
   const hoje = diaLocal();
-  const [aba, setAba] = useState<Aba>(() => abaPedida ?? abaInicial());
+  const [aba, setAba] = useState<Aba>(() => relatorio?.parte ?? abaInicial());
   const [busca, setBusca] = useState('');
   const [verFiltros, setVerFiltros] = useState(false);
   const [frente, setFrente] = useState('');
@@ -68,7 +70,6 @@ export default function ProgramacaoTab({ planejamento: planejamentoSalvo, produc
   useAtalhoNovo(() => setAberta({ id: null }), podeEditar && !aberta);
   const [lancamentoAberto, setLancamentoAberto] = useState<RegistroProducao | null>(null);
   const [aviso, setAviso] = useState('');
-  const [menuExportar, setMenuExportar] = useState(false);
   const [exportando, setExportando] = useState(false);
 
   useGSAP(() => {
@@ -160,7 +161,6 @@ export default function ProgramacaoTab({ planejamento: planejamentoSalvo, produc
   };
 
   const exportar = async (tipo: 'excel' | 'pdf') => {
-    setMenuExportar(false);
     setExportando(true);
     try {
       if (aba === 'avanco') {
@@ -295,7 +295,7 @@ export default function ProgramacaoTab({ planejamento: planejamentoSalvo, produc
         <PageHeader
           eyebrow="Operação"
           title="Programação"
-          abas={(
+          abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : (
             <AbasDaTela
               id="programacao"
               rotulo="Subtelas da programação"
@@ -307,37 +307,23 @@ export default function ProgramacaoTab({ planejamento: planejamentoSalvo, produc
                 { id: 'hoje', rotulo: 'Dia a dia', curto: 'Dia', icone: CalendarDays },
                 { id: 'quadro', rotulo: 'Cronograma', icone: GanttChartSquare, contador: atrasadas, contadorRotulo: 'atrasadas' },
                 { id: 'lista', rotulo: 'Atividades', icone: List },
-                // Relatórios no mesmo padrão das outras abas que lançam (15/11/2026).
-                {
-                  grupo: 'relatorios', rotulo: 'Relatórios', icone: PieChart, abas: [
-                    { id: 'avanco', rotulo: 'Avanço físico', curto: 'Avanço', icone: PieChart },
-                    { id: 'producao', rotulo: 'Apontamentos', icone: ClipboardList },
-                  ],
-                },
               ]}
             />
           )}
-          actions={aberta ? undefined : (
+          actions={aberta ? undefined : relatorio ? (
             <>
-              <div className="relative">
-                <button type="button" onClick={() => setMenuExportar(atual => !atual)} aria-expanded={menuExportar} aria-haspopup="menu" disabled={exportando} className={BOTAO_SECUNDARIO} data-testid="programacao-exportar">
-                  <Download className="size-4" aria-hidden="true" />
-                  {exportando ? 'Gerando…' : 'Exportar'}
-                </button>
-                {menuExportar && (
-                  <div role="menu" className="absolute right-0 top-12 z-30 grid min-w-56 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
-                    <button type="button" role="menuitem" onClick={() => void exportar('excel')} className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50">
-                      <FileSpreadsheet className="size-4 text-[#176b4d]" aria-hidden="true" /> {aba === 'avanco' ? 'Relatório de avanço em Excel' : 'Planilha Excel'}
-                    </button>
-                    <button type="button" role="menuitem" onClick={() => void exportar('pdf')} className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50">
-                      <FileText className="size-4 text-rose-700" aria-hidden="true" /> {aba === 'avanco' ? 'Relatório de avanço em PDF' : 'PDF para imprimir'}
-                    </button>
-                    <button type="button" role="menuitem" onClick={() => { setMenuExportar(false); void copiarDia(); }} className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50">
-                      <MessageCircle className="size-4 text-[#176b4d]" aria-hidden="true" /> Texto do dia para WhatsApp
-                    </button>
-                  </div>
-                )}
-              </div>
+              <button type="button" onClick={() => void exportar('excel')} disabled={exportando} className={BOTAO_SECUNDARIO} data-testid="programacao-excel">
+                <FileSpreadsheet className="size-4" aria-hidden="true" /> Excel
+              </button>
+              <button type="button" onClick={() => void exportar('pdf')} disabled={exportando} className={BOTAO_SECUNDARIO} data-testid="programacao-pdf">
+                <FileText className="size-4" aria-hidden="true" /> {exportando ? 'Gerando…' : 'PDF'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => void copiarDia()} className={BOTAO_SECUNDARIO} data-testid="programacao-whatsapp">
+                <MessageCircle className="size-4" aria-hidden="true" /> Texto do dia
+              </button>
               {podeEditar && (
                 <button type="button" onClick={() => setAberta({ id: null })} className={`${BOTAO_PRIMARIO} max-sm:order-first px-5`} data-testid="programacao-nova">
                   <Plus className="size-5" aria-hidden="true" />

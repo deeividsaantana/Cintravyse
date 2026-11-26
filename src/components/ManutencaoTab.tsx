@@ -84,7 +84,9 @@ export interface ManutencaoTabProps {
   abas: ReactNode;
   /** Escolha da tela dentro da seção (Paradas de hoje / Ordens / Conferir 10 h). */
   seletor?: ReactNode;
-  idAbaAtiva: string;
+  idAbaAtiva?: string;
+  /** Aberta pela guia Relatórios: sem o Abrir OS. */
+  emRelatorio?: boolean;
 }
 
 const TIPOS: OrdemServico['tipo'][] = ['Corretiva', 'Preventiva', 'Preditiva', 'Revisão'];
@@ -136,6 +138,7 @@ export default function ManutencaoTab({
   abas,
   seletor,
   idAbaAtiva,
+  emRelatorio = false,
 }: ManutencaoTabProps) {
   const escopo = useRef<HTMLElement>(null);
   // As horas do dia correm com o relógio: refaz a conta a cada minuto.
@@ -164,7 +167,7 @@ export default function ManutencaoTab({
   const [avisoExport, setAvisoExport] = useState('');
   const equipamentoFieldRef = useRef<HTMLSelectElement>(null);
 
-  useAtalhoNovo(() => abrirNova(), !formAberto && podeEditar);
+  useAtalhoNovo(() => abrirNova(), !emRelatorio && !formAberto && podeEditar);
 
   /** O que já aconteceu com as ordens — abertura, edição e liberação. */
   const historico = useMemo(() => historicoDaManutencao(historyLogs), [historyLogs]);
@@ -461,7 +464,7 @@ export default function ManutencaoTab({
               <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> {exportando ? 'Gerando...' : 'Exportar Excel'}
             </button>
           )}
-          {podeEditar && (
+          {podeEditar && !emRelatorio && (
             <button type="button" onClick={abrirNova} className={BOTAO_PRIMARIO}>
               <Plus className="h-4 w-4" aria-hidden="true" /> Abrir OS
             </button>

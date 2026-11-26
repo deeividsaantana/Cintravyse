@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { CheckCircle2, CloudRain, NotebookPen, Plus, X } from 'lucide-react';
+import { CheckCircle2, NotebookPen, Plus, X } from 'lucide-react';
 import type { CondicaoClimatica, DiarioObra, ObraLocal } from '../types';
 import { AbasDaTela } from '../shared/ui/AbasDaTela';
 import { PageHeader } from '../shared/ui/PageHeader';
+import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TelaCheia } from '../shared/ui/TelaCheia';
 import MapaChuva from './MapaChuva';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CARTAO } from './cadastros/estilos';
@@ -19,19 +20,22 @@ interface PluviometroTabProps {
   responsavel: string;
   podeEditar: boolean;
   onSave: (diario: DiarioObra, isNew: boolean) => void;
+  /** Aberto pela guia Relatórios: mostra só o mapa de chuvas do mês. */
+  relatorio?: ModoRelatorio;
 }
 
 const CLIMAS: CondicaoClimatica[] = ['Bom', 'Nublado', 'Chuva fraca', 'Chuva forte', 'Impraticável'];
 const hoje = new Date();
 
-export default function PluviometroTab({ diarios, obras, responsavel, podeEditar, onSave }: PluviometroTabProps) {
+export default function PluviometroTab({ diarios, obras, responsavel, podeEditar, onSave, relatorio }: PluviometroTabProps) {
   const escopo = useRef<HTMLElement>(null);
   const meses = useMemo(() => {
     const encontrados = mesesComDiario(diarios);
     return encontrados.length > 0 ? encontrados : [{ ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 }];
   }, [diarios]);
   const [mesSelecionado, setMesSelecionado] = useState(`${meses[0].ano}-${String(meses[0].mes).padStart(2, '0')}`);
-  const [aba, setAba] = useState<'resumo' | 'lancamentos'>('resumo');
+  // O mapa de chuvas (resumo) só abre pela guia Relatórios (25/11/2026).
+  const aba: 'resumo' | 'lancamentos' = relatorio ? 'resumo' : 'lancamentos';
   const [aberto, setAberto] = useState(false);
   const [diaSelecionado, setDiaSelecionado] = useState(`${mesSelecionado}-01`);
   const [obraId, setObraId] = useState('');
@@ -106,20 +110,16 @@ export default function PluviometroTab({ diarios, obras, responsavel, podeEditar
         <PageHeader
           eyebrow="Obra"
           title="Pluviômetro"
-          abas={(
+          abas={relatorio ? <VoltarAosRelatorios relatorio={relatorio} /> : (
             <AbasDaTela
               id="pluviometro"
               rotulo="Subtelas do pluviômetro"
               ativa={aba}
-              onTrocar={id => setAba(id === 'lancamentos' ? 'lancamentos' : 'resumo')}
+              onTrocar={() => undefined}
               idPainel="pluviometro-dados"
               testId="pluviometro-abas"
               abas={[
                 { id: 'lancamentos', rotulo: 'Lançamentos', icone: NotebookPen, contador: registrosDoMes.length, contadorRotulo: 'registros no mês', tom: 'neutro' },
-                // Relatórios no mesmo padrão das outras abas que lançam (15/11/2026).
-                { grupo: 'relatorios', rotulo: 'Relatórios', icone: CloudRain, abas: [
-                  { id: 'resumo', rotulo: 'Resumo mensal', icone: CloudRain },
-                ] },
               ]}
             />
           )}
@@ -135,7 +135,7 @@ export default function PluviometroTab({ diarios, obras, responsavel, podeEditar
                 ))}
               </select>
             </label>
-            {podeEditar && (
+            {podeEditar && !relatorio && (
               <button type="button" onClick={() => abrir(diaDeHoje())} className={`${BOTAO_PRIMARIO} max-sm:order-first px-5`} data-testid="pluviometro-novo">
                 <Plus className="size-5" aria-hidden="true" /> Novo lançamento
               </button>
