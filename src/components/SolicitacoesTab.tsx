@@ -44,6 +44,8 @@ import {
   formatarDia,
   numeroBr,
   pessoaDoUsuario,
+  PASSOS_RASTREIO,
+  rastreioDe,
   situacaoDe,
   type Ator,
   type PessoaSuprimentos,
@@ -205,7 +207,11 @@ export default function SolicitacoesTab({
   const [filtroSolicitante, setFiltroSolicitante] = useState("");
   const [filtroDataInicio, setFiltroDataInicio] = useState("");
   const [filtroDataFim, setFiltroDataFim] = useState("");
-  const [modo, setModo] = useState<"cards" | "lista">("cards");
+  // Guia do ERP (26/11/2026): no computador os pedidos abrem em tabela; os
+  // cards com a linha de etapas ficam no celular e no botão Exibição.
+  const [modo, setModo] = useState<"cards" | "lista">(() =>
+    typeof window !== "undefined" && window.matchMedia?.("(min-width: 1024px)").matches ? "lista" : "cards",
+  );
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [filtroConferencia, setFiltroConferencia] =
     useState<FiltroConferencia>("A conferir");
@@ -660,6 +666,18 @@ export default function SolicitacoesTab({
       render: ({ situacao }) => <SeloSituacao situacao={situacao} />,
       valorOrdenacao: ({ situacao }) => situacao,
       valorExportacao: ({ situacao }) => situacao,
+    },
+    {
+      chave: "etapa",
+      titulo: "Etapa",
+      larguraIdeal: 150,
+      render: ({ sol }) => {
+        const passo = rastreioDe(sol, hoje).passo;
+        return `${passo + 1}/5 · ${PASSOS_RASTREIO[passo]}`;
+      },
+      dica: ({ sol }) => rastreioDe(sol, hoje).frase,
+      valorOrdenacao: ({ sol }) => rastreioDe(sol, hoje).passo,
+      valorExportacao: ({ sol }) => PASSOS_RASTREIO[rastreioDe(sol, hoje).passo],
     },
     {
       chave: "pedido",
