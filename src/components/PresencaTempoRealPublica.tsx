@@ -151,7 +151,8 @@ type PresenceDraft = {
 
 const readDraft = (token: string): PresenceDraft | null => {
   try {
-    const raw = sessionStorage.getItem(draftStorageKey(token));
+    const key = draftStorageKey(token);
+    const raw = localStorage.getItem(key) ?? sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PresenceDraft>;
     if (!parsed || typeof parsed !== 'object') return null;
@@ -168,9 +169,15 @@ const readDraft = (token: string): PresenceDraft | null => {
 
 const writeDraft = (token: string, draft: PresenceDraft) => {
   try {
-    sessionStorage.setItem(draftStorageKey(token), JSON.stringify(draft));
+    const key = draftStorageKey(token);
+    const serialized = JSON.stringify(draft);
+    localStorage.setItem(key, serialized);
   } catch {
-    // A storage failure must never interrupt field registration.
+    try {
+      sessionStorage.setItem(draftStorageKey(token), JSON.stringify(draft));
+    } catch {
+      // A storage failure must never interrupt field registration.
+    }
   }
 };
 

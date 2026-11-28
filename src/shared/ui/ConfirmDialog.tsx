@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Modal } from './Modal';
 import { cn } from './styles';
@@ -17,9 +18,9 @@ export interface ConfirmDialogProps {
 }
 
 const confirmToneClass: Record<ConfirmTone, string> = {
-  danger: 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500',
-  warning: 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500',
-  neutral: 'bg-white hover:bg-slate-50 focus:ring-slate-500',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500',
+  warning: 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500',
+  neutral: 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50 focus:ring-slate-500',
 };
 
 const iconToneClass: Record<ConfirmTone, string> = {
@@ -40,10 +41,12 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const titleId = useId();
   return (
     <Modal
       open={open}
       role="alertdialog"
+      ariaLabelledBy={titleId}
       size="sm"
       busy={busy}
       onClose={onCancel}
@@ -62,7 +65,7 @@ export function ConfirmDialog({
             disabled={busy}
             onClick={() => void onConfirm()}
             className={cn(
-              'min-h-11 rounded-lg px-4 text-sm font-bold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60',
+              'min-h-11 rounded-lg px-4 text-sm font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60',
               confirmToneClass[tone],
             )}
           >
@@ -76,7 +79,7 @@ export function ConfirmDialog({
           <AlertTriangle size={20} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
+          <h2 id={titleId} className="text-base font-bold text-slate-900">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
         </div>
       </div>

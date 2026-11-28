@@ -1,0 +1,17 @@
+# Bloqueio rígido de governança do Cintravyse ERP.
+# Qualquer alteração no padrão, nos gates de CI, nas regras para agentes ou nas
+# migrations do banco exige aprovação obrigatória do dono do produto.
+
+/standards/                      @deeividsaantana
+/scripts/check-standards.mjs     @deeividsaantana
+/scripts/check-bundle-size.mjs   @deeividsaantana
+/scripts/check-pr-checklist.mjs  @deeividsaantana
+/components.json                 @deeividsaantana
+/eslint.config.js                @deeividsaantana
+/.prettierrc                     @deeividsaantana
+/vitest.config.ts                @deeividsaantana
+/render.yaml                     @deeividsaantana
+/.github/                        @deeividsaantana
+/AGENTS.md                       @deeividsaantana
+/docs/PADRAO_UNICO_ERP.md        @deeividsaantana
+/supabase/migrations/            @deeividsaantana

@@ -1,6 +1,6 @@
 // Painel Dev de acessos (16/11/2026). Só o dono do sistema usa: cada chamada
 // passa por funções do banco que conferem erp_dev_owners antes de ler ou
-// gravar (supabase/migrations/202611160001_painel_dev_acessos.sql). Quem é
+// gravar (supabase/migrations/202611160003_painel_dev_acessos.sql). Quem é
 // quem vem da sessão (token do Supabase), nunca do corpo do pedido.
 // Senha o dev não vê nem escolhe (18/11/2026): no login novo e no "esqueci a
 // senha" a pessoa cria a própria na tela de entrada (api/primeiro-acesso.js).

@@ -151,5 +151,5 @@ test('ninguém digita senha ao criar login e não existe mais link de senha', ()
   assert.doesNotMatch(aviso, /href=|wa\.me|location\.origin/, 'nenhum link: a pessoa só entra como sempre');
   assert.match(entrada, /Digite novamente/);
   assert.equal(fs.existsSync('src/PrimeiroAcessoApp.tsx'), false);
-  assert.match(servidor, /\$\{prefix\}\/primeiro-acesso`, toExpressHandler\(primeiroAcesso\)/);
+  assert.match(servidor, /'\/api\/primeiro-acesso', toExpressHandler\(primeiroAcesso\)/);
 });

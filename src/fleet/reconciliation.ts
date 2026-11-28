@@ -42,13 +42,37 @@ export const isDumpTruck = (equipment: Equipamento): boolean =>
     `${equipment.familia ?? ''} ${equipment.tipo ?? ''} ${equipment.nome ?? ''}`,
   ).includes('basculante');
 
+const HEAVY_YELLOW_IRON_CATEGORIES = [
+  'escavadeira',
+  'pa carregadeira',
+  'carregadeira',
+  'motoniveladora',
+  'patrol',
+  'rolo compactador',
+  'compactador',
+  'trator',
+  'retroescavadeira',
+  'guindaste',
+  'munck',
+  'perfuratriz',
+  'bate estaca',
+  'betoneira',
+  'vibroacabadora',
+  'fresadora',
+  'gerador',
+  'minicarregadeira',
+  'bobcat',
+  'empilhadeira',
+  'caminhao',
+];
+
 export const isOperationalFleet = (equipment: Equipamento): boolean => {
   const description = normalizeComparable(
     `${equipment.prefixo ?? ''} ${equipment.familia ?? ''} ${equipment.tipo ?? ''} ${equipment.nome ?? ''}`,
   );
-  return ['basculante', 'pipa', 'cavalo mecanico', 'comboio', 'carroceria']
+  return ['basculante', 'pipa', 'cavalo mecanico', 'comboio', 'carroceria', ...HEAVY_YELLOW_IRON_CATEGORIES]
     .some(category => description.includes(category))
-    || /^(cb|cp|cv|ca|cc)\d+$/i.test(normalizePrefix(equipment.prefixo));
+    || /^(cb|cp|cv|ca|cc|es|pc|mn|rc|tr|re|gd|mk|pf|bt|ge)\d+$/i.test(normalizePrefix(equipment.prefixo));
 };
 
 export interface OperationalFleetClassification {
@@ -76,6 +100,12 @@ export const classifyOperationalFleet = (equipment: Pick<Equipamento, 'prefixo' 
   }
   if (prefix.startsWith('CB') || description.includes('basculante')) {
     return { group: 'Basculantes', equipmentType: 'Caminhão Basculante' };
+  }
+  if (HEAVY_YELLOW_IRON_CATEGORIES.some(category => description.includes(category)) || /^(es|pc|mn|rc|tr|re|gd|pf)\d+$/i.test(prefix)) {
+    return {
+      group: equipment.familia?.trim() || 'Linha Amarela',
+      equipmentType: equipment.tipo?.trim() || equipment.nome?.trim() || 'Equipamento pesado',
+    };
   }
   return {
     group: equipment.familia?.trim() || 'Apoio',

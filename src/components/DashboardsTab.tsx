@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { ArrowUpRight, CloudRain, Fuel, Truck, Users } from 'lucide-react';
 import type { Abastecimento, ControleEquipamentoDiario, DiarioObra, Equipamento, PresencaApontamento } from '../types';
 import type { Solicitacao } from '../utils/solicitacoes';
 import { PageHeader } from '../shared/ui';
@@ -14,7 +15,6 @@ interface DashboardsTabProps {
   presencasLink: PresencaApontamento[];
   diariosObra: DiarioObra[];
   solicitacoes: Solicitacao[];
-  /** A pessoa abre a aba? Gráfico de aba que ela não abre não aparece. */
   podeVer: (tab: string) => boolean;
   onNavigate: (tab: string) => void;
 }
@@ -26,7 +26,6 @@ const PERIODOS: Array<{ dias: Periodo; rotulo: string }> = [
 
 const isoLocal = (data: Date) => `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
 
-/** Os dias do período, do mais antigo a hoje, em AAAA-MM-DD. */
 function diasDoPeriodo(dias: number) {
   const hoje = new Date();
   return Array.from({ length: dias }, (_, i) => {
@@ -54,12 +53,6 @@ function contar<T>(itens: T[], chave: (item: T) => string) {
 
 const PRESENTE = new Set(['Presente', 'Atraso', 'Saída antecipada']);
 
-/**
- * Dashboards (pedido do Deivid em 25/11/2026): os gráficos interativos de
- * pizza, linha e barras numa aba própria, separados da Visão geral. Um
- * período só no topo (7, 30 ou 90 dias) vale para todos; cada cartão leva
- * para a aba de onde o dado vem. Mostra só o que a pessoa pode abrir.
- */
 export default function DashboardsTab(props: DashboardsTabProps) {
   const { podeVer, onNavigate } = props;
   const [periodo, setPeriodo] = useState<Periodo>(30);
@@ -67,7 +60,11 @@ export default function DashboardsTab(props: DashboardsTabProps) {
 
   useGSAP(() => {
     if (!telaRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    gsap.fromTo(telaRef.current.querySelectorAll('.cv-grafico'), { opacity: .5 }, { opacity: 1, duration: .15, ease: 'power1.out', clearProps: 'opacity' });
+    gsap.fromTo(
+      telaRef.current.querySelectorAll('.cv-grafico'),
+      { opacity: 0.6, y: 6 },
+      { opacity: 1, y: 0, duration: 0.22, stagger: 0.04, ease: 'power2.out', clearProps: 'transform,opacity' },
+    );
   }, { scope: telaRef, dependencies: [periodo] });
 
   const dados = useMemo(() => {
@@ -77,7 +74,6 @@ export default function DashboardsTab(props: DashboardsTabProps) {
     const abast = props.abastecimentos.filter(a => dentro.has(a.data));
     const presencas = props.presencasLink.filter(p => dentro.has(p.data) && !p.inativoEm);
     const chuvas = props.diariosObra.filter(d => d.ativo !== false && dentro.has(d.data));
-    // Frota: a posição do último dia com lançamento dentro do período.
     const controles = props.controlesEquipamentos.filter(c => dentro.has(c.data));
     const ultimoDia = controles.reduce((maior, c) => (c.data > maior ? c.data : maior), '');
     const frotaDoDia = controles.filter(c => c.data === ultimoDia);
@@ -107,11 +103,11 @@ export default function DashboardsTab(props: DashboardsTabProps) {
 
   const fmt = (valor: number, casas = 0) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: casas }).format(valor);
   const numeros = [
-    podeVer('controle-equipamentos') && { rotulo: 'Máquinas em operação', valor: dados.ultimoDia ? fmt(dados.emOperacao) : '—', detalhe: dados.ultimoDia ? `em ${rotuloDia(dados.ultimoDia)}` : 'sem lançamento no período' },
-    podeVer('lancamentos') && { rotulo: 'Diesel no período', valor: `${fmt(dados.litros)} L`, detalhe: `${PERIODOS.find(p => p.dias === periodo)?.rotulo}` },
-    podeVer('presenca') && { rotulo: 'Presentes por dia', valor: fmt(dados.mediaPresentes), detalhe: 'média dos dias lançados' },
-    podeVer('pluviometro') && { rotulo: 'Chuva no período', valor: `${fmt(dados.chuvaTotal, 1)} mm`, detalhe: `${dados.chuvaPorDia.filter(d => d.valor > 0).length} dias com chuva` },
-  ].filter(Boolean) as Array<{ rotulo: string; valor: string; detalhe: string }>;
+    podeVer('controle-equipamentos') && { rotulo: 'Máquinas em operação', valor: dados.ultimoDia ? fmt(dados.emOperacao) : '—', detalhe: dados.ultimoDia ? `em ${rotuloDia(dados.ultimoDia)}` : 'sem lançamento no período', icone: Truck, borda: 'border-t-[#176b4d]', aba: 'controle-equipamentos' },
+    podeVer('lancamentos') && { rotulo: 'Diesel no período', valor: `${fmt(dados.litros)} L`, detalhe: `${PERIODOS.find(p => p.dias === periodo)?.rotulo}`, icone: Fuel, borda: 'border-t-sky-700', aba: 'lancamentos' },
+    podeVer('presenca') && { rotulo: 'Presentes por dia', valor: fmt(dados.mediaPresentes), detalhe: 'média dos dias lançados', icone: Users, borda: 'border-t-[#176b4d]', aba: 'presenca' },
+    podeVer('pluviometro') && { rotulo: 'Chuva no período', valor: `${fmt(dados.chuvaTotal, 1)} mm`, detalhe: `${dados.chuvaPorDia.filter(d => d.valor > 0).length} dias com chuva`, icone: CloudRain, borda: 'border-t-[#c2410c]', aba: 'pluviometro' },
+  ].filter(Boolean) as Array<{ rotulo: string; valor: string; detalhe: string; icone: typeof Truck; borda: string; aba: string }>;
 
   const Cartao = ({ titulo, sub, aba, largo, children }: { titulo: string; sub: string; aba: string; largo?: boolean; children: React.ReactNode }) => (
     <section className={`cv-grafico${largo ? ' cv-grafico--largo' : ''}`} aria-label={titulo}>
@@ -125,35 +121,73 @@ export default function DashboardsTab(props: DashboardsTabProps) {
 
   return (
     <TelaCheia ref={telaRef} id="dashboards-tab" rotulo="Dashboards" longa rotuloDados="Gráficos da operação"
-      cabecalho={<PageHeader title="Dashboards" actions={
-        <div className="cv-periodo" role="group" aria-label="Período dos gráficos">
+      cabecalho={<PageHeader title="Dashboards" />}
+    >
+      {/* Faixa analítica Floresta com seletor de janela */}
+      <section className="cv-hero-floresta flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4 text-white">
+        <div className="min-w-0">
+          <h2 className="text-[1.125rem] font-semibold tracking-[-0.02em] text-white">Telemetria da Operação</h2>
+          <p className="mt-0.5 text-[12.5px] text-emerald-100">
+            Indicadores consolidados dos últimos {periodo} dias em frota, diesel, efetivo e clima.
+          </p>
+        </div>
+        <div className="inline-flex rounded-xl bg-white/10 p-1 ring-1 ring-white/15" role="group" aria-label="Período dos gráficos">
           {PERIODOS.map(p => (
-            <button key={p.dias} type="button" aria-pressed={periodo === p.dias} onClick={() => setPeriodo(p.dias)}>{p.rotulo}</button>
+            <button
+              key={p.dias}
+              type="button"
+              aria-pressed={periodo === p.dias}
+              onClick={() => setPeriodo(p.dias)}
+              className={`rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                periodo === p.dias ? 'bg-white text-emerald-950' : 'text-emerald-100 hover:text-white'
+              }`}
+            >
+              {p.rotulo}
+            </button>
           ))}
         </div>
-      } />}
-    >
+      </section>
+
       {numeros.length > 0 && (
-        <section className="renea-faixa-numeros cv-numeros grid-cols-2 lg:grid-cols-4" aria-label="Resumo do período">
-          {numeros.map(n => (
-            <div key={n.rotulo} className="bg-white p-4"><p className="text-[13px] font-medium text-slate-500">{n.rotulo}</p><strong className="mt-1 block text-2xl font-semibold tabular-nums text-slate-900">{n.valor}</strong><span className="text-xs text-slate-500">{n.detalhe}</span></div>
-          ))}
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Resumo do período">
+          {numeros.map(n => {
+            const Icone = n.icone;
+            return (
+              <button
+                key={n.rotulo}
+                type="button"
+                onClick={() => onNavigate(n.aba)}
+                className={`group flex flex-col justify-between rounded-2xl border border-slate-200 border-t-[3px] ${n.borda} bg-white px-4 py-3 text-left shadow-[0_1px_2px_rgba(11,27,22,0.05)] transition-colors hover:bg-slate-50`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] font-medium text-">{n.rotulo}</span>
+                  <Icone className="size-4 text-[#176b4d]" aria-hidden="true" />
+                </div>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <strong className="text-[1.5rem] font-semibold tracking-[-0.025em] tabular-nums text-slate-900">{n.valor}</strong>
+                  <ArrowUpRight className="size-3.5 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+                </div>
+                <span className="mt-1 text-xs text-">{n.detalhe}</span>
+              </button>
+            );
+          })}
         </section>
       )}
+
       <div className="cv-graficos">
         {podeVer('lancamentos') && (
           <Cartao titulo="Diesel por dia" sub="Litros abastecidos em cada dia" aba="lancamentos" largo>
-            <GraficoTempo tipo="linha" pontos={dados.litrosPorDia} unidade=" L" vazio="Nenhum abastecimento no período." />
+            <GraficoTempo pontos={dados.litrosPorDia} unidade="L" cor={CORES_SERIE[0]} tipo="barras" vazio="Nenhum abastecimento no período." />
           </Cartao>
         )}
         {podeVer('controle-equipamentos') && (
-          <Cartao titulo="Situação da frota" sub={dados.ultimoDia ? `Lançamento de ${rotuloDia(dados.ultimoDia)}` : 'Último dia lançado'} aba="controle-equipamentos">
+          <Cartao titulo="Situação da frota" sub={dados.ultimoDia ? `Posição de ${rotuloDia(dados.ultimoDia)}` : 'Último dia lançado'} aba="controle-equipamentos">
             <GraficoPizza fatias={dados.frotaDoDia} vazio="Nenhuma máquina lançada no período." />
           </Cartao>
         )}
         {podeVer('presenca') && (
           <Cartao titulo="Presentes por dia" sub="Pessoas presentes nos apontamentos" aba="presenca" largo>
-            <GraficoTempo tipo="barras" pontos={dados.presentesPorDia} vazio="Nenhum apontamento no período." cor={CORES_SERIE[1]} />
+            <GraficoTempo pontos={dados.presentesPorDia} unidade="pessoas" cor={CORES_SERIE[1]} tipo="linha" vazio="Nenhum apontamento no período." />
           </Cartao>
         )}
         {podeVer('presenca') && (
@@ -163,17 +197,17 @@ export default function DashboardsTab(props: DashboardsTabProps) {
         )}
         {podeVer('pluviometro') && (
           <Cartao titulo="Chuva por dia" sub="Leitura do pluviômetro, em mm" aba="pluviometro" largo>
-            <GraficoTempo tipo="barras" pontos={dados.chuvaPorDia} unidade=" mm" casas={1} vazio="Sem chuva lançada no período." cor={CORES_SERIE[1]} />
+            <GraficoTempo pontos={dados.chuvaPorDia} unidade="mm" cor={CORES_SERIE[2]} tipo="barras" vazio="Sem chuva lançada no período." />
           </Cartao>
         )}
         {podeVer('solicitacoes') && (
-          <Cartao titulo="Pedidos por etapa" sub={`${fmt(dados.pedidos)} pedidos abertos no período`} aba="solicitacoes">
+          <Cartao titulo="Pedidos por etapa" sub={`${dados.pedidos} pedidos abertos no período`} aba="solicitacoes">
             <GraficoPizza fatias={dados.pedidosPorEtapa} vazio="Nenhum pedido aberto no período." />
           </Cartao>
         )}
-        {podeVer('lancamentos') && (
-          <Cartao titulo="Máquinas que mais abasteceram" sub="Litros no período, as 8 maiores" aba="lancamentos" largo>
-            <GraficoRanking itens={dados.litrosPorMaquina} unidade=" L" vazio="Nenhum abastecimento no período." />
+        {podeVer('lancamentos') && dados.litrosPorMaquina.length > 0 && (
+          <Cartao titulo="Quem mais consumiu diesel" sub="Máquinas no período" aba="lancamentos" largo>
+            <GraficoRanking itens={dados.litrosPorMaquina} unidade="L" vazio="Nenhum abastecimento no período." />
           </Cartao>
         )}
       </div>

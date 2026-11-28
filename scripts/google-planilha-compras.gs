@@ -83,6 +83,10 @@ function aplicarLinhas_(planilha, linhas) {
     if (codigo) pedidoDoNumero[codigo.split('/')[0]] = pedido;
   });
 
+  var seguroTexto_ = function (valor) {
+    if (typeof valor !== 'string') return valor;
+    return /^[\t\r=+\-@]/.test(valor) ? "'" + valor : valor;
+  };
   var alteradas = 0;
   var novas = 0;
   linhas.forEach(function (pedida) {
@@ -96,8 +100,16 @@ function aplicarLinhas_(planilha, linhas) {
     if (achadas.length) {
       achadas.forEach(function (indice) {
         var numeroDaLinha = LINHA_CABECALHO + 1 + indice;
-        if (pedida.sc !== undefined) { aba.getRange(numeroDaLinha, col.sc).setValue(pedida.sc); dados[indice][col.sc - 1] = pedida.sc; }
-        if (pedida.previsao !== undefined) { aba.getRange(numeroDaLinha, col.previsao).setValue(valorDaPrevisao_(pedida.previsao)); dados[indice][col.previsao - 1] = pedida.previsao; }
+        if (pedida.sc !== undefined) {
+          var scSeguro = seguroTexto_(pedida.sc);
+          aba.getRange(numeroDaLinha, col.sc).setValue(scSeguro);
+          dados[indice][col.sc - 1] = scSeguro;
+        }
+        if (pedida.previsao !== undefined) {
+          var prevSeguro = seguroTexto_(valorDaPrevisao_(pedida.previsao));
+          aba.getRange(numeroDaLinha, col.previsao).setValue(prevSeguro);
+          dados[indice][col.previsao - 1] = pedida.previsao;
+        }
         alteradas += 1;
       });
       return;
@@ -107,15 +119,15 @@ function aplicarLinhas_(planilha, linhas) {
     if (!pedidoDoNumero[numero]) { maiorPedido += 1; pedidoDoNumero[numero] = maiorPedido; }
     var nova = [];
     for (var c = 0; c < Math.max(largura, col.codigo); c += 1) nova.push('');
-    if (col.data) nova[col.data - 1] = dataDe_(pedida.nova.data) || pedida.nova.data;
+    if (col.data) nova[col.data - 1] = dataDe_(pedida.nova.data) || seguroTexto_(pedida.nova.data);
     nova[col.pedido - 1] = pedidoDoNumero[numero];
-    if (col.solicitante) nova[col.solicitante - 1] = pedida.nova.solicitante;
-    nova[col.item - 1] = pedida.item;
-    if (col.unidade) nova[col.unidade - 1] = pedida.nova.unidade;
+    if (col.solicitante) nova[col.solicitante - 1] = seguroTexto_(pedida.nova.solicitante);
+    nova[col.item - 1] = seguroTexto_(pedida.item);
+    if (col.unidade) nova[col.unidade - 1] = seguroTexto_(pedida.nova.unidade);
     if (col.quantidade) nova[col.quantidade - 1] = pedida.nova.quantidade;
-    nova[col.sc - 1] = pedida.sc || '';
-    nova[col.previsao - 1] = pedida.previsao ? valorDaPrevisao_(pedida.previsao) : '';
-    nova[col.codigo - 1] = pedida.codigo;
+    nova[col.sc - 1] = seguroTexto_(pedida.sc || '');
+    nova[col.previsao - 1] = pedida.previsao ? seguroTexto_(valorDaPrevisao_(pedida.previsao)) : '';
+    nova[col.codigo - 1] = seguroTexto_(pedida.codigo);
     aba.appendRow(nova);
     dados.push(nova);
     novas += 1;

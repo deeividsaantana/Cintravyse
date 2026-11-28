@@ -44,18 +44,25 @@ const recordUsage = async (event, staff) => {
   return jsonResponse(200, { success: true });
 };
 
-const summarizeUsage = async (event) => {
+const summarizeUsage = async (event, staff) => {
+  if (staff.role !== 'admin' && staff.role !== 'gestor') {
+    return jsonResponse(403, { success: false, message: 'Apenas gestor ou administrador pode consultar o resumo de uso.' });
+  }
   const requestedDays = Number(event.queryStringParameters?.days || 30);
   const periodDays = Math.max(1, Math.min(90, Number.isFinite(requestedDays) ? Math.floor(requestedDays) : 30));
   const start = new Date();
   start.setUTCDate(start.getUTCDate() - periodDays + 1);
-  const { data: rows, error } = await getSupabaseAdmin().from('usage_telemetry').select('user_id, tabs, updated_at').gte('day', isoDay(start));
+  const { data: rows, error } = await getSupabaseAdmin()
+    .from('usage_telemetry')
+    .select('user_id, tabs, updated_at')
+    .eq('organization_id', staff.organizationId)
+    .gte('day', isoDay(start));
   if (error) throw error;
   const counts = {};
   const users = new Set();
   let updatedAt = '';
   (rows || []).forEach(data => {
-    if (data.userId) users.add(String(data.userId));
+    if (data.user_id) users.add(String(data.user_id));
     if (String(data.updated_at || '') > updatedAt) updatedAt = String(data.updated_at);
     Object.entries(data.tabs || {}).forEach(([key, count]) => {
       counts[key] = Number(counts[key] || 0) + Number(count || 0);
@@ -80,7 +87,7 @@ export const handler = async event => {
   try {
     const staff = await requireSupabaseUser(event);
     if (event.httpMethod === 'POST') return await recordUsage(event, staff);
-    if (event.httpMethod === 'GET') return await summarizeUsage(event);
+    if (event.httpMethod === 'GET') return await summarizeUsage(event, staff);
     return jsonResponse(405, { success: false, message: 'Método não permitido.' }, { Allow: 'GET, POST' });
   } catch (error) {
     return functionErrorResponse(error);

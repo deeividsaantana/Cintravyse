@@ -23,16 +23,20 @@ export const normalizeStakeText = (value: unknown) =>
     .replace(/[^A-Z0-9]+/g, ' ')
     .trim();
 
+const isActiveStakeLot = (lote: LoteEstaca) => lote.status !== 'Cancelado' && !lote.inativoEm;
+
 export const calculateStakeBalance = (
   lote: LoteEstaca,
   cravacoes: CravacaoEstaca[]
 ): StakeBalance => {
   const vinculadas = cravacoes.filter(item => item.loteId === lote.id);
-  const recebidoM = round(
+  const comprimentoBruto = round(
     lote.quantidadeFisica > 0
       ? lote.quantidadeFisica * lote.comprimentoM
       : lote.comprimentoM
   );
+  // Lotes de Saída ou Cancelados não aumentam o saldo recebido de aço na obra.
+  const recebidoM = (!isActiveStakeLot(lote) || lote.movimento === 'Saída') ? 0 : comprimentoBruto;
   const cravadoM = round(vinculadas.reduce((total, item) => total + item.comprimentoCravadoM, 0));
   const sobraDeclaradaM = round(vinculadas.reduce((total, item) => total + item.sobraM, 0));
   const perdaM = round(vinculadas.reduce((total, item) => total + item.perdaM, 0));
@@ -58,7 +62,7 @@ export const calculateStakeBalance = (
 };
 
 export const buildStakeBalances = (controle: ControleEstacas) =>
-  controle.lotes.map(lote => calculateStakeBalance(lote, controle.cravacoes));
+  controle.lotes.filter(isActiveStakeLot).map(lote => calculateStakeBalance(lote, controle.cravacoes));
 
 export const suggestStakeLot = (
   draft: Pick<CravacaoEstaca, 'perfil' | 'comprimentoM'>,
@@ -67,7 +71,7 @@ export const suggestStakeLot = (
   const wanted = normalizeStakeText(draft.perfil);
   const balances = new Map(buildStakeBalances(controle).map(item => [item.loteId, item]));
   const best = controle.lotes
-    .filter(lote => lote.status !== 'Cancelado')
+    .filter(lote => isActiveStakeLot(lote) && lote.movimento !== 'Saída')
     .map(lote => {
       const text = normalizeStakeText(`${lote.perfilModelo} ${lote.descricao}`);
       const balance = balances.get(lote.id);
@@ -83,7 +87,7 @@ export const suggestStakeLot = (
 export const reconcileStakeInvoice = (lotes: LoteEstaca[], notaFiscal: string) => {
   const invoiceKey = (value: string) => value.replace(/\D/g, '').replace(/^0+/, '') || normalizeStakeText(value);
   const normalized = invoiceKey(notaFiscal);
-  const items = lotes.filter(lote => invoiceKey(lote.notaFiscal) === normalized);
+  const items = lotes.filter(lote => isActiveStakeLot(lote) && invoiceKey(lote.notaFiscal) === normalized);
   return {
     notaFiscal,
     itens: items.length,
@@ -98,18 +102,19 @@ export const reconcileStakeInvoice = (lotes: LoteEstaca[], notaFiscal: string) =
 };
 
 export const buildStakeSummary = (controle: ControleEstacas) => {
+  const lotesAtivos = controle.lotes.filter(isActiveStakeLot);
   const balances = buildStakeBalances(controle);
-  const notas = Array.from(new Set(controle.lotes.map(item => item.notaFiscal).filter(Boolean)));
+  const notas = Array.from(new Set(lotesAtivos.map(item => item.notaFiscal).filter(Boolean)));
   return {
-    lotes: controle.lotes.length,
+    lotes: lotesAtivos.length,
     cravacoes: controle.cravacoes.length,
-    pesoKg: round(controle.lotes.reduce((total, item) => total + item.pesoKg, 0)),
-    valorTotal: round(controle.lotes.reduce((total, item) => total + item.valorTotal, 0)),
+    pesoKg: round(lotesAtivos.reduce((total, item) => total + item.pesoKg, 0)),
+    valorTotal: round(lotesAtivos.reduce((total, item) => total + item.valorTotal, 0)),
     recebidoM: round(balances.reduce((total, item) => total + item.recebidoM, 0)),
     cravadoM: round(balances.reduce((total, item) => total + item.cravadoM, 0)),
     sobraM: round(balances.reduce((total, item) => total + item.saldoConfirmadoM, 0)),
     perdaM: round(balances.reduce((total, item) => total + item.perdaM, 0)),
-    notasPendentes: notas.filter(nota => reconcileStakeInvoice(controle.lotes, nota).status !== 'Conforme').length,
+    notasPendentes: notas.filter(nota => reconcileStakeInvoice(lotesAtivos, nota).status !== 'Conforme').length,
     saldosDivergentes: balances.filter(item => item.status === 'Divergente').length,
   };
 };

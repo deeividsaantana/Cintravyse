@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type PropsWithChildren, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, RefreshCw, ShieldCheck } from 'lucide-react';
+import { captureClientException } from '../../observability/sentry';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,7 +24,7 @@ interface ApplicationErrorBoundaryProps {
   children?: ReactNode;
 }
 
-class ApplicationErrorBoundary extends Component<ApplicationErrorBoundaryProps, ApplicationErrorBoundaryState> {
+export class ApplicationErrorBoundary extends Component<ApplicationErrorBoundaryProps, ApplicationErrorBoundaryState> {
   state: ApplicationErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): ApplicationErrorBoundaryState {
@@ -32,6 +33,7 @@ class ApplicationErrorBoundary extends Component<ApplicationErrorBoundaryProps, 
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Falha não tratada na interface do ERP.', error, errorInfo);
+    captureClientException(error, { componentStack: errorInfo.componentStack, boundary: 'application' });
   }
 
   render(): ReactNode {
@@ -76,6 +78,57 @@ class ApplicationErrorBoundary extends Component<ApplicationErrorBoundaryProps, 
           <footer className="mt-10 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-400">Cintravyse · A recuperação não altera lançamentos, cadastros ou históricos.</footer>
         </section>
       </main>
+    );
+  }
+}
+
+interface TabErrorBoundaryProps {
+  resetKey: string;
+  children?: ReactNode;
+}
+
+export class TabErrorBoundary extends Component<TabErrorBoundaryProps, ApplicationErrorBoundaryState> {
+  state: ApplicationErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): ApplicationErrorBoundaryState {
+    return { error };
+  }
+
+  componentDidUpdate(prevProps: TabErrorBoundaryProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error(`Falha isolada na aba "${this.props.resetKey}".`, error, errorInfo);
+    captureClientException(error, { componentStack: errorInfo.componentStack, boundary: 'tab', tab: this.props.resetKey });
+  }
+
+  render(): ReactNode {
+    if (!this.state.error) return this.props.children;
+    return (
+      <section className="mx-auto my-8 max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm" role="alert">
+        <div className="flex items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-50 text-amber-700">
+            <AlertTriangle size={20} aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold text-slate-900">Esta aba encontrou um erro inesperado.</h2>
+            <p className="mt-1 text-sm text-slate-600">Seus dados continuam salvos e as demais abas seguem funcionando normalmente.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => this.setState({ error: null })}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#176b4d] px-4 text-sm font-bold text-white hover:bg-[#0f5a3d]"
+              >
+                <RefreshCw size={15} aria-hidden="true" />
+                Recarregar aba
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     );
   }
 }

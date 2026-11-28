@@ -154,8 +154,9 @@ export const formatDurationMinutes = (
   emptyLabel = '—',
 ): string => {
   if (value === undefined || !Number.isFinite(value) || value < 0) return emptyLabel;
-  const hours = Math.floor(value / 60);
-  const minutes = Math.round(value % 60);
+  const totalMinutes = Math.round(value);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 

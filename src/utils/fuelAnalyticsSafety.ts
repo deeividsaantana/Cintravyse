@@ -16,9 +16,13 @@ export const parseFuelAnalyticsNumber = (value: unknown): number | null => {
 
   let normalized = cleaned;
   if (cleaned.includes(',') && cleaned.includes('.')) {
-    normalized = cleaned.replace(/\./g, '').replace(',', '.');
+    normalized = cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.')
+      ? cleaned.replace(/\./g, '').replace(',', '.')
+      : cleaned.replace(/,/g, '');
   } else if (cleaned.includes(',')) {
-    normalized = cleaned.replace(',', '.');
+    normalized = /^-?\d{1,3}(,\d{3})+$/.test(cleaned)
+      ? cleaned.replace(/,/g, '')
+      : cleaned.replace(',', '.');
   } else if (/^-?\d{1,3}(\.\d{3})+$/.test(cleaned)) {
     normalized = cleaned.replace(/\./g, '');
   }

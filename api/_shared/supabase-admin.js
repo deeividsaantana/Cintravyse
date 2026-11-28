@@ -9,10 +9,20 @@ const key = () => String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 let clienteSubstituto = null;
 export const substituirClienteSupabase = cliente => { clienteSubstituto = cliente; };
 
+let cachedAdminClient = null;
+let cachedAdminKey = '';
+
 export const getSupabaseAdmin = () => {
   if (clienteSubstituto) return clienteSubstituto;
-  if (!url() || !key()) throw new Error('Supabase administrativo não configurado no servidor.');
-  return createClient(url(), key(), { auth: { autoRefreshToken: false, persistSession: false } });
+  const currentUrl = url();
+  const currentKey = key();
+  if (!currentUrl || !currentKey) throw new Error('Supabase administrativo não configurado no servidor.');
+  const cacheKey = `${currentUrl}|${currentKey}`;
+  if (!cachedAdminClient || cachedAdminKey !== cacheKey) {
+    cachedAdminClient = createClient(currentUrl, currentKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    cachedAdminKey = cacheKey;
+  }
+  return cachedAdminClient;
 };
 
 export const requireSupabaseUser = async event => {
@@ -21,12 +31,25 @@ export const requireSupabaseUser = async event => {
   const client = getSupabaseAdmin();
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user) { const denied = new Error('Sessão inválida.'); denied.statusCode = 401; throw denied; }
+  if (data.user.banned_until && new Date(data.user.banned_until) > new Date()) {
+    const denied = new Error('Sua conta está desativada.');
+    denied.statusCode = 403;
+    throw denied;
+  }
   const { data: membership, error: membershipError } = await client
     .from('organization_members').select('organization_id, role').eq('user_id', data.user.id).limit(1).maybeSingle();
   if (membershipError) throw membershipError;
   if (!membership) { const denied = new Error('Sua conta não possui autorização de equipe.'); denied.statusCode = 403; throw denied; }
   const role = appRoleFor(membership.role, data.user.app_metadata?.role);
-  return { uid: data.user.id, email: data.user.email || '', name: data.user.user_metadata?.full_name || data.user.email || '', role, organizationId: membership.organization_id };
+  const procurementRole = cleanString(data.user.app_metadata?.procurement_role, 40);
+  return {
+    uid: data.user.id,
+    email: data.user.email || '',
+    name: data.user.user_metadata?.full_name || data.user.email || '',
+    role,
+    procurementRole,
+    organizationId: membership.organization_id,
+  };
 };
 export const requireStaffUser = requireSupabaseUser;
 /** Zerar o dia e entregar o endereço dos links é de gestor ou administrador (M1). */
@@ -67,19 +90,21 @@ export const serverTimestamp = () => new Date().toISOString();
 export const stableHash = value => crypto.createHash('sha256').update(String(value)).digest('hex');
 export const requestIpHash = event => {
   const headers = event?.headers || {};
-  const forwarded = headers['x-nf-client-connection-ip'] || headers['x-real-ip'] || headers['x-forwarded-for'] || headers['client-ip'] || 'unknown';
+  const forwarded = headers['x-real-ip'] || headers['x-forwarded-for'] || headers['client-ip'] || 'unknown';
   return stableHash(String(forwarded).split(',')[0].trim()).slice(0, 24);
 };
 export const functionErrorResponse = error => jsonResponse(Number(error?.statusCode) || 500, { success: false, message: Number(error?.statusCode) >= 500 ? 'O serviço está temporariamente indisponível.' : error.message });
 
 /**
- * Igual ao update do Firestore: 'payload.records' troca só o campo de dentro,
- * em vez de criar uma chave solta com ponto no nome e deixar o antigo intacto.
+ * Atualização por caminho pontuado: 'payload.records' troca só o campo interno,
+ * sem sobrescrever o objeto pai nem criar chave literal com ponto.
  */
+const CHAVES_PROIBIDAS = new Set(['__proto__', 'constructor', 'prototype']);
 export const applyFieldUpdates = (document, updates) => {
   const next = structuredClone(document || {});
   for (const [path, value] of Object.entries(updates || {})) {
     const keys = path.split('.');
+    if (keys.some(key => CHAVES_PROIBIDAS.has(key))) continue;
     let target = next;
     for (const key of keys.slice(0, -1)) {
       if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) target[key] = {};
@@ -120,8 +145,8 @@ const makeRef = (path, id = crypto.randomUUID()) => ({
   collectionPath: path,
   async get() { const { data, error } = await rowStore().select('id,payload').eq('path', `${path}/${id}`).maybeSingle(); if (error) throw error; return snapshot(data ? { ...data, payload: data.payload } : null, makeRef(path, id)); },
   async set(payload, options = {}) { const current = options.merge ? await this.get() : null; const next = options.merge ? { ...(current.data() || {}), ...payload } : payload; const { error } = await rowStore().upsert(documentRow(path, id, next)); if (error) throw error; if (path === PUBLIC_SUBMISSIONS_COLLECTION) await mirrorPublicSubmission(id, next, { reabrir: true }); },
-  // Como o create do Firestore: falha se o documento já existe (a chave única de
-  // path decide no banco, então duas requisições simultâneas não passam juntas).
+  // Falha se o documento já existe (a chave única de path decide no banco,
+  // então duas requisições simultâneas não passam juntas).
   async create(payload) { const { error } = await rowStore().insert(documentRow(path, id, payload)); if (error) throw error.code === '23505' ? alreadyExists() : error; if (path === PUBLIC_SUBMISSIONS_COLLECTION) await mirrorPublicSubmission(id, payload, { reabrir: true }); },
   async update(payload) { const current = await this.get(); if (!current.exists) throw new Error('Documento não encontrado.'); await this.set(applyFieldUpdates(current.data(), payload)); },
   async delete() { const { error } = await rowStore().delete().eq('path', `${path}/${id}`); if (error) throw error; },
@@ -201,12 +226,19 @@ const makeBatch = () => {
         for (const path of deletes) { const { error: rowError } = await rowStore().delete().eq('path', path); if (rowError) throw rowError; }
       }
       await Promise.all(writes.filter(row => row.collection_path === PUBLIC_SUBMISSIONS_COLLECTION).map(row => mirrorPublicSubmission(row.id, row.payload, { reabrir: true })));
+      const deletedSubmissionIds = deletes
+        .filter(path => path.startsWith(`${PUBLIC_SUBMISSIONS_COLLECTION}/`))
+        .map(path => path.slice(PUBLIC_SUBMISSIONS_COLLECTION.length + 1))
+        .filter(Boolean);
+      if (deletedSubmissionIds.length > 0) {
+        await getSupabaseAdmin().from('erp_public_submissions').delete().in('id', deletedSubmissionIds);
+      }
     },
   };
 };
-// Sem transação de verdade no PostgREST. Como no Firestore, as escritas só
-// acontecem depois que o bloco termina sem erro, na ordem em que foram pedidas;
-// create falha se o documento existe e interrompe as escritas seguintes.
+// Sem transação nativa no PostgREST: as escritas só acontecem depois que o
+// bloco termina sem erro, na ordem em que foram pedidas; create falha se o
+// documento existe e interrompe as escritas seguintes.
 export const getAdminDb = () => ({ collection: makeCollection, batch: makeBatch, async runTransaction(callback) {
   const operations = [];
   const transaction = { get: ref => ref.get(), set: (ref, data, options) => { operations.push(() => ref.set(data, options)); }, update: (ref, data) => { operations.push(() => ref.update(data)); }, delete: ref => { operations.push(() => ref.delete()); }, create: (ref, data) => { operations.push(() => ref.create(data)); } };
@@ -241,10 +273,9 @@ export const enforceRateLimit = async (_database, event, bucket, limit, windowSe
     throw denied;
   }
 };
-// Mantém a forma do antigo Firebase Admin (uid, displayName, disabled e
-// claims) para api/master-data.js, traduzindo para o Supabase: e-mail já
-// confirmado, nome em user_metadata, bloqueio por ban_duration e o perfil
-// gravado em organization_members, que é o que libera o login no app.
+// Fachada administrativa do Supabase Auth (uid, displayName, disabled e claims)
+// para api/master-data.js: e-mail confirmado, nome em user_metadata, bloqueio
+// por ban_duration e perfil gravado em organization_members.
 // organization_members só aceita admin, editor e viewer (é o que o banco
 // confere para gravar). O perfil do app (gestor, operador) fica em app_metadata.
 /** Contas com perfil de administrador na organização. */
@@ -309,6 +340,12 @@ export const getAdminAuth = () => {
         { organization_id: claims.organization_id, user_id: id, role: membershipRoleFor(claims.role) },
         { onConflict: 'organization_id,user_id' },
       );
+      if (error) throw error;
+    },
+    async deleteUser(id) {
+      const { error: memberError } = await client.from('organization_members').delete().eq('user_id', id);
+      if (memberError) throw memberError;
+      const { error } = await client.auth.admin.deleteUser(id);
       if (error) throw error;
     },
   };

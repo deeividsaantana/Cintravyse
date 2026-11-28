@@ -25,14 +25,40 @@ jobs:
       - name: Instalar dependencias
         run: npm ci --no-audit --no-fund
 
-      - name: Validar tipagem
+      - name: Conferir padrao unico do ERP
+        run: npm run check:standards
+
+      - name: Validar tipagem TypeScript
         run: npm run lint
 
-      - name: Executar testes
+      - name: Conferir ESLint nos novos padroes
+        run: npm run lint:code
+
+      - name: Executar testes de contrato (Node)
         run: npm test
+
+      - name: Executar testes de UI e API mockada (Vitest + RTL + MSW)
+        run: npm run test:ui
 
       - name: Gerar build
         run: npm run build
 
       - name: Conferir peso do build
         run: npm run check:bundle
+
+  deploy_render:
+    name: Deploy Render (condicionado aos testes)
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar deploy na Render apos aprovacao dos testes
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL nao configurado nos Secrets do repositorio; pulando disparo automatico."
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"

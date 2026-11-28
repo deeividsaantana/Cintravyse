@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Calendar, Save } from 'lucide-react';
 import type { Funcionario, GrupoEquipe } from '../../types';
 import { criarEscalaSabado, type EscalaSabadoRecord } from '../../utils/presencaManual';
-import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, ROTULO } from '../cadastros/estilos';
+import { CAMPO } from '../cadastros/estilos';
+import { Badge, Button, Label } from '../ui';
 
 interface Props {
   funcionarios: readonly Funcionario[];
@@ -11,6 +15,13 @@ interface Props {
   onSalvar: (escala: EscalaSabadoRecord) => void;
   onCancelar: () => void;
 }
+
+const escalaSabadoSchema = z.object({
+  grupoEquipeId: z.string().trim().min(1, 'Selecione uma equipe antes de salvar a escala.'),
+  observacaoGeral: z.string().max(600, 'Observação limitada a 600 caracteres.').optional(),
+});
+
+type EscalaSabadoFormValues = z.infer<typeof escalaSabadoSchema>;
 
 // Data local, não toISOString: à noite em Brasília o UTC já é o dia seguinte.
 const proximoSabado = (hoje = new Date()) => {
@@ -25,7 +36,19 @@ export function EscalaSabado({ funcionarios, gruposEquipe, escalaExistente, onSa
   const [escala, setEscala] = useState<EscalaSabadoRecord>(
     () => escalaExistente ?? criarEscalaSabado(proximoSabado(), funcionarios, ''),
   );
-  const [observacao, setObservacao] = useState(escala.observacaoGeral ?? '');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<EscalaSabadoFormValues>({
+    resolver: zodResolver(escalaSabadoSchema),
+    defaultValues: {
+      grupoEquipeId: escala.grupoEquipeId,
+      observacaoGeral: escala.observacaoGeral ?? '',
+    },
+  });
+
   const escalados = escala.funcionarios.filter(pessoa => pessoa.escalado).length;
 
   const alternar = (funcionarioId: string) => {
@@ -36,35 +59,46 @@ export function EscalaSabado({ funcionarios, gruposEquipe, escalaExistente, onSa
     }));
   };
 
-  const salvar = () => {
-    onSalvar({ ...escala, observacaoGeral: observacao.trim() || undefined, atualizadoEm: new Date().toISOString() });
-  };
+  const salvar = handleSubmit(valores => {
+    onSalvar({
+      ...escala,
+      grupoEquipeId: valores.grupoEquipeId,
+      observacaoGeral: valores.observacaoGeral?.trim() || undefined,
+      atualizadoEm: new Date().toISOString(),
+    });
+  });
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={salvar} className="space-y-4" noValidate>
       <div className="flex items-center gap-2">
         <Calendar className="size-5 text-emerald-700" aria-hidden="true" />
         <h2 className="text-lg font-bold text-slate-950">Escala para sábado</h2>
-        <span className="ml-auto text-sm text-slate-600">{dataBr(escala.data)}</span>
+        <Badge variant="outline" className="ml-auto">{dataBr(escala.data)}</Badge>
       </div>
 
       <div className="space-y-3">
-        <label className={`${ROTULO} block`}>
-          Equipe
+        <div className="space-y-1.5">
+          <Label htmlFor="escala-sabado-equipe">Equipe</Label>
           <select
-            value={escala.grupoEquipeId}
-            onChange={event => setEscala({ ...escala, grupoEquipeId: event.target.value })}
-            className={`${CAMPO} mt-2`}
+            id="escala-sabado-equipe"
+            {...register('grupoEquipeId')}
+            aria-invalid={Boolean(errors.grupoEquipeId)}
+            className={CAMPO}
           >
             <option value="">Selecione uma equipe</option>
             {gruposEquipe.map(grupo => (
               <option key={grupo.id} value={grupo.id}>{grupo.nome}</option>
             ))}
           </select>
-        </label>
+          {errors.grupoEquipeId && (
+            <p role="alert" className="text-xs font-semibold text-rose-700">
+              {errors.grupoEquipeId.message}
+            </p>
+          )}
+        </div>
 
         <fieldset className="space-y-2">
-          <legend className={ROTULO}>
+          <legend className="text-sm font-medium text-slate-700">
             Quem vem no sábado ({escalados} de {escala.funcionarios.length})
           </legend>
           <div className="grid max-h-72 gap-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
@@ -85,26 +119,32 @@ export function EscalaSabado({ funcionarios, gruposEquipe, escalaExistente, onSa
           </div>
         </fieldset>
 
-        <label className={`${ROTULO} block`}>
-          Observações
+        <div className="space-y-1.5">
+          <Label htmlFor="escala-sabado-observacao">Observações</Label>
           <textarea
-            value={observacao}
-            onChange={event => setObservacao(event.target.value)}
+            id="escala-sabado-observacao"
+            {...register('observacaoGeral')}
+            aria-invalid={Boolean(errors.observacaoGeral)}
             placeholder="Anotações sobre a escala"
-            className={`${CAMPO} mt-2 min-h-24 py-2`}
+            className={`${CAMPO} min-h-24 py-2`}
           />
-        </label>
+          {errors.observacaoGeral && (
+            <p role="alert" className="text-xs font-semibold text-rose-700">
+              {errors.observacaoGeral.message}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2 pt-2">
-        <button type="button" onClick={onCancelar} className={`${BOTAO_SECUNDARIO} flex-1`}>
+        <Button type="button" variant="outline" onClick={onCancelar} className="flex-1">
           Cancelar
-        </button>
-        <button type="button" onClick={salvar} className={`${BOTAO_PRIMARIO} flex-1`}>
+        </Button>
+        <Button type="submit" className="flex-1">
           <Save className="size-4" aria-hidden="true" />
           Salvar escala
-        </button>
+        </Button>
       </div>
-    </div>
+    </form>
   );
 }

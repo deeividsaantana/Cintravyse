@@ -1,8 +1,7 @@
 import { getSupabaseAdmin } from './supabase-admin.js';
 
-// Os links de campo leem o mesmo retrato que o app publica em erp_snapshots.
-// Antes liam o formato antigo do Firestore em legacy_documents, que ninguém
-// atualiza desde a mudança para o Supabase (08/10/2026).
+// Os links de campo leem o mesmo retrato que o app publica em erp_snapshots
+// no Supabase.
 const SNAPSHOT_TABLE = 'erp_snapshots';
 const SNAPSHOT_CACHE_TTL_MS = 30_000;
 const NOME_DE_TABELA = /^[A-Za-z][A-Za-z0-9_]*$/;

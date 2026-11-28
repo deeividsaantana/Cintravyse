@@ -6,6 +6,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toExpressHandler } from './handlerAdapter.js';
+import { captureServerException, initServerSentry } from './sentry.js';
 
 import { handler as publicPresenca } from '../api/public-presenca.js';
 import { handler as masterData } from '../api/master-data.js';
@@ -18,6 +19,7 @@ import { handler as devAcessos } from '../api/dev-acessos.js';
 import { handler as primeiroAcesso } from '../api/primeiro-acesso.js';
 import { sincronizarUmaVez } from './procurementSpreadsheetSyncJob.js';
 
+const sentryEnabled = initServerSentry();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, '..', 'dist');
 
@@ -25,36 +27,54 @@ const app = express();
 app.disable('x-powered-by');
 // Corpo cru como string: os handlers fazem o próprio parse/limite de tamanho
 // (parseJsonBody em supabase-admin.js), no formato de evento que os handlers esperam.
-app.use(express.text({ type: '*/*', limit: '2mb' }));
+// 5mb cobre os lotes de importação (até 4 MB em api/master-data.js).
+app.use(express.text({ type: '*/*', limit: '5mb' }));
+
+app.use((error, req, res, next) => {
+  if (error && (error.type === 'entity.too.large' || error.status === 413)) {
+    res.status(413).json({ success: false, message: 'O envio excede o tamanho permitido.' });
+    return;
+  }
+  next(error);
+});
+
+const CSP_HEADER = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  res.setHeader('Content-Security-Policy', CSP_HEADER);
+  if (process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   next();
 });
 
-// A API vive em /api/. O prefixo antigo /.netlify/functions/ continua
-// respondendo com os mesmos handlers para não quebrar quem ainda está com o
-// app antigo aberto, service worker em cache ou fila offline gravada antes
-// da troca. Pode sair depois que todos os aparelhos atualizarem.
-for (const prefix of ['/api', '/.netlify/functions']) {
-  app.get(`${prefix}/public-presenca`, toExpressHandler(publicPresenca));
-  app.post(`${prefix}/public-presenca`, toExpressHandler(publicPresenca));
-  app.patch(`${prefix}/public-presenca`, toExpressHandler(publicPresenca));
-  app.delete(`${prefix}/public-presenca`, toExpressHandler(publicPresenca));
+// A API vive exclusivamente em /api/ no servidor Render.
+app.get('/api/public-presenca', toExpressHandler(publicPresenca));
+app.post('/api/public-presenca', toExpressHandler(publicPresenca));
+app.patch('/api/public-presenca', toExpressHandler(publicPresenca));
+app.delete('/api/public-presenca', toExpressHandler(publicPresenca));
 
-
-
-  app.all(`${prefix}/master-data`, toExpressHandler(masterData));
-  app.all(`${prefix}/usage-telemetry`, toExpressHandler(usageTelemetry));
-  app.all(`${prefix}/procurement`, toExpressHandler(procurement));
-  app.all(`${prefix}/procurement-sheet`, toExpressHandler(procurementSheet));
-  app.all(`${prefix}/contratacao`, toExpressHandler(contratacao));
-  app.all(`${prefix}/dev-acessos`, toExpressHandler(devAcessos));
-  app.all(`${prefix}/primeiro-acesso`, toExpressHandler(primeiroAcesso));
-}
+app.all('/api/master-data', toExpressHandler(masterData));
+app.all('/api/usage-telemetry', toExpressHandler(usageTelemetry));
+app.all('/api/procurement', toExpressHandler(procurement));
+app.all('/api/procurement-sheet', toExpressHandler(procurementSheet));
+app.all('/api/contratacao', toExpressHandler(contratacao));
+app.all('/api/dev-acessos', toExpressHandler(devAcessos));
+app.all('/api/primeiro-acesso', toExpressHandler(primeiroAcesso));
 
 // Não existe cron nativo no plano gratuito: um pinger externo gratuito (cron-job.org,
 // sem cartão) chama esta rota 1x/dia com o segredo configurado no painel.
@@ -76,17 +96,22 @@ app.post('/tasks/cleanup-cloud-data', async (req, res) => {
   } catch (error) {
     // Sem isto a falha ficava sem resposta e o pinger esperava até estourar o tempo.
     console.error('Limpeza da nuvem falhou:', error);
+    captureServerException(error, { task: 'cleanup-cloud-data' });
     res.status(500).json({ success: false, message: 'A limpeza falhou; veja o log do servidor.' });
   }
 });
 
 // Pinger de manutenção (UptimeRobot, cron-job.org): evita o serviço dormir
 // no plano gratuito e serve como checagem simples de saúde.
-app.get('/health', (req, res) => res.status(200).json({ ok: true }));
+app.get('/health', (req, res) => res.status(200).json({
+  ok: true,
+  supabaseConfigured: Boolean((process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) && process.env.SUPABASE_SERVICE_ROLE_KEY),
+  sentryConfigured: sentryEnabled,
+}));
 
 // Rota de API que não existe responde 404 em JSON, não a página do site
 // (antes o app recebia HTML com 200 e quebrava ao ler a resposta).
-app.all(['/api/*', '/.netlify/functions/*'], (req, res) => {
+app.all('/api/*', (req, res) => {
   res.status(404).json({ success: false, message: 'Rota da API não encontrada.' });
 });
 

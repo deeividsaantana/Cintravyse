@@ -642,8 +642,8 @@ export const handler = async event => {
   try {
     const database = getAdminDb();
     const method = String(event.httpMethod || 'GET').toUpperCase();
-    // GET é somente leitura e não deve abrir uma transação de escrita no
-    // Firestore a cada carregamento do link. Escritas continuam protegidas.
+    // GET é somente leitura e não deve abrir escrita de rate-limit no banco
+    // a cada carregamento do link. Escritas continuam protegidas.
     if (method !== 'GET' && method !== 'DELETE') {
       await aplicarLimiteDeEnvio(database, event, method);
     }
@@ -804,10 +804,9 @@ export const handler = async event => {
         const horaEnvio = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
         let updatedRecord = null;
         try {
-          // A leitura e a escrita do array de registros acontecem na mesma
-          // transação. Se dois dispositivos editarem colaboradores diferentes
-          // da mesma equipe ao mesmo tempo, o Firestore serializa e reexecuta
-          // a transação perdedora automaticamente — nenhuma edição é perdida.
+          // A leitura e a escrita do array de registros acontecem no mesmo
+          // bloco transacional do adaptador, evitando sobrescrita parcial em
+          // caso de erro durante o processamento.
           await database.runTransaction(async transaction => {
             const document = await transaction.get(submissionRef);
             if (!document.exists) {
@@ -1077,10 +1076,19 @@ export const handler = async event => {
       const token = cleanString(body.token, 180);
       const groupId = cleanString(body.grupoId, 160);
       const saturdayDate = cleanString(body.data, 10);
-      const scale = body.scale;
-      if (!token || !groupId || !isIsoDate(saturdayDate) || !scale) {
+      const rawScale = body.scale;
+      if (!token || !groupId || !isIsoDate(saturdayDate) || !rawScale || typeof rawScale !== 'object' || !Array.isArray(rawScale.funcionarios) || rawScale.funcionarios.length > 500) {
         return jsonResponse(400, { success: false, message: 'Dados da escala incompletos ou inválidos.' });
       }
+      const scale = {
+        funcionarios: rawScale.funcionarios.map(item => ({
+          id: cleanString(item?.id, 160),
+          nome: cleanString(item?.nome, 200),
+          escalado: Boolean(item?.escalado),
+          ...(item?.observacao ? { observacao: cleanString(item.observacao, 300) } : {}),
+        })).filter(item => item.id),
+        ...(rawScale.observacaoGeral ? { observacaoGeral: cleanString(rawScale.observacaoGeral, 500) } : {}),
+      };
       const idempotencyKey = assertIdempotencyKey(event, { required: true });
       const scaleContext = {
         database,

@@ -49,6 +49,7 @@ import { addCorporateSummarySheet, configureCorporateWorkbook, createCorporateWo
 import { generateUniversalPdfReport } from '../utils/universalPdfReport';
 import { imprimirEmUmaFolha } from '../utils/imprimirEmUmaFolha';
 import { useAtalhoNovo } from '../shared/hooks/useAtalhoNovo';
+import { saveSaturdayScale } from '../publicApi';
 import type {
   Empresa,
   Funcionario,
@@ -609,71 +610,83 @@ export default function ControlePresencaTab({
   };
 
   const exportExcelRecords = async (records: PresencaApontamento[], reportDate: string, reportTitle: string) => {
-    const workbook = await createCorporateWorkbook();
-    configureCorporateWorkbook(workbook, reportTitle);
-    const sheet = workbook.addWorksheet('Presença');
-    sheet.columns = [
-      { header: 'Data', key: 'data', width: 14 },
-      { header: 'Equipe', key: 'equipe', width: 24 },
-      { header: 'Responsável', key: 'responsavel', width: 26 },
-      { header: 'Frente', key: 'frente', width: 28 },
-      { header: 'Colaborador', key: 'colaborador', width: 34 },
-      { header: 'Função', key: 'funcao', width: 28 },
-      { header: 'Status', key: 'status', width: 20 },
-      { header: 'Observação', key: 'observacao', width: 36 },
-      { header: 'Horário', key: 'horario', width: 12 },
-    ];
-    records.forEach(record => sheet.addRow([
-      record.data, record.grupoNome, record.responsavel, record.frenteServico,
-      record.funcionarioNome, record.funcao, record.status, record.observacao, record.horaEnvio,
-    ]));
-    styleCorporateWorksheet(sheet, { title: reportTitle, headerRow: 1, lastColumn: 9, recordCount: records.length });
-    addCorporateSummarySheet(workbook, reportTitle, [
-      ['Registros exportados', records.length],
-      ['Presentes', records.filter(record => record.status === 'Presente').length],
-      ['Ausentes', records.filter(record => record.status === 'Ausente').length],
-      ['Data de referência', reportDate.split('-').reverse().join('/')],
-    ]);
-    await downloadCorporateWorkbook(workbook, `RENEA_situacao_diaria_${reportDate}.xlsx`);
+    try {
+      const workbook = await createCorporateWorkbook();
+      configureCorporateWorkbook(workbook, reportTitle);
+      const sheet = workbook.addWorksheet('Presença');
+      sheet.columns = [
+        { header: 'Data', key: 'data', width: 14 },
+        { header: 'Equipe', key: 'equipe', width: 24 },
+        { header: 'Responsável', key: 'responsavel', width: 26 },
+        { header: 'Frente', key: 'frente', width: 28 },
+        { header: 'Colaborador', key: 'colaborador', width: 34 },
+        { header: 'Função', key: 'funcao', width: 28 },
+        { header: 'Status', key: 'status', width: 20 },
+        { header: 'Observação', key: 'observacao', width: 36 },
+        { header: 'Horário', key: 'horario', width: 12 },
+      ];
+      records.forEach(record => sheet.addRow([
+        record.data, record.grupoNome, record.responsavel, record.frenteServico,
+        record.funcionarioNome, record.funcao, record.status, record.observacao, record.horaEnvio,
+      ]));
+      styleCorporateWorksheet(sheet, { title: reportTitle, headerRow: 1, lastColumn: 9, recordCount: records.length });
+      addCorporateSummarySheet(workbook, reportTitle, [
+        ['Registros exportados', records.length],
+        ['Presentes', records.filter(record => record.status === 'Presente').length],
+        ['Ausentes', records.filter(record => record.status === 'Ausente').length],
+        ['Data de referência', reportDate.split('-').reverse().join('/')],
+      ]);
+      await downloadCorporateWorkbook(workbook, `RENEA_situacao_diaria_${reportDate}.xlsx`);
+    } catch (error) {
+      console.error('Falha ao exportar Excel de presença:', error);
+      setFeedback('Não foi possível gerar o Excel agora. Verifique a conexão e tente novamente.');
+    }
   };
 
-  const exportPdfRecords = async (records: PresencaApontamento[], reportDate: string, reportTitle: string, pendingCount: number) => generateUniversalPdfReport({
-    title: reportTitle,
-    subtitle: 'Efetivo recebido diretamente das equipes de campo',
-    company: 'RENEA INFRAESTRUTURA · Sistema Integrado de Gestão Operacional',
-    orientation: 'landscape',
-    fileName: `RENEA_situacao_diaria_${reportDate}.pdf`,
-    period: reportDate,
-    filters: [recordGroup === 'todos' ? 'Todas as equipes' : `Equipe: ${recordGroup}`, recordStatus === 'todos' ? 'Todos os status' : `Status: ${recordStatus}`],
-    summary: [
-      { label: 'Registros', value: records.length },
-      { label: 'Presentes', value: records.filter(record => record.status === 'Presente').length },
-      { label: 'Ausentes', value: records.filter(record => record.status === 'Ausente').length },
-      { label: 'Equipes pendentes', value: pendingCount },
-    ],
-    columns: [
-      { header: 'Data', dataKey: 'data' },
-      { header: 'Equipe', dataKey: 'equipe' },
-      { header: 'Responsável', dataKey: 'responsavel' },
-      { header: 'Frente', dataKey: 'frente' },
-      { header: 'Colaborador', dataKey: 'colaborador' },
-      { header: 'Função', dataKey: 'funcao' },
-      { header: 'Status', dataKey: 'status' },
-      { header: 'Observação', dataKey: 'observacao' },
-      { header: 'Horário', dataKey: 'horario' },
-    ],
-    rows: records.map(record => ({
-      data: record.data,
-      equipe: record.grupoNome,
-      responsavel: record.responsavel,
-      frente: record.frenteServico,
-      colaborador: record.funcionarioNome,
-      funcao: record.funcao,
-      status: record.status,
-      observacao: record.observacao,
-      horario: record.horaEnvio,
-    })),
-  });
+  const exportPdfRecords = async (records: PresencaApontamento[], reportDate: string, reportTitle: string, pendingCount: number) => {
+    try {
+      await generateUniversalPdfReport({
+        title: reportTitle,
+        subtitle: 'Efetivo recebido diretamente das equipes de campo',
+        company: 'RENEA INFRAESTRUTURA · Sistema Integrado de Gestão Operacional',
+        orientation: 'landscape',
+        fileName: `RENEA_situacao_diaria_${reportDate}.pdf`,
+        period: reportDate,
+        filters: [recordGroup === 'todos' ? 'Todas as equipes' : `Equipe: ${recordGroup}`, recordStatus === 'todos' ? 'Todos os status' : `Status: ${recordStatus}`],
+        summary: [
+          { label: 'Registros', value: records.length },
+          { label: 'Presentes', value: records.filter(record => record.status === 'Presente').length },
+          { label: 'Ausentes', value: records.filter(record => record.status === 'Ausente').length },
+          { label: 'Equipes pendentes', value: pendingCount },
+        ],
+        columns: [
+          { header: 'Data', dataKey: 'data' },
+          { header: 'Equipe', dataKey: 'equipe' },
+          { header: 'Responsável', dataKey: 'responsavel' },
+          { header: 'Frente', dataKey: 'frente' },
+          { header: 'Colaborador', dataKey: 'colaborador' },
+          { header: 'Função', dataKey: 'funcao' },
+          { header: 'Status', dataKey: 'status' },
+          { header: 'Observação', dataKey: 'observacao' },
+          { header: 'Horário', dataKey: 'horario' },
+        ],
+        rows: records.map(record => ({
+          data: record.data,
+          equipe: record.grupoNome,
+          responsavel: record.responsavel,
+          frente: record.frenteServico,
+          colaborador: record.funcionarioNome,
+          funcao: record.funcao,
+          status: record.status,
+          observacao: record.observacao,
+          horario: record.horaEnvio,
+        })),
+      });
+    } catch (error) {
+      console.error('Falha ao exportar PDF de presença:', error);
+      setFeedback('Não foi possível gerar o PDF agora. Verifique a conexão e tente novamente.');
+    }
+  };
 
   const exportExcel = () => exportExcelRecords(filteredRecords, recordDate || today, 'Relatório de presença');
   const exportPdf = () => exportPdfRecords(filteredRecords, recordDate || today, 'Relatório de presença', pendingGroups.length);
@@ -972,25 +985,25 @@ export default function ControlePresencaTab({
                 é naturalmente mais alto (lista de equipes pendentes), e sem
                 esse preenchimento sobrava uma faixa em branco do lado esquerdo. */}
             <div className="space-y-5">
-              <article data-cartao-painel className={`renea-card ${PANEL} relative overflow-hidden p-4 transition-shadow duration-200 hover:shadow-[0_12px_28px_-16px_rgba(16,24,32,0.25)] sm:p-5`}>
+              <article data-cartao-painel className="cv-hero-floresta relative overflow-hidden rounded-2xl p-4 sm:p-5">
                 <div className="relative">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs font-bold text-slate-500">Efetivo confirmado</p>
-                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-800"><span className="h-2 w-2 animate-pulse rounded-full bg-[#176b4d]" />{metrics.latest ? `Atualizado às ${metrics.latest}` : 'Aguardando o primeiro envio'}</span>
+                    <p className="text-[12px] font-medium text-emerald-200">Efetivo confirmado</p>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-emerald-100 ring-1 ring-inset ring-white/15"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />{metrics.latest ? `Atualizado às ${metrics.latest}` : 'Aguardando o primeiro envio'}</span>
                   </div>
-                  <div className="mt-4 flex items-end gap-3">
-                    <strong data-count={metrics.present} className="text-4xl font-black tabular-nums tracking-[-0.045em] text-slate-900 sm:text-5xl">0</strong>
-                    <div className="pb-1"><p className="text-base font-bold text-emerald-800">presentes</p><p className="text-xs text-slate-500">{metrics.planned ? `de ${metrics.planned} previstos` : 'sem efetivo previsto vinculado às equipes'}</p></div>
+                  <div className="mt-3 flex items-end gap-3">
+                    <strong data-count={metrics.present} className="text-4xl font-semibold tabular-nums tracking-[-0.04em] text-white sm:text-[2.75rem]">0</strong>
+                    <div className="pb-1"><p className="text-sm font-semibold text-emerald-300">presentes</p><p className="text-xs text-emerald-200">{metrics.planned ? `de ${metrics.planned} previstos` : 'sem efetivo previsto vinculado às equipes'}</p></div>
                   </div>
                   {/* Sem efetivo previsto não existe percentual: mostrar "0% confirmado"
                       ao lado de 32 presentes faz o painel parecer quebrado. */}
                   {metrics.planned > 0 ? (
                     <>
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200"><div data-barra-efetivo className="h-full origin-left rounded-full bg-[#176b4d]" style={{ width: `${metrics.percent}%` }} /></div>
-                      <p className="mt-2 text-right text-xs font-bold tabular-nums text-slate-500">{metrics.percent}% confirmado</p>
+                      <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-white/15"><div data-barra-efetivo className="h-full origin-left rounded-full bg-emerald-400" style={{ width: `${metrics.percent}%` }} /></div>
+                      <p className="mt-1.5 text-right text-xs font-semibold tabular-nums text-emerald-100">{metrics.percent}% confirmado</p>
                     </>
                   ) : (
-                    <p className="mt-4 text-xs text-slate-500">Vincule os colaboradores às equipes em <strong className="font-bold text-slate-700">Equipes</strong> para acompanhar o percentual confirmado.</p>
+                    <p className="mt-3.5 text-xs text-emerald-200">Vincule os colaboradores às equipes em <strong className="font-semibold text-white">Equipes</strong> para acompanhar o percentual confirmado.</p>
                   )}
                 </div>
               </article>
@@ -1490,9 +1503,34 @@ export default function ControlePresencaTab({
           <EscalaSabado
             funcionarios={funcionarios}
             gruposEquipe={gruposEquipe}
-            onSalvar={(escala) => {
-              // TODO: Implementar salvamento da escala
-              setMostrarEscalaSabado(false);
+            onSalvar={async (escala) => {
+              if (!escala.grupoEquipeId) {
+                setFeedback('Selecione uma equipe antes de salvar a escala de sábado.');
+                return;
+              }
+              const grupo = gruposEquipe.find(item => item.id === escala.grupoEquipeId);
+              const chaveLocal = `renea_escala_sabado_${escala.grupoEquipeId}_${escala.data}`;
+              try {
+                localStorage.setItem(chaveLocal, JSON.stringify(escala));
+              } catch {
+                // Cópia local é best-effort; a gravação principal segue abaixo.
+              }
+              if (!grupo?.token) {
+                setFeedback('Escala salva localmente neste aparelho. Ative o link da equipe para sincronizar com o campo.');
+                setMostrarEscalaSabado(false);
+                return;
+              }
+              try {
+                const resposta = await saveSaturdayScale(grupo.token, grupo.id, {
+                  funcionarios: escala.funcionarios,
+                  observacaoGeral: escala.observacaoGeral,
+                }, escala.data);
+                setFeedback(resposta.message || `Escala de sábado de ${grupo.nome} salva.`);
+                setMostrarEscalaSabado(false);
+              } catch (error) {
+                const detalhe = error instanceof Error ? error.message : 'Falha de conexão.';
+                setFeedback(`Não foi possível enviar a escala ao servidor (${detalhe}). Uma cópia ficou guardada neste aparelho.`);
+              }
             }}
             onCancelar={() => setMostrarEscalaSabado(false)}
           />

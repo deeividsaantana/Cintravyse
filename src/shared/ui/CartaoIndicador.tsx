@@ -22,36 +22,44 @@ interface CartaoIndicadorProps {
 }
 
 const COR_DO_VALOR: Record<TomIndicador, string> = {
-  neutro: 'text-slate-900',
+  neutro: 'text-[#10211c]',
   verde: 'text-[#176b4d]',
   laranja: 'text-[#c2410c]',
   vermelho: 'text-rose-700',
 };
 
+const FILETE_DO_TOM: Record<TomIndicador, string> = {
+  neutro: 'border-l-[#0d261e]',
+  verde: 'border-l-[#176b4d]',
+  laranja: 'border-l-[#d97706]',
+  vermelho: 'border-l-[#dc2626]',
+};
+
 /**
- * Número do topo das abas (redesenho de 25/11/2026): rótulo pequeno, número
- * e uma linha de detalhe, sem ícone (minimalismo pedido pelo Deivid em 25/11). Dentro de uma
- * faixa (`renea-faixa-numeros`) os números viram uma peça só, com linhas
- * finas entre eles, como num app premium.
- * Toda aba usa este cartão, para o mesmo tipo de informação ter a mesma cara
- * em qualquer tela.
+ * Cartão de indicador Pedra & Floresta: filete lateral semântico, rótulo
+ * discreto, número tabular compacto e detalhe em uma linha. Mesma gramática
+ * visual do Painel em todas as abas operacionais.
  */
 export function CartaoIndicador({ rotulo, valor, detalhe, tom = 'neutro', onClick, ariaLabel, className, dados }: CartaoIndicadorProps) {
   const conteudo = (
     <>
-      <span className="block min-w-0 text-[13px] font-medium leading-snug text-[#5b6870] [overflow-wrap:anywhere]">{rotulo}</span>
-      <strong className={cn('mt-2 block text-2xl font-semibold leading-none tracking-tight tabular-nums', COR_DO_VALOR[tom])}>{valor}</strong>
-      {detalhe && <span className="mt-2 block text-xs text-[#5b6870]">{detalhe}</span>}
+      <span className="block min-w-0 text-[12px] font-medium leading-snug text-[#54645c] [overflow-wrap:anywhere]">{rotulo}</span>
+      <strong className={cn('mt-1 block text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums', COR_DO_VALOR[tom])}>{valor}</strong>
+      {detalhe && <span className="mt-1 block text-xs text-[#54645c]">{detalhe}</span>}
     </>
   );
-  const classe = cn('renea-indicador block min-w-0 rounded-2xl border border-slate-200 bg-white p-4 text-left', className);
+  const classe = cn(
+    'renea-indicador block min-w-0 rounded-xl border border-[#d5ddd8] border-l-[3px] bg-white px-3.5 py-2.5 text-left shadow-[0_1px_2px_rgba(11,27,22,0.05)]',
+    FILETE_DO_TOM[tom],
+    className,
+  );
   return onClick ? (
     <button
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
       {...dados}
-      className={cn(classe, 'w-full cursor-pointer transition duration-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)')}
+      className={cn(classe, 'w-full cursor-pointer transition-colors duration-150 hover:bg-[#f2f8f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)')}
     >
       {conteudo}
     </button>

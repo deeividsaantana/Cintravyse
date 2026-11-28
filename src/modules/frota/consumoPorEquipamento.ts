@@ -102,6 +102,7 @@ export const montarConsumoPorEquipamento = ({
   const nomeEmpresa = new Map(empresas.map(item => [item.id, item.nome]));
   const grupos = new Map<string, Abastecimento[]>();
   registros.forEach(item => {
+    if (item.inativoEm || String(item.status || '').toLowerCase() === 'cancelado') return;
     const chave = chaveDe(item);
     grupos.set(chave, [...(grupos.get(chave) || []), item]);
   });
@@ -111,21 +112,22 @@ export const montarConsumoPorEquipamento = ({
     const ordenados = [...lista].sort((a, b) => momento(a).localeCompare(momento(b)));
     if (!ordenados.some(item => dentro(item.data, filtro))) return;
 
-    // Uma leitura que voltou não serve de base para a próxima: a conta segue
-    // do último abastecimento com leitura boa, senão o erro estraga dois.
+    // Uma leitura que voltou ou veio zerada não serve de base para a próxima:
+    // a conta segue do último abastecimento com leitura boa, senão o erro estraga dois.
     // O diesel desse abastecimento entra na conta do seguinte, que cobre o mesmo trecho.
     let ultimoBom: Abastecimento | undefined;
     let litrosPendentes = 0;
     const todos = ordenados.map(atual => {
       const voltou = leituraVoltou(atual, ultimoBom);
-      if (voltou) {
+      const temLeitura = Number(atual.horimetroInicial || 0) > 0 || Number(atual.kmInicial || 0) > 0;
+      if (voltou || (!temLeitura && ultimoBom)) {
         litrosPendentes += Number(atual.quantidadeLitros || 0);
         return { atual, voltou, consumo: undefined, litrosConta: 0 };
       }
       const litrosConta = Number(atual.quantidadeLitros || 0) + litrosPendentes;
       const consumo = calcularConsumo({ ...atual, quantidadeLitros: litrosConta }, ultimoBom);
       litrosPendentes = 0;
-      ultimoBom = atual;
+      if (temLeitura) ultimoBom = atual;
       return { atual, voltou, consumo, litrosConta };
     });
 

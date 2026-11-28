@@ -20,23 +20,25 @@ export function EmptyState({
   action,
   className,
 }: EmptyStateProps) {
-  // Mesmo desenho do LoadingState e do ErrorState: ícone num círculo, frase
-  // curta do que aconteceu e, embaixo, o que fazer. Letra de 14 a 16 px para
-  // ler de relance.
   return (
     <div
       role="status"
       className={cn(
-        'flex flex-col items-center justify-center px-4 text-center',
-        compact ? 'py-6' : 'py-10',
+        'flex flex-col items-center justify-center px-5 text-center',
+        compact ? 'py-7' : 'py-12',
         className,
       )}
     >
-      <span className={cn('mb-3 grid place-items-center rounded-full bg-[#f7f8f6] text-[#5b6870]', compact ? 'size-10' : 'size-12')}>
-        <Icon className={compact ? 'size-5' : 'size-6'} aria-hidden="true" />
+      <span
+        className={cn(
+          'mb-3.5 grid place-items-center rounded-xl bg-[#e8f5ee] text-[#176b4d] ring-1 ring-inset ring-[#cce6d8]',
+          compact ? 'size-10' : 'size-12',
+        )}
+      >
+        <Icon className={compact ? 'size-5' : 'size-5.5'} aria-hidden="true" />
       </span>
-      <p className={cn('font-bold text-slate-800', compact ? 'text-sm' : 'text-base')}>{title}</p>
-      {description && <p className="mt-1 max-w-md text-sm leading-relaxed text-slate-600">{description}</p>}
+      <p className={cn('font-semibold tracking-[-0.01em] text-[#10211c]', compact ? 'text-[13.5px]' : 'text-[15px]')}>{title}</p>
+      {description && <p className="mt-1 max-w-md text-[12.5px] leading-relaxed text-[#54645c]">{description}</p>}
       {action && <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>
   );

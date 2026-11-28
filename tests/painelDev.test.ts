@@ -145,7 +145,7 @@ test('API: "Quem assina" do Dev usa os papéis da Contratação (RH, 2º e 3º g
 });
 
 test('banco: dev conferido nas funções, histórico só cresce e desfaz uma vez só', () => {
-  const sql = fs.readFileSync('supabase/migrations/202611160001_painel_dev_acessos.sql', 'utf8');
+  const sql = fs.readFileSync('supabase/migrations/202611160003_painel_dev_acessos.sql', 'utf8');
   assert.match(sql, /before update or delete on public\.erp_access_audit/);
   assert.match(sql, /unique index if not exists erp_access_audit_desfaz_uma_vez/);
   assert.match(sql, /você não pode esconder uma aba de si mesmo/);

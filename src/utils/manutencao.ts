@@ -128,8 +128,10 @@ export const liberarMaquinasDaOrdemConcluida = (
   if (!isOrdemEncerrada(ordem.status)) return { registros, liberados: 0 };
   let liberados = 0;
   const hora = horaLocal(agora);
+  const dataConclusao = ordem.dataConclusao?.slice(0, 10) || '';
   const registrosAtualizados = registros.map(registro => {
     if (registro.ordemServicoId !== ordem.id || !EM_MANUTENCAO_OS.includes(registro.status)) return registro;
+    if (dataConclusao && registro.data && registro.data < dataConclusao) return registro;
     liberados += 1;
     const evento: EventoControleEquipamentoDiario = {
       id: `evt-${agora}-${registro.equipamentoId}`,

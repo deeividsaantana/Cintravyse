@@ -225,3 +225,5 @@ import './primeiroAcesso.test';
 import './apagarSolicitacoes.test';
 import './pdfUmaFolha.test';
 import './hierarquia.test';
+import './auditoriaOnda0.test';
+import './stackPadrao.test';

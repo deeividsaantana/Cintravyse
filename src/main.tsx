@@ -1,15 +1,15 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import { AppProviders } from './app/providers/AppProviders';
+import { AppProviders, ApplicationErrorBoundary } from './app/providers/AppProviders';
 import { APP_VERSION } from './app/version';
 import './index.css';
-import '@fontsource-variable/outfit';
 import '@fontsource-variable/geist';
 import { isContratacaoLinkUrl, isPublicLinkUrl } from './app/routing/publicRoutes';
 import { parsePrivatePath } from './app/routing/privateRoutes';
 import { isSupabaseCloudEnabled } from './platform/cloudProvider';
 import { mirrorReneaLocalStorage, restoreMissingReneaLocalStorage, startReneaStorageMirror } from './utils/resilientStorage';
 import { instalarReservaEmMemoria, registrarPendentesDaReserva } from './utils/reservaArmazenamento';
+import { initClientSentry } from './observability/sentry';
 
 // Depois de um deploy, quem estava com o site aberto pede pedaços de código
 // que não existem mais (o nome muda a cada versão) e a tela travava em branco.
@@ -32,6 +32,7 @@ window.addEventListener('load', () => {
 });
 
 const startApplication = async () => {
+  void initClientSentry();
   // Um service worker de um build anterior pode continuar controlando o
   // localhost e devolver index.html no lugar de módulos .tsx do Vite.
   // Em desenvolvimento, remova esse controle antes de iniciar a aplicação.
@@ -55,14 +56,18 @@ const startApplication = async () => {
     const { default: PublicLinksApp } = await import('./PublicLinksApp');
     root.render(
       <StrictMode>
-        <PublicLinksApp />
+        <ApplicationErrorBoundary>
+          <PublicLinksApp />
+        </ApplicationErrorBoundary>
       </StrictMode>,
     );
   } else if (isContratacaoLinkUrl()) {
     const { default: ContratacaoLinkApp } = await import('./ContratacaoLinkApp');
     root.render(
       <StrictMode>
-        <ContratacaoLinkApp />
+        <ApplicationErrorBoundary>
+          <ContratacaoLinkApp />
+        </ApplicationErrorBoundary>
       </StrictMode>,
     );
   } else {

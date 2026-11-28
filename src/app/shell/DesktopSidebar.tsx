@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronsLeft, ChevronsRight, LogOut, Search } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
 import { Avatar } from '../../shared/ui/Avatar';
 import type { NavigationGroupView } from './NavigationMenu';
 import { MarcaProduto, SimboloProduto } from '../../shared/ui/MarcaProduto';
@@ -14,7 +14,7 @@ interface DesktopSidebarProps {
   pessoa?: { nome: string; foto?: string | null; cor?: string | null; papel?: string };
   onAbrirPerfil?: () => void;
   onSair?: () => void;
-  /** Abre a pesquisa geral (a mesma do Ctrl K). */
+  /** Mantido por compatibilidade; a busca global (Ctrl K) fica na barra superior. */
   onPesquisar?: () => void;
 }
 
@@ -35,14 +35,11 @@ const readCollapsed = () => {
 };
 
 /**
- * Menu lateral do computador (redesenho de 11/11/2026, pedido do Deivid:
- * "deixar profissional"). Fundo branco como o resto do sistema, grupos
- * sempre abertos com o nome discreto (sem setas para abrir e fechar), item
- * aberto em verde-claro com a barrinha verde à esquerda, e o ambiente do
- * cliente num cartão compacto logo abaixo da marca. O projeto também aparece
- * na barra superior.
+ * Menu lateral Pedra & Floresta: fundo verde-floresta profundo (#0a1914) com
+ * a marca original Cintravyse no topo, navegação agrupada limpa sem busca
+ * duplicada (Ctrl K na barra superior) e perfil compacto no rodapé.
  */
-export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirPerfil, onSair, onPesquisar }: DesktopSidebarProps) {
+export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirPerfil, onSair }: DesktopSidebarProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   
   // Só grava quando a pessoa aperta o botão: o padrão pela largura da tela
@@ -79,7 +76,7 @@ export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirP
         )}
       </div>
 
-      {collapsed ? (
+      {collapsed && (
         <button
           type="button"
           onClick={() => mudarRecolhido(false)}
@@ -89,16 +86,6 @@ export function DesktopSidebar({ activeTab, groups, onNavigate, pessoa, onAbrirP
         >
           <ChevronsRight className="size-4" strokeWidth={ICON_STROKE} />
         </button>
-      ) : (
-        <div className="space-y-2 px-2.5 pt-2.5">
-          {onPesquisar && (
-            <button type="button" onClick={onPesquisar} className={`flex h-8 w-full items-center gap-2 rounded-md border border-[#e6e8eb] bg-white px-2.5 text-[0.8125rem] text-slate-500 hover:border-slate-300 ${FOCO}`}>
-              <Search className="size-3.5 shrink-0" strokeWidth={ICON_STROKE} aria-hidden="true" />
-              Buscar ou ir para…
-              <kbd className="ml-auto rounded border border-[#e6e8eb] px-1 font-sans text-xs text-slate-500">Ctrl K</kbd>
-            </button>
-          )}
-        </div>
       )}
 
       <nav className={`flex-1 overflow-y-auto pb-3 pt-1 ${collapsed ? 'px-2' : 'px-3'}`}>

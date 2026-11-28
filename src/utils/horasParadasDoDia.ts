@@ -132,7 +132,11 @@ export const horasParadasDoDia = (
   if (typeof marcos === 'string') return { ...base, situacao: 'INCONSISTENTE', motivoInconsistencia: marcos };
 
   const hoje = dataLocal(agora);
-  const ateMin = registro.data === hoje ? paraMin(horaLocal(agora.toISOString())) : FIM_DO_DIA_MIN;
+  const ateMin = registro.data > hoje
+    ? 0
+    : registro.data === hoje
+      ? paraMin(horaLocal(agora.toISOString()))
+      : FIM_DO_DIA_MIN;
 
   const periodos: Array<{ inicio: number; fim: number | null }> = [];
   let aberto: number | null = opcoes.vemParadoDeOntem ? paraMin(INICIO_DO_DIA) : null;

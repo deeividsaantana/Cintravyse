@@ -13,6 +13,7 @@ interface ModalProps {
   /** Bloqueia fechar por ESC/clique fora enquanto uma ação está em andamento. */
   busy?: boolean;
   role?: 'dialog' | 'alertdialog';
+  ariaLabelledBy?: string;
   /**
    * Ação de salvar do diálogo. Liga CTRL+S e CTRL+ENTER em qualquer campo e ENTER nos
    * campos de uma linha — quem preenche formulário no teclado não precisa
@@ -72,6 +73,7 @@ export function Modal({
   size = 'md',
   busy = false,
   role = 'dialog',
+  ariaLabelledBy,
   onSubmit,
   footer,
   onClose,
@@ -99,6 +101,7 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return undefined;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const panel = panelRef.current;
     // Abre já no primeiro campo: quem vai lançar começa a digitar sem clicar.
     // Diálogo sem campo (confirmação) fica no primeiro botão, como antes.
@@ -151,6 +154,9 @@ export function Modal({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      if (previouslyFocused && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      }
     };
   }, [busy, initialFocusRef, open]);
 
@@ -162,7 +168,8 @@ export function Modal({
         ref={panelRef}
         role={role}
         aria-modal="true"
-        aria-label={typeof title === 'string' ? title : undefined}
+        aria-labelledby={ariaLabelledBy}
+        aria-label={!ariaLabelledBy && typeof title === 'string' ? title : undefined}
         data-lancamento=""
         className="renea-lancamento fixed inset-0 z-[110] flex flex-col bg-white lg:absolute lg:z-[60]"
       >
@@ -197,6 +204,7 @@ export function Modal({
 
   return createPortal(
     <div
+      data-app-portal=""
       className={cn('fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/10 sm:items-center', emTelaCheia ? 'sm:p-0' : 'sm:p-4')}
       role="presentation"
       onMouseDown={event => {
@@ -207,7 +215,8 @@ export function Modal({
         ref={panelRef}
         role={role}
         aria-modal="true"
-        aria-label={typeof title === 'string' ? title : undefined}
+        aria-labelledby={ariaLabelledBy}
+        aria-label={!ariaLabelledBy && typeof title === 'string' ? title : undefined}
         data-tela-cheia={emTelaCheia ? 'true' : undefined}
         className={cn(
           'flex w-full flex-col border border-slate-200 bg-white shadow-2xl',
@@ -239,9 +248,9 @@ export function Modal({
               aria-label="Fechar"
               disabled={busy}
               onClick={onClose}
-              className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--renea-focus)"
             >
-              <X size={18} />
+              <X size={18} aria-hidden="true" />
             </button>
           </header>
         )}

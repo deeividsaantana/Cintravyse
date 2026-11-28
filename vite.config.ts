@@ -65,7 +65,7 @@ const lerIconesSeparados = (lerModulo: LerModulo, ids: Iterable<string>) => {
  * Aparece no rodapé do menu, para saber na hora se o site no ar é o mais novo.
  */
 const carimboDoBuild = () => {
-  const commit = (process.env.RENDER_GIT_COMMIT || process.env.COMMIT_REF || '').slice(0, 7);
+  const commit = (process.env.RENDER_GIT_COMMIT || '').slice(0, 7);
   const quando = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date());
   return commit ? `${quando} · ${commit}` : quando;
 };
@@ -77,7 +77,7 @@ export default defineConfig(() => {
     resolve: {
       dedupe: ['react', 'react-dom'],
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(__dirname, 'src'),
       },
     },
     // A leitura de planilha de Materiais roda num worker que carrega o ExcelJS
@@ -107,11 +107,12 @@ export default defineConfig(() => {
                 if (!icone || inicio.has(icone)) return 'vendor-icones-base';
                 return publicos.has(icone) ? 'vendor-icones-publicos' : 'vendor-icones';
               }
+              if (id.includes('/@sentry/') || id.includes('\\@sentry\\')) return 'vendor-sentry';
               if (id.includes('/@supabase/') || id.includes('\\@supabase\\')) return 'vendor-supabase';
               if (id.includes('/exceljs/') || id.includes('\\exceljs\\')) return 'vendor-excel';
               if (id.includes('/jspdf') || id.includes('\\jspdf')) return 'vendor-pdf';
               if (id.includes('/html2canvas/') || id.includes('\\html2canvas\\')) return 'vendor-canvas';
-              if (id.includes('/react/') || id.includes('\\react\\') || id.includes('/react-dom/') || id.includes('\\react-dom\\')) {
+              if (/[\\/]node_modules[\\/](?:react|react-dom|scheduler)[\\/]/.test(id)) {
                 return 'vendor-react';
               }
             }
@@ -120,18 +121,23 @@ export default defineConfig(() => {
       },
     },
     server: {
+      allowedHosts: true,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify - file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
-      // No localhost, encaminha apenas as funções públicas para o backend já publicado.
-      // Isso permite testar o link pelo celular sem fazer um novo deploy.
+      // No localhost, encaminha /api para o servidor local por padrão (evita
+      // gravação acidental em produção); para apontar outro ambiente, use
+      // VITE_PUBLIC_FUNCTIONS_PROXY_TARGET.
       proxy: {
         '/api': {
-          target: process.env.VITE_PUBLIC_FUNCTIONS_PROXY_TARGET || 'https://renea-erp.onrender.com',
+          target: process.env.VITE_PUBLIC_FUNCTIONS_PROXY_TARGET || 'http://localhost:3001',
           changeOrigin: true,
           secure: true,
+          bypass(req) {
+            if (req.url?.startsWith('/api/_shared/')) return req.url;
+          },
         },
       },
     },

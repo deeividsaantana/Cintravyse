@@ -12,6 +12,12 @@ export const procurementActorFromStaff = staff => {
   const name = String(staff?.name || staff?.email || '').trim();
   const normalized = normalize(name);
   const suppliedRole = String(staff?.procurementRole || '').trim();
+  const orgRole = String(staff?.role || '').trim();
+  // Conta somente-leitura (viewer/leitura) nunca pode escalar para aprovador,
+  // suprimentos ou solicitante apenas alterando o próprio nome (user_metadata).
+  if (!suppliedRole && (orgRole === 'leitura' || orgRole === 'viewer')) {
+    return { id: staff?.uid || staff?.sub, name, role: 'visualizador' };
+  }
   const role = suppliedRole || (normalized === 'bruno'
     ? 'aprovador'
     : BUYERS.has(normalized)
@@ -20,7 +26,7 @@ export const procurementActorFromStaff = staff => {
         ? 'solicitante'
         : VIEWERS.has(normalized)
           ? 'visualizador'
-        : String(staff?.role || ''));
+        : orgRole);
   return { id: staff?.uid || staff?.sub, name, role };
 };
 

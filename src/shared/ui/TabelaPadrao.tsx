@@ -250,9 +250,9 @@ const FOCO = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visib
 const CAIXA = 'size-6 cursor-pointer rounded border-slate-300 accent-[#176b4d]';
 // Cor e borda ficam fora da base: duas classes de fundo na mesma tag brigam e
 // a página atual saía branca sobre branco.
-const BOTAO_PAGINA_BASE = `grid min-h-11 min-w-11 place-items-center rounded-lg border px-2 text-[13px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 md:min-h-8 md:min-w-8 ${FOCO}`;
-const BOTAO_PAGINA = `${BOTAO_PAGINA_BASE} border-slate-200 bg-white text-slate-700 hover:border-emerald-500`;
-const BOTAO_PAGINA_ATUAL = `${BOTAO_PAGINA_BASE} border-[#176b4d] bg-[#176b4d] text-white`;
+const BOTAO_PAGINA_BASE = `grid min-h-11 min-w-11 place-items-center rounded-lg border px-2 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 md:min-h-8 md:min-w-8 ${FOCO}`;
+const BOTAO_PAGINA = `${BOTAO_PAGINA_BASE} border-[#d5ddd8] bg-white text-[#23332d] hover:border-[#176b4d] hover:text-[#176b4d]`;
+const BOTAO_PAGINA_ATUAL = `${BOTAO_PAGINA_BASE} border-[#0d261e] bg-[#0d261e] text-white`;
 
 /** Clique que nasceu num botão, link ou campo dentro da linha não abre a linha. */
 const veioDeControle = (evento: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => {

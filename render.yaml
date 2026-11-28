@@ -4,6 +4,10 @@ services:
     runtime: node
     plan: free
     region: oregon
+    # Deploy condicionado aos testes: desativa auto-deploy cego no push.
+    # O GitHub Actions (ci.yml) dispara o Deploy Hook da Render somente depois
+    # que check:standards, lint, testes, Vitest, build e bundle passarem.
+    autoDeploy: false
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
@@ -16,6 +20,10 @@ services:
         sync: false
       - key: CLEANUP_TASK_SECRET
         generateValue: true
+      - key: SENTRY_DSN
+        sync: false
+      - key: VITE_SENTRY_DSN
+        sync: false
       - key: VITE_CLOUD_PROVIDER
         value: supabase
       - key: VITE_SUPABASE_URL

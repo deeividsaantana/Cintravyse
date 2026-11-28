@@ -145,30 +145,68 @@ export default function PluviometroTab({ diarios, obras, responsavel, podeEditar
         />
       )}
     >
-      <div id="pluviometro-dados" role="tabpanel" data-pluviometro-reveal className="space-y-5">
+      <div id="pluviometro-dados" role="tabpanel" data-pluviometro-reveal className="space-y-4">
         {aba === 'resumo' ? (
           <MapaChuva diarios={diarios} responsavel={responsavel} mesSelecionado={{ ano, mes }} ocultarFiltro />
         ) : (
-          <section className={`${CARTAO} min-w-0 p-3`}>
-            <div className="mb-2 flex items-center justify-between gap-3 border-b border-slate-200 pb-2">
-              <h2 className="text-[15px] font-semibold text-slate-900">Lançamentos do mês</h2>
-              <span className="shrink-0 text-xs font-semibold text-slate-500">{resumo.diasComChuva} com chuva · {resumo.diasSemDiario} sem registro</span>
+          <>
+            <div className="renea-faixa-numeros grid-cols-2 lg:grid-cols-4">
+              <div className="px-3.5 py-2.5">
+                <span className="block text-[12px] font-medium text-">Chuva acumulada</span>
+                <strong className="mt-1 block text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-slate-900">{resumo.totalMm.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mm</strong>
+                <span className="mt-1 block text-xs text-">no mês selecionado</span>
+              </div>
+              <div className="px-3.5 py-2.5">
+                <span className="block text-[12px] font-medium text-">Dias com chuva</span>
+                <strong className="mt-1 block text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#176b4d]">{resumo.diasComChuva}</strong>
+                <span className="mt-1 block text-xs text-">{resumo.diasImpraticaveis} impraticáveis</span>
+              </div>
+              <div className="px-3.5 py-2.5">
+                <span className="block text-[12px] font-medium text-">Horas paradas</span>
+                <strong className="mt-1 block text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#c2410c]">{resumo.horasParadas.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h</strong>
+                <span className="mt-1 block text-xs text-">impacto climático</span>
+              </div>
+              <div className="px-3.5 py-2.5">
+                <span className="block text-[12px] font-medium text-">Dias sem registro</span>
+                <strong className="mt-1 block text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-slate-900">{resumo.diasSemDiario}</strong>
+                <span className="mt-1 block text-xs text-">aguardando leitura</span>
+              </div>
             </div>
-            <div className="divide-y divide-slate-100">
-              {registrosDoMes.length === 0 && <p className="p-5 text-sm text-slate-600">Nenhum lançamento neste mês.{podeEditar ? ' Toque em "Novo lançamento" ou aperte N.' : ''}</p>}
-              {[...registrosDoMes].sort((a, b) => b.data.localeCompare(a.data)).map(item => (
-                // Linha de tabela: dia, tempo com o pontinho da cor e a chuva à direita (26/11/2026).
-                <button key={item.id} type="button" onClick={() => abrir(item.data, item.obraId || '')} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_4.5rem] items-center gap-4 px-4 py-2 text-left text-sm hover:bg-slate-50">
-                  <span className="truncate font-medium tabular-nums text-slate-800">{new Date(`${item.data}T12:00:00`).toLocaleDateString('pt-BR')}{item.obraId ? <span className="font-normal text-slate-500"> · {obras.find(obra => obra.id === item.obraId)?.nome ?? 'Obra'}</span> : ''}</span>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
-                    <span aria-hidden="true" className={`size-2 rounded-full ${/impratic/i.test(item.climaManha ?? '') ? 'bg-rose-500' : Number(item.precipitacaoMm) > 0 ? 'bg-sky-500' : 'bg-slate-300'}`} />
-                    {item.climaManha}
-                  </span>
-                  <span className="text-right font-semibold tabular-nums text-slate-900">{item.precipitacaoMm ?? 0} <span className="font-normal text-slate-500">mm</span></span>
-                </button>
-              ))}
-            </div>
-          </section>
+            <section className={`${CARTAO} min-w-0 overflow-hidden`}>
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+                <h2 className="text-[13.5px] font-semibold text-slate-900">Lançamentos do mês</h2>
+                <span className="shrink-0 text-[12px] font-medium text-">{resumo.diasComChuva} com chuva · {resumo.diasSemDiario} sem registro</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {registrosDoMes.length === 0 && (
+                  <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
+                    <span className="mb-3 grid size-11 place-items-center rounded-xl bg-emerald-50 text-[#176b4d] ring-1 ring-inset ring-emerald-200">
+                      <NotebookPen className="size-5" aria-hidden="true" />
+                    </span>
+                    <p className="text-[14px] font-semibold text-slate-900">Nenhum lançamento neste mês</p>
+                    <p className="mt-1 max-w-sm text-[12.5px] text-">
+                      {podeEditar ? 'Registre a leitura diária do pluviômetro para compor o mapa de chuvas. Toque em "Novo lançamento" ou aperte N.' : 'Ainda não há leituras registradas neste período.'}
+                    </p>
+                    {podeEditar && (
+                      <button type="button" onClick={() => abrir(diaDeHoje())} className={`${BOTAO_PRIMARIO} mt-4`}>
+                        <Plus className="size-4" aria-hidden="true" /> Registrar leitura de hoje
+                      </button>
+                    )}
+                  </div>
+                )}
+                {[...registrosDoMes].sort((a, b) => b.data.localeCompare(a.data)).map(item => (
+                  <button key={item.id} type="button" onClick={() => abrir(item.data, item.obraId || '')} className="grid min-h-10 w-full grid-cols-[minmax(0,1fr)_auto_5rem] items-center gap-4 px-4 py-2 text-left text-[13px] transition-colors hover:bg-slate-50">
+                    <span className="truncate font-medium tabular-nums text-slate-900">{new Date(`${item.data}T12:00:00`).toLocaleDateString('pt-BR')}{item.obraId ? <span className="font-normal text-"> · {obras.find(obra => obra.id === item.obraId)?.nome ?? 'Obra'}</span> : ''}</span>
+                    <span className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
+                      <span aria-hidden="true" className={`size-2 rounded-full ${/impratic/i.test(item.climaManha ?? '') ? 'bg-rose-500' : Number(item.precipitacaoMm) > 0 ? 'bg-sky-500' : 'bg-slate-500'}`} />
+                      {item.climaManha}
+                    </span>
+                    <span className="text-right font-semibold tabular-nums text-slate-900">{item.precipitacaoMm ?? 0} <span className="font-normal text-">mm</span></span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </>
         )}
       </div>
 

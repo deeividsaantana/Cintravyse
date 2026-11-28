@@ -195,8 +195,15 @@ export const saveSaturdayScale = async (
   token: string,
   grupoId: string,
   scale: { funcionarios: Array<{ id: string; nome: string; escalado: boolean; observacao?: string }>; observacaoGeral?: string },
+  data?: string,
 ) => {
-  const payload = { action: 'escala-sabado', token, grupoId, scale };
+  const saturdayDate = data || (() => {
+    const hoje = new Date();
+    const dia = new Date(hoje);
+    dia.setDate(dia.getDate() + ((6 - hoje.getDay() + 7) % 7 || 7));
+    return `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`;
+  })();
+  const payload = { action: 'escala-sabado', token, grupoId, data: saturdayDate, scale };
   const response = await callPublicApi<{ success: boolean }>('/api/public-presenca', {
     method: 'POST',
     headers: { 'X-Idempotency-Key': stableRequestKey('escala-sabado', payload) },

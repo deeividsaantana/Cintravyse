@@ -1,4 +1,4 @@
-import { cleanString, functionErrorResponse, getSupabaseAdmin, jsonResponse, requireSupabaseUser } from './_shared/supabase-admin.js';
+import { cleanString, functionErrorResponse, getSupabaseAdmin, jsonResponse, parseJsonBody, requireSupabaseUser } from './_shared/supabase-admin.js';
 import { assertHttpMethod, httpError } from './_shared/api-security.js';
 import { assertProcurementPermission, procurementActorFromStaff } from './_shared/procurement-authorization.js';
 import { sincronizarUmaVez } from '../server/procurementSpreadsheetSyncJob.js';
@@ -6,6 +6,7 @@ import { enviarParaPlanilha, envioLigado, linhasValidas } from '../server/procur
 
 // Abrir a aba lê a planilha de novo se a última leitura tem mais que isto.
 const LEITURA_VELHA_MS = 2 * 60 * 1000;
+const PAPEIS_ESCRITA_PLANILHA = new Set(['suprimentos', 'aprovador', 'solicitante', 'dev', 'admin', 'gestor']);
 
 const ultimaLeitura = async organizationId => {
   const { data } = await getSupabaseAdmin().from('erp_procurement_sync_runs').select('status, error_message, finished_at').eq('organization_id', organizationId).order('started_at', { ascending: false }).limit(1);
@@ -27,12 +28,15 @@ export const handler = async event => {
   try {
     const method = assertHttpMethod(event, ['GET', 'POST']);
     const staff = await requireSupabaseUser(event);
-    assertProcurementPermission(procurementActorFromStaff(staff), 'view');
+    const actor = procurementActorFromStaff(staff);
+    assertProcurementPermission(actor, 'view');
     const configurada = Boolean(process.env.PROCUREMENT_SPREADSHEET_URL);
 
     if (method === 'POST') {
-      let corpo;
-      try { corpo = JSON.parse(event.body || '{}'); } catch { throw httpError('Corpo inválido.', 400); }
+      if (staff.role === 'leitura' || (!PAPEIS_ESCRITA_PLANILHA.has(actor.role) && !PAPEIS_ESCRITA_PLANILHA.has(staff.role))) {
+        throw httpError('Apenas usuários com permissão de escrita podem atualizar a planilha de compras.', 403);
+      }
+      const corpo = parseJsonBody(event, 250_000);
       const linhas = linhasValidas(corpo.linhas);
       if (!linhas.length) throw httpError('Nada para enviar à planilha.', 400);
       const resultado = await enviarParaPlanilha(linhas);

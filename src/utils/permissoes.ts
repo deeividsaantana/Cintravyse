@@ -8,7 +8,7 @@ export type Capacidade = 'ver' | 'editar' | 'aprovar' | 'excluir';
  * lugar só para mudar quem pode o quê.
  *
  * Isto é ergonomia de interface, não segurança: a autorização real está nas
- * regras do Firestore e nas custom claims. Esconder um botão não protege dado —
+ * políticas RLS e RPCs do Supabase/PostgreSQL. Esconder um botão não protege dado —
  * a regra do servidor é quem recusa a gravação.
  */
 const CAPACIDADES: Record<Capacidade, readonly UserRole[]> = {

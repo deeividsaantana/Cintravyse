@@ -13,11 +13,11 @@ test('o app chama a API em /api/ e não no endereço antigo', () => {
   }
 });
 
-test('o servidor da Render atende /api/ e mantém o endereço antigo', () => {
+test('o servidor da Render atende exclusivamente /api/ sem resquício de Netlify', () => {
   const server = read('server/index.js');
-  assert.match(server, /for \(const prefix of \['\/api', '\/\.netlify\/functions'\]\)/);
+  assert.doesNotMatch(server, /netlify/i);
   for (const route of ['public-presenca', 'master-data', 'usage-telemetry', 'procurement', 'procurement-sheet']) {
-    assert.match(server, new RegExp(`\\$\\{prefix\\}/${route}`), route);
+    assert.match(server, new RegExp(`/api/${route}`), route);
   }
 });
 
@@ -68,11 +68,11 @@ test('adaptador Supabase representa documento ausente sem ler id de null', () =>
   assert.match(source, /exists:\s*Boolean\(row\)/);
 });
 
-test('repetir um envio pelo endereço novo reaproveita a idempotência do antigo', () => {
+test('hash de idempotência é determinístico para o caminho /api/', () => {
   const body = JSON.stringify({ nome: 'Teste' });
   assert.equal(
     buildRequestHash({ httpMethod: 'POST', path: '/api/master-data', body }),
-    buildRequestHash({ httpMethod: 'POST', path: '/.netlify/functions/master-data', body }),
+    buildRequestHash({ httpMethod: 'POST', path: '/api/master-data', body }),
   );
 });
 

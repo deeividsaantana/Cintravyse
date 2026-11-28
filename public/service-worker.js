@@ -4,8 +4,7 @@ const SHELL = ['/manifest.webmanifest', '/favicon.png?v=20261111'];
 // O Service Worker guarda somente recursos visuais estáveis.
 const STATIC_DESTINATIONS = new Set(['image', 'font', 'manifest']);
 
-// /.netlify/functions/ é o endereço antigo da API, ainda aceito pelo servidor.
-const isApiPath = pathname => pathname.startsWith('/api/') || pathname.startsWith('/.netlify/functions/');
+const isApiPath = pathname => pathname.startsWith('/api/');
 
 const isStaticRequest = request => {
   const url = new URL(request.url);

@@ -8,8 +8,7 @@ const hashValue = value => crypto.createHash('sha256').update(String(value || 'u
 
 export const getRequestId = event => {
   const existing = cleanLogString(
-    event?.headers?.['x-nf-request-id']
-      || event?.headers?.['x-request-id']
+    event?.headers?.['x-request-id']
       || event?.headers?.['X-Request-Id']
       || '',
     96,

@@ -20,8 +20,9 @@ import {
 import { assertHttpMethod, httpError } from './_shared/api-security.js';
 
 const TABELA = 'erp_first_access_links';
-// Sem prazo: a pessoa cria a senha quando for entrar pela primeira vez.
-const SEM_PRAZO = '2999-12-31T00:00:00.000Z';
+// Janela finita (72h por padrão) para reduzir exposição de contas ainda sem senha.
+const VALIDADE_HORAS = Math.min(Math.max(Number(process.env.FIRST_ACCESS_TTL_HOURS) || 72, 1), 168);
+const calcularExpiracao = (agoraMs = Date.now()) => new Date(agoraMs + VALIDADE_HORAS * 60 * 60 * 1000).toISOString();
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Senha que ninguém conhece: o login nasce com ela até a pessoa criar a sua. */
@@ -46,12 +47,13 @@ const erroDaTabela = error => {
 };
 
 /**
- * Deixa a pessoa criar a própria senha na tela de entrada. Usado ao criar o
- * login e quando o dono libera "criar senha nova". Fecha o que estava aberto.
+ * Deixa a pessoa criar a própria senha na tela de entrada por prazo limitado.
+ * Usado ao criar o login e quando o dono libera "criar senha nova". Fecha o que estava aberto.
  */
 export const liberarCriarSenha = async ({ organizationId, userId, createdBy }) => {
   const client = getSupabaseAdmin();
-  const agora = new Date().toISOString();
+  const agoraMs = Date.now();
+  const agora = new Date(agoraMs).toISOString();
   const { error: erroFechar } = await client.from(TABELA).update({ revoked_at: agora })
     .eq('user_id', userId).is('used_at', null).is('revoked_at', null);
   if (erroFechar) throw erroDaTabela(erroFechar);
@@ -61,7 +63,7 @@ export const liberarCriarSenha = async ({ organizationId, userId, createdBy }) =
     user_id: userId,
     created_by: createdBy || null,
     created_at: agora,
-    expires_at: SEM_PRAZO,
+    expires_at: calcularExpiracao(agoraMs),
   });
   if (error) throw erroDaTabela(error);
 };
@@ -93,7 +95,7 @@ const criarSenha = async (client, email, senha, repetida) => {
   if (!pendencia) throw httpError('Este login já tem senha. Entre com ela ou use "Recuperar senha".', 409);
   const agora = new Date().toISOString();
   const { data: fechada, error } = await client.from(TABELA).update({ used_at: agora })
-    .eq('token_hash', pendencia.chave).is('used_at', null).is('revoked_at', null)
+    .eq('token_hash', pendencia.chave).is('used_at', null).is('revoked_at', null).gt('expires_at', agora)
     .select('user_id').maybeSingle();
   if (error) throw erroDaTabela(error);
   if (!fechada) throw httpError('Este login já tem senha. Entre com ela ou use "Recuperar senha".', 409);
@@ -112,12 +114,14 @@ export const handler = async event => {
     const corpo = parseJsonBody(event, 4_000);
     const client = getSupabaseAdmin();
     const email = emailDoCorpo(corpo);
+    const emailHash = stableHash(email).slice(0, 24);
     if (corpo.action === 'verificar') {
-      await enforceRateLimit(null, event, 'primeiro-acesso-verificar', 60, 600);
+      await enforceRateLimit(null, event, 'primeiro-acesso-verificar', 20, 600);
       return jsonResponse(200, { success: true, data: { criarSenha: Boolean(await pendenciaDoEmail(client, email)) } });
     }
     if (corpo.action === 'criar') {
-      await enforceRateLimit(null, event, 'primeiro-acesso-criar', 10, 600);
+      await enforceRateLimit(null, event, 'primeiro-acesso-criar', 5, 600);
+      await enforceRateLimit(null, event, 'primeiro-acesso-criar-email', 5, 600, `email-${emailHash}`);
       return jsonResponse(200, { success: true, data: await criarSenha(client, email, corpo.senha, corpo.repetida) });
     }
     throw httpError('Ação inválida.', 422);

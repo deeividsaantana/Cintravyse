@@ -54,12 +54,37 @@ export default function VisaoEstacas({ hoje, estacas, frentes, frenteAtual, onFr
 
   if (!estacas.length) {
     return (
-      <section data-estacas-reveal className={`${CARTAO} p-6 text-center sm:p-10`}>
-        <Target className="mx-auto size-10 text-[#176b4d]" aria-hidden="true" />
-        <h2 className="mt-3 text-lg font-bold text-slate-900">Nenhuma estaca lançada ainda</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-slate-600">Comece dizendo quantas estacas a frente precisa. Depois é só marcar cada uma quando for cravada.</p>
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <button type="button" onClick={() => onPlanejar()} className={BOTAO_PRIMARIO}><Target className="size-5" aria-hidden="true" /> Informar quantas estacas</button>
+      <section data-estacas-reveal className="overflow-hidden rounded-2xl border border-[#d5ddd8] bg-white shadow-[0_1px_2px_rgba(11,27,22,0.06)]">
+        <div className="cv-hero-floresta flex flex-wrap items-center justify-between gap-4 border-0 px-5 py-5">
+          <div className="flex items-center gap-3.5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/12 text-[#7ae5b5] ring-1 ring-inset ring-white/15">
+              <Target className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-[16px] font-semibold tracking-[-0.015em] text-white">Nenhuma estaca lançada ainda</h2>
+              <p className="mt-0.5 text-[12.5px] text-[#a5c6b7]">Comece dizendo quantas estacas a frente precisa. Depois é só marcar cada uma quando for cravada.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onPlanejar()}
+            className={`inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-4 text-[13px] font-semibold text-[#0d261e] shadow-xs transition hover:bg-[#e8f5ee] ${FOCO}`}
+          >
+            <Target className="size-4" aria-hidden="true" /> Informar quantas estacas
+          </button>
+        </div>
+        <div className="grid gap-3 bg-[#f7faf8] p-4 sm:grid-cols-3">
+          {[
+            { n: '01', titulo: 'Planejar cortina', texto: 'Informe a frente e a quantidade total prevista de estacas.' },
+            { n: '02', titulo: 'Registrar cravação', texto: 'Marque cada estaca cravada com metragem real e data.' },
+            { n: '03', titulo: 'Conferir recebimentos', texto: 'Concilie lotes entregues por nota fiscal e acompanhe o avanço.' },
+          ].map(passo => (
+            <div key={passo.n} className="rounded-2xl border border-[#d5ddd8] bg-white p-3.5">
+              <span className="inline-flex rounded-md bg-[#e8f5ee] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#176b4d]">{passo.n}</span>
+              <p className="mt-2 text-[13px] font-semibold text-[#10211c]">{passo.titulo}</p>
+              <p className="mt-0.5 text-[12px] text-[#54645c]">{passo.texto}</p>
+            </div>
+          ))}
         </div>
       </section>
     );

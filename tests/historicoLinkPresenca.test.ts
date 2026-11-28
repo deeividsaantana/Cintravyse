@@ -12,10 +12,10 @@ const envio = (data: string) => ({
 });
 
 // Um banco de mentira que registra como a consulta foi montada, para provar
-// que o corte acontece no Firestore e não depois de baixar a obra inteira.
+// que o corte acontece no banco e não depois de baixar a obra inteira.
 const bancoFalso = ({ exigeIndice = false } = {}) => {
   const consulta = { ordenou: '', limite: 0, varreuTudo: false, filtros: [] as string[] };
-  // No Firestore cada refinamento devolve uma consulta nova; o objeto original
+  // Cada refinamento devolve uma consulta nova; o objeto original
   // continua sem ordem e sem limite. O falso precisa imitar isso, senão o
   // caminho de retorno herdaria o limite e o teste mentiria.
   const query = (estado: { ordenou: string; limite: number; filtros: string[] }) => ({

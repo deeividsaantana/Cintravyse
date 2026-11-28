@@ -106,7 +106,7 @@ export function buildDashboardGeneralViewModel(filters: DashboardGeneralFilters,
   const inScope = (obraId?: string) => !filters.obraId || obraId === filters.obraId;
   const equipment = (source.equipamentos ?? []).filter(item => inScope(item.localAtualId));
   const equipmentIds = new Set(equipment.map(item => item.id));
-  const controls = (source.controlesEquipamentos ?? []).filter(item => equipmentIds.has(item.equipamentoId));
+  const controls = (source.controlesEquipamentos ?? []).filter(item => !item.excluido && equipmentIds.has(item.equipamentoId));
   const fleet = fleetSummary(fleetSnapshot(equipment, controls, filters.to));
   const availabilitySeries = dates.map(date => {
     const value = fleetSummary(fleetSnapshot(equipment, controls, date)).availability;
@@ -118,7 +118,8 @@ export function buildDashboardGeneralViewModel(filters: DashboardGeneralFilters,
     item.ativo !== false && inScope(item.obraId) && withinPeriod(item.data, filters.from, filters.to)
     && item.unidade === 'm³');
   const fuelRows = (source.abastecimentos ?? []).filter(item =>
-    (!filters.obraId || equipmentIds.has(item.equipamentoId)) && withinPeriod(item.data, filters.from, filters.to));
+    !item.inativoEm && String(item.status || '').toLowerCase() !== 'cancelado'
+    && (!filters.obraId || equipmentIds.has(item.equipamentoId)) && withinPeriod(item.data, filters.from, filters.to));
   const groups = (source.gruposEquipe ?? []).filter(item => item.status !== 'inativo' && inScope(item.obraId));
   const recoveredGroups = recoverTeamGroups(groups as GrupoEquipe[], source.presencasLink ?? [], source.funcionarios ?? []);
   const teamRecords = (source.presencasLink ?? []).filter(item =>

@@ -43,14 +43,24 @@ const openDatabase = () => new Promise<IDBDatabase>((resolve, reject) => {
   request.onerror = () => reject(request.error || new Error('Falha ao abrir fila offline'));
 });
 
+const stableSerialize = (value: unknown): string => {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(',')}]`;
+  const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
+  return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableSerialize(item)}`).join(',')}}`;
+};
+
 export const createIdempotencyKey = (kind: string, payload: unknown) => {
-  const raw = `${kind}|${JSON.stringify(payload)}|${Date.now()}|${Math.random()}`;
-  let hash = 2166136261;
+  const raw = `${kind}|${stableSerialize(payload)}`;
+  let hashA = 2166136261;
+  let hashB = 5381;
   for (let index = 0; index < raw.length; index += 1) {
-    hash ^= raw.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
+    const code = raw.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 16777619);
+    hashB = Math.imul(hashB, 33) ^ code;
   }
-  return `${kind}-${(hash >>> 0).toString(16)}-${Date.now().toString(36)}`;
+  return `${kind}-${(hashA >>> 0).toString(16)}-${(hashB >>> 0).toString(16)}`;
 };
 
 export const listOfflineCommands = async (): Promise<OfflineCommand[]> => {
@@ -66,18 +76,7 @@ export const listOfflineCommands = async (): Promise<OfflineCommand[]> => {
   }
 };
 
-export const enqueueOfflineCommand = async <T>(kind: string, payload: T) => {
-  const existing = (await listOfflineCommands()).find(item => item.kind === kind);
-  if (existing) return existing as OfflineCommand<T>;
-  const idempotencyKey = createIdempotencyKey(kind, payload);
-  const command: OfflineCommand<T> = {
-    id: idempotencyKey,
-    idempotencyKey,
-    kind,
-    payload,
-    createdAt: new Date().toISOString(),
-    attempts: 0,
-  };
+const persistOfflineCommand = async <T>(command: OfflineCommand<T>) => {
   try {
     const database = await openDatabase();
     await new Promise<void>((resolve, reject) => {
@@ -88,7 +87,24 @@ export const enqueueOfflineCommand = async <T>(kind: string, payload: T) => {
   } catch {
     fallbackWrite([...fallbackRead().filter(item => item.id !== command.id), command]);
   }
-  window.dispatchEvent(new CustomEvent('renea-offline-queue-change'));
+};
+
+export const enqueueOfflineCommand = async <T>(kind: string, payload: T) => {
+  const idempotencyKey = createIdempotencyKey(kind, payload);
+  const existing = (await listOfflineCommands()).find(item => item.idempotencyKey === idempotencyKey);
+  if (existing) return existing as OfflineCommand<T>;
+  const command: OfflineCommand<T> = {
+    id: idempotencyKey,
+    idempotencyKey,
+    kind,
+    payload,
+    createdAt: new Date().toISOString(),
+    attempts: 0,
+  };
+  await persistOfflineCommand(command);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('renea-offline-queue-change'));
+  }
   return command;
 };
 
@@ -103,13 +119,16 @@ export const removeOfflineCommand = async (id: string) => {
   } catch {
     fallbackWrite(fallbackRead().filter(item => item.id !== id));
   }
-  window.dispatchEvent(new CustomEvent('renea-offline-queue-change'));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('renea-offline-queue-change'));
+  }
 };
 
 export const flushOfflineCommands = async (
   handlers: Record<string, (command: OfflineCommand) => Promise<void>>
 ) => {
-  const commands = await listOfflineCommands();
+  const commands = (await listOfflineCommands())
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const result = { processed: 0, failed: 0, pending: commands.length };
   for (const command of commands) {
     const handler = handlers[command.kind];
@@ -119,8 +138,14 @@ export const flushOfflineCommands = async (
       await removeOfflineCommand(command.id);
       result.processed += 1;
       result.pending -= 1;
-    } catch {
+    } catch (error) {
       result.failed += 1;
+      const lastError = error instanceof Error ? error.message : String(error || 'Falha ao sincronizar comando offline.');
+      await persistOfflineCommand({
+        ...command,
+        attempts: (command.attempts || 0) + 1,
+        lastError,
+      });
     }
   }
   return result;

@@ -1,6 +1,0 @@
-{
-  "name": "Renea Infraestrutura",
-  "description": "Controle operacional completo: cadastro de empresas, obras, frotas, motoristas, abastecimento, lubrificação e relatórios de consumo e custos.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["SUPABASE_AUTHENTICATION", "SUPABASE_OPERATIONAL_DATA", "RENDER_SERVER_API"]
-}

@@ -19,3 +19,9 @@ Como:
 - [ ] Abas ocultas que usam a mesma tela foram conferidas
 - [ ] Skills de design usadas (CONTRIBUTING.md, seção 7)
 - [ ] Prints no celular (390 px) e no computador anexados
+
+### Alteração de padrão aprovada (obrigatório SOMENTE se mexeu em standards/, scripts/check-*.mjs, .github/ ou AGENTS.md)
+
+- [ ] A mudança não afrouxa travas de segurança, multi-tenant, RLS ou integridade de dados
+- [ ] A justificativa arquitetural e o plano de migração foram descritos acima
+- [ ] Aprovação explícita do dono do produto (`@deeividsaantana`) solicitada via CODEOWNERS

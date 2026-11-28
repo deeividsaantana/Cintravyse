@@ -22,7 +22,16 @@ export const textoDaCelula = (valor: ValorCelula): string => {
   return valor.replace(/\s+/g, ' ').trim();
 };
 
-const protegido = (texto: string) => (/[;"\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto);
+const NUMERO_NEGATIVO = /^-\d+([.,]\d+)?$/;
+const neutralizarFormula = (texto: string) => (
+  /^[\t\r=+@]/.test(texto) || (texto.startsWith('-') && !NUMERO_NEGATIVO.test(texto))
+    ? `'${texto}`
+    : texto
+);
+const protegido = (texto: string) => {
+  const seguro = neutralizarFormula(texto);
+  return /[;"\n\r]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro;
+};
 
 /** Monta o CSV (sem a marca UTF-8) com o cabeçalho e uma linha por registro. */
 export const tabelaParaCsv = <T,>(linhas: readonly T[], colunas: readonly ColunaExportavel<T>[]): string => {

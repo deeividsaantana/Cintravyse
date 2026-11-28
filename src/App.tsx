@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { lazy, Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';import { migrarEfetivoObra3 } from './utils/migracaoEfetivoObra3';
+import React, { lazy, Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { migrarEfetivoObra3 } from './utils/migracaoEfetivoObra3';
+import { TabErrorBoundary } from './app/providers/AppProviders';
 
 import { PularParaConteudo, RouteMotion, PageHeader } from './shared/ui';
 import { 
@@ -611,10 +613,18 @@ export default function App() {
   // que é o que vai para o armazenamento e para a nuvem.
   const canteirosNomes = useMemo(() => canteiros.map(item => item.nome), [canteiros]);
   const abastecimentosAtivos = useMemo(() => somenteAtivos(abastecimentos), [abastecimentos]);
+  const abastecimentosOperacionais = useMemo(
+    () => abastecimentosAtivos.filter(item => String(item.status || '').toLowerCase() !== 'cancelado'),
+    [abastecimentosAtivos],
+  );
   const presencasLinkAtivas = useMemo(() => somenteAtivos(presencasLink), [presencasLink]);
   const presencasLinkInativas = useMemo(() => presencasLink.filter(item => !estaAtivo(item)), [presencasLink]);
   const [historicoPresencas, setHistoricoPresencas] = useState<HistoricoPresenca[]>([]);
   const [controleEquipamentosDiario, setControleEquipamentosDiario] = useState<ControleEquipamentoDiario[]>([]);
+  const controleEquipamentosDiarioAtivos = useMemo(
+    () => controleEquipamentosDiario.filter(item => !item.excluido),
+    [controleEquipamentosDiario],
+  );
   // As regras automáticas da manutenção (fechar no limite, continuidade) só
   // gravam depois que esta sessão igualou com a nuvem pelo menos uma vez.
   const [baixouDaNuvemNestaSessao, setBaixouDaNuvemNestaSessao] = useState(false);
@@ -990,7 +1000,7 @@ export default function App() {
     };
   }, [isLoggedIn]);
 
-  // Check the real Firestore connection only after authentication.
+  // Check the real Supabase connection only after authentication.
   useEffect(() => {
     setIsAutoSyncEnabled(true);
     writeStoredFlag(localStorage, STORAGE_KEYS.autoSync, true);
@@ -4202,8 +4212,8 @@ export default function App() {
           onRetryUpload={tentarNovamenteEnvio}
           lastCloudSync={lastCloudSync}
           pendingCount={pendingCount}
-          isRetryingPending={isRetryingPending}
-          onRetryPending={() => void handleRetryPending()}
+          isRetryingPending={isRetryingPending} onRetryPending={() => void handleRetryPending()}
+          onPesquisar={() => setPesquisaAberta(true)}
         />}
         {/* Task 8: Rota presenca-publica fora do padrão de abas */}
         {activeTab === 'presenca-publica' && (
@@ -4227,6 +4237,7 @@ export default function App() {
         {/* Área das abas: o recuo vem de --renea-respiro (index.css), a mesma
             medida que a TelaCheia desconta para caber na altura da tela. */}
         <div id="main-tab-viewport" tabIndex={-1} className={`flex-1 overflow-x-clip w-full max-w-none p-[var(--renea-respiro)] print:p-0 print:m-0${combustivelListaSomente ? ' renea-viewport--solta' : ''}`}>
+          <TabErrorBoundary resetKey={activeTab}>
           <Suspense fallback={<ScreenLoadingFallback />}>
             <RouteMotion key={activeTab}>
             {activeTab === 'dashboard' && (
@@ -4239,14 +4250,14 @@ export default function App() {
                 comboios={comboios}
                 combustiveis={combustiveis}
                 lubrificantes={lubrificantes}
-                abastecimentos={abastecimentosAtivos}
+                abastecimentos={abastecimentosOperacionais}
                 lubrificacoes={lubrificacoes}
                 historyLogs={historyLogs}
                 listasPresenca={listasPresenca}
                 ordensServico={ordensServico}
                 estacas={controleEstacas}
                 presencasLink={presencasLinkAtivas}
-                controlesEquipamentos={controleEquipamentosDiario}
+                controlesEquipamentos={controleEquipamentosDiarioAtivos}
                 gruposEquipe={gruposEquipe}
                 planejamento={planejamentoItens}
                 producao={producaoRegistros}
@@ -4265,9 +4276,9 @@ export default function App() {
 
             {activeTab === 'dashboards' && (
               <DashboardsTab
-                abastecimentos={abastecimentosAtivos}
+                abastecimentos={abastecimentosOperacionais}
                 equipamentos={equipamentos}
-                controlesEquipamentos={controleEquipamentosDiario}
+                controlesEquipamentos={controleEquipamentosDiarioAtivos}
                 presencasLink={presencasLinkAtivas}
                 diariosObra={diariosObra}
                 solicitacoes={solicitacoes}
@@ -4524,6 +4535,7 @@ export default function App() {
 
             </RouteMotion>
           </Suspense>
+          </TabErrorBoundary>
         </div>
         </>
         )}

@@ -65,10 +65,14 @@ export const montarMesDeChuva = (
     if (!diario) {
       return { data, dia, milimetros: null, horasParadas: 0, impraticavel: false };
     }
+    const temLeituraMm = diario.precipitacaoMm !== undefined
+      && diario.precipitacaoMm !== null
+      && String(diario.precipitacaoMm).trim() !== ''
+      && Number.isFinite(Number(diario.precipitacaoMm));
     return {
       data,
       dia,
-      milimetros: numero(diario.precipitacaoMm),
+      milimetros: temLeituraMm ? numero(diario.precipitacaoMm) : null,
       horasParadas: numero(diario.horasParadasClima),
       climaManha: diario.climaManha,
       climaTarde: diario.climaTarde,
@@ -77,18 +81,19 @@ export const montarMesDeChuva = (
     };
   });
 
-  const comDiario = dias.filter(dia => dia.milimetros !== null);
+  const comLeitura = dias.filter(dia => dia.milimetros !== null);
+  const diasSemDiario = dias.filter(dia => !doMes.has(dia.data)).length;
   return {
     ano,
     mes,
     rotulo: `${NOMES_MES[mes - 1]} de ${ano}`,
     dias,
-    totalMm: Number(comDiario.reduce((soma, dia) => soma + (dia.milimetros || 0), 0).toFixed(1)),
-    diasComChuva: comDiario.filter(dia => (dia.milimetros || 0) > 0).length,
-    diasSemDiario: dias.length - comDiario.length,
+    totalMm: Number(comLeitura.reduce((soma, dia) => soma + (dia.milimetros || 0), 0).toFixed(1)),
+    diasComChuva: comLeitura.filter(dia => (dia.milimetros || 0) > 0).length,
+    diasSemDiario,
     diasImpraticaveis: dias.filter(dia => dia.impraticavel).length,
     horasParadas: Number(dias.reduce((soma, dia) => soma + dia.horasParadas, 0).toFixed(1)),
-    maiorMm: comDiario.reduce((maior, dia) => Math.max(maior, dia.milimetros || 0), 0),
+    maiorMm: comLeitura.reduce((maior, dia) => Math.max(maior, dia.milimetros || 0), 0),
   };
 };
 

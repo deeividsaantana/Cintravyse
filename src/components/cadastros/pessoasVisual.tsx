@@ -29,14 +29,14 @@ export const iniciais = (nome: string) => {
 
 const TAMANHO = { p: 'size-8 text-xs', m: 'size-9 text-xs', g: 'size-14 text-lg' } as const;
 
-/** Bolinha com as iniciais, na cor do nível do cargo da pessoa. */
+/** Iniciais em cápsula quadrada arredondada, na cor do nível do cargo da pessoa. */
 export function Avatar({ nome, nivel, tamanho = 'm', borda = false }: { nome: string; nivel?: number | null; tamanho?: keyof typeof TAMANHO; borda?: boolean }) {
   const cor = corDoNivel(nivel);
   return (
     <span
       aria-hidden="true"
       style={{ background: cor.fundo, color: cor.letra }}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold tracking-tight ${TAMANHO[tamanho]} ${borda ? 'ring-2 ring-white' : ''}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-lg font-semibold tracking-tight ${TAMANHO[tamanho]} ${borda ? 'ring-2 ring-white' : ''}`}
     >
       {iniciais(nome)}
     </span>
@@ -48,8 +48,8 @@ export function SeloNivel({ nivel, curto = false }: { nivel?: NivelCargo | numbe
   const cor = corDoNivel(nivel);
   const dados = nivel && nivel >= 1 && nivel <= 6 ? NIVEIS[nivel - 1] : null;
   return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold text-slate-800" style={{ background: cor.claro }}>
-      <span aria-hidden="true" className="size-2.5 rounded-sm" style={{ background: cor.fundo }} />
+    <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold text-[#10211c]" style={{ background: cor.claro }}>
+      <span aria-hidden="true" className="size-2 rounded-xs" style={{ background: cor.fundo }} />
       {dados ? (curto ? dados.nome : `${dados.nivel} · ${dados.nome}`) : 'Sem nível'}
     </span>
   );
@@ -63,10 +63,10 @@ export function FilaDeRostos({ nomes, total }: { nomes: string[]; total: number 
       <span className="flex -space-x-1.5">
         {nomes.map(nome => <Avatar key={nome} nome={nome} tamanho="p" borda nivel={5} />)}
         {resto > 0 && (
-          <span aria-hidden="true" className="inline-flex size-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 ring-2 ring-white">+{resto}</span>
+          <span aria-hidden="true" className="inline-flex size-8 items-center justify-center rounded-lg bg-[#eef2ef] text-xs font-semibold text-[#46574f] ring-2 ring-white">+{resto}</span>
         )}
       </span>
-      <span className="text-sm font-semibold tabular-nums text-slate-800">{total} {total === 1 ? 'pessoa' : 'pessoas'}</span>
+      <span className="text-[13px] font-semibold tabular-nums text-[#10211c]">{total} {total === 1 ? 'pessoa' : 'pessoas'}</span>
     </span>
   );
 }
@@ -103,10 +103,10 @@ export function ResumoColaboradores({ linhas, filtros, onFiltrar }: {
             type="button"
             aria-pressed={quadro.filtro ? ligado : undefined}
             onClick={() => onFiltrar(ligado ? null : quadro.filtro, quadro.valor)}
-            className="flex min-h-16 flex-col justify-center px-4 py-3 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#176b4d]"
+            className={`flex min-h-14 flex-col justify-center px-3.5 py-2.5 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#176b4d] ${atencao ? 'border-l-[#d97706]' : 'border-l-[#176b4d]'}`}
           >
-            <span className="text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums text-slate-900">{quadro.total.toLocaleString('pt-BR')}</span>
-            <span className={`mt-1.5 text-[13px] font-semibold ${atencao ? 'text-[#c2410c]' : 'text-[#5b6870]'}`}>{quadro.rotulo}</span>
+            <span className="text-[12px] font-medium text-[#54645c]">{quadro.rotulo}</span>
+            <span className={`mt-0.5 text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums ${atencao ? 'text-[#c2410c]' : 'text-[#10211c]'}`}>{quadro.total.toLocaleString('pt-BR')}</span>
           </button>
         );
       })}

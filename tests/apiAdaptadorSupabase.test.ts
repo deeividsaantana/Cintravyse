@@ -125,8 +125,8 @@ test('limite de requisições: cabeçalhos inventados pelo cliente não abrem ja
   const cliente = clienteFalso({ registrar_requisicao: () => ({ data: true }) });
   substituirClienteSupabase(cliente);
   t.after(() => substituirClienteSupabase(null));
-  await enforceRateLimit(null, { headers: { 'x-nf-client-connection-ip': '1.1.1.1', 'x-forwarded-for': '9.9.9.9, 200.0.0.5' } }, 'b', 10, 60);
-  await enforceRateLimit(null, { headers: { 'x-nf-client-connection-ip': '2.2.2.2', 'x-forwarded-for': '8.8.8.8, 200.0.0.5' } }, 'b', 10, 60);
+  await enforceRateLimit(null, { headers: { 'x-client-ip': '1.1.1.1', 'x-forwarded-for': '9.9.9.9, 200.0.0.5' } }, 'b', 10, 60);
+  await enforceRateLimit(null, { headers: { 'x-client-ip': '2.2.2.2', 'x-forwarded-for': '8.8.8.8, 200.0.0.5' } }, 'b', 10, 60);
   assert.equal(cliente.chamadas[0][1].p_chave, cliente.chamadas[1][1].p_chave);
 });
 

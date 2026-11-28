@@ -1,55 +1,45 @@
-# Sistema Renea
+# Cintravyse (RENEA ERP)
 
-Webapp operacional para controle de equipamentos, combustível, materiais, tickets de jazida, apontamentos e presença.
+Webapp operacional SaaS para obras de infraestrutura: controle de frotas e manutenção, combustível, presença em campo, programação/Curva S, estacas, pluviômetro, solicitações/compras, contratação RH assinável e cadastros.
 
-## Módulos principais
+## Stack oficial travada
 
-- Combustível inteligente com digitação rápida por prefixo, auditoria contínua, importação e exportação em Excel.
-- Dashboard de consumo, qualidade dos dados, sequência de bomba e desvios de KM/horímetro.
-- Parte diária de equipamentos com lançamento, indicadores, filtros, edição e PDF no padrão do formulário físico.
-- Consulta e migração controlada do legado SGE, preservando os dados dos bancos Access antigos.
-- Tickets de liberação e recebimento vinculados, assinatura digital, histórico e impressão em duas vias.
-- Links públicos operacionais para tickets, apontamentos e presença, com rascunhos isolados por aparelho.
-- Sincronização segmentada com Firebase para respeitar o limite de tamanho dos documentos do Firestore.
-- Migração incremental para Supabase por gateway, com Firebase padrão, dual-write de homologação e RLS por organização.
+- **Frontend:** Vite 6 + React 19 + TypeScript 5.8
+- **UI:** Tailwind CSS 4 + shadcn/ui (`components.json`, `src/components/ui/*`, `lucide-react`)
+- **Validação:** Zod + React Hook Form (`@hookform/resolvers`)
+- **Data Fetching:** TanStack Query (`@tanstack/react-query`)
+- **Backend / Banco:** Express (Node 22) + Supabase (PostgreSQL, Auth, RLS, Storage)
+- **Deploy:** Render (`render.yaml`)
+
+Regras de governança e bloqueio rígido da stack: `docs/PADRAO_UNICO_ERP.md` e `standards/erp-standards.lock.json`.
 
 ## Executar localmente
 
-Requisitos: Node.js 20 ou superior.
+Requisitos: Node.js 22+.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Para validar a versão de produção:
+Para rodar a validação completa (padrão único, tipagem, testes, build e peso do bundle):
 
 ```bash
-npm run build
+npm run verify
 ```
 
-## Publicação
+## Publicação (Render)
 
-O deploy de produção roda no Render (`server/index.js` serve o build do frontend e a API de `api/` em `/api/...`, adaptada para Express).
-
-Consulte `docs/INSTRUCOES_CONTAS_FIREBASE.md` e `docs/ARQUITETURA_MIGRACAO_SUPABASE.md`.
+O deploy de produção roda no Render (`render.yaml`): `server/index.js` serve o build do frontend (`dist/`) e a API em `/api/*`.
 
 ## Estrutura do repositório
 
-- `src/`: aplicação React (telas em `src/components`, regras puras em `src/utils`).
-- `preview/`: harness de telas sem login, usado pelos testes E2E.
-- `server/`: servidor Express do Render.
-- `api/`: handlers HTTP da API (links públicos, presença, cadastros), servidos em `/api/`.
-- `functions/`: Cloud Functions do Firebase.
+- `src/components/ui/`: primitivos oficiais shadcn/ui.
+- `src/components/`: telas e fluxos por módulo.
+- `src/utils/`: regras puras de domínio.
+- `src/cloud/` e `src/supabase/`: sincronização e persistência Supabase.
+- `server/` e `api/`: servidor Express (Render) e endpoints `/api/*`.
 - `supabase/migrations/`: migrations versionadas do PostgreSQL.
+- `standards/`: trava rígida do padrão único (`erp-standards.lock.json`).
 - `tests/`: contratos operacionais (`npm test`) e E2E (`npm run e2e`).
-- `scripts/`: utilitários de manutenção e testes.
-
-## Documentação
-
-- `docs/ARQUITETURA_SISTEMA_INTEGRADO_V3_5.md`: arquitetura atual.
-- `docs/ARQUITETURA_MIGRACAO_SUPABASE.md`: migração gradual para Supabase.
-- `docs/SAAS_DESIGN_SYSTEM.md` e `docs/superpowers/`: padrão visual das telas.
-- `docs/SEGURANCA_FIRESTORE.md`: invariantes de segurança do Firestore.
-- `docs/LEGADO_SGE_CONVERSAO.md` e `docs/ANALISE_BANCOS_ACCESS_SGE.md`: legado SGE.
-- `docs/historico/`: notas de alteração e validação de cada versão (V2.0 a V3.5 e V7).
+- `docs/`: documentação técnica e `docs/PADRAO_UNICO_ERP.md`.

@@ -577,6 +577,9 @@ export const aplicarAcao = (
     case 'receber': {
       if (!exerce(ator, 'recebedor')) return falha('Só Recepção/Campo confirma a chegada física.');
       if (sol.etapa === 'Cancelado' || sol.etapa === 'Entregue') return falha('Esta solicitação já está fechada.');
+      if (sol.origem !== 'planilha-controle' && sol.etapa !== 'Aprovado' && sol.etapa !== 'Em Trânsito') {
+        return falha('Só solicitação aprovada ou em trânsito pode registrar recebimento físico.');
+      }
       const { recebimento } = acao;
       if (!recebimento.local.trim()) return falha('Informe onde o material chegou.');
       if (!recebimento.notaFiscal.trim()) return falha('Informe o número da nota fiscal.');

@@ -20,7 +20,7 @@ const espiao = () => {
 };
 
 const envio = (body: unknown) => ({
-  headers: { 'x-nf-client-connection-ip': '200.200.200.200' },
+  headers: { 'x-forwarded-for': '200.200.200.200' },
   body: JSON.stringify(body),
 });
 

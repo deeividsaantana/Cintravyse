@@ -16,8 +16,8 @@ const adaptUser = (user: User | null): SupabaseAuthUser | null => {
     getIdToken: async () => (await getSupabaseClient().auth.getSession()).data.session?.access_token || '',
     getIdTokenResult: async () => ({
       claims: {
-        ...((user.app_metadata || {}) as Record<string, unknown>),
         ...((user.user_metadata || {}) as Record<string, unknown>),
+        ...((user.app_metadata || {}) as Record<string, unknown>),
       },
     }),
   });

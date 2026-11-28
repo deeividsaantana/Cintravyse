@@ -106,8 +106,21 @@ const transitionRequest = async (event, staff, actor) => {
   const requestId = cleanString(body.request_id, 64);
   const version = Number(body.version);
   if (!requestId || !Number.isInteger(version) || version < 1) { const error = new Error('request_id e version são obrigatórios.'); error.statusCode = 422; throw error; }
+  const client = getSupabaseAdmin();
+  const { data: existingRequest, error: existingError } = await client
+    .from('erp_requests')
+    .select('id')
+    .eq('id', requestId)
+    .eq('organization_id', staff.organizationId)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (!existingRequest) {
+    const error = new Error('Solicitação de compra não encontrada nesta organização.');
+    error.statusCode = 404;
+    throw error;
+  }
   const actorPayload = { actor_user_id: staff.uid, actor_name: staff.name, actor_role: actor.role };
-  const { data, error } = await getSupabaseAdmin().rpc('transition_erp_request', {
+  const { data, error } = await client.rpc('transition_erp_request', {
     p_request_id: requestId,
     p_expected_version: version,
     p_action: action,

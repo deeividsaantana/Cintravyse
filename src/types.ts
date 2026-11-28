@@ -1192,6 +1192,8 @@ export interface ControleEquipamentoDiario {
   continuaAlemDoLimite?: { decididoEm: string; decididoPor: string };
   /** Id do lançamento do dia anterior que abriu este pela continuidade (entrada das 07:00). */
   continuacaoDe?: string;
+  /** Exclusão lógica de lançamento diário de frota (compatível com FleetSoftDelete e formatos legados). */
+  excluido?: boolean | { deletedAt?: string; deletedBy?: string; deletionReason?: string; em?: string; por?: string; motivo?: string };
   criadoEm: string;
   atualizadoEm: string;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ArrowLeft, History, KeyRound, Lock, RefreshCw, RotateCcw, Search, ShieldCheck, UserPlus } from 'lucide-react';
@@ -25,7 +25,6 @@ import {
   type RegrasDeAcesso,
 } from '../utils/regrasDeAcesso';
 import {
-  carregarPainelDev,
   criarLoginDev,
   desfazerMudanca,
   liberarSenhaNova,
@@ -33,11 +32,11 @@ import {
   mudarContratacaoDaPessoa,
   mudarPerfilDaPessoa,
   mudarSituacaoDaPessoa,
-  type DadosPainelDev,
   type MudancaDeAcesso,
   type PapelContratacaoDev,
   type PessoaDev,
 } from '../services/devAcessosApi';
+import { usePainelDevQuery } from '../hooks/usePainelDevQuery';
 
 /**
  * Aba Dev (16/11/2026): o painel do dono do sistema para ver e mudar o que
@@ -104,10 +103,10 @@ interface DevTabProps {
 export default function DevTab({ pessoasCompras, onSalvarPessoasCompras }: DevTabProps = {}) {
   const escopo = useRef<HTMLElement>(null);
   const [subtela, setSubtela] = useState<Subtela>('pessoas');
-  const [dados, setDados] = useState<DadosPainelDev | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const { dados, carregando, erroConsulta, recarregar } = usePainelDevQuery();
   const [ocupado, setOcupado] = useState(false);
-  const [erro, setErro] = useState('');
+  const [erroAcao, setErro] = useState('');
+  const erro = erroAcao || erroConsulta;
   const [aviso, setAviso] = useState<{ texto: string; desfazer?: number } | null>(null);
   const [busca, setBusca] = useState('');
   const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
@@ -118,18 +117,9 @@ export default function DevTab({ pessoasCompras, onSalvarPessoasCompras }: DevTa
   const [erroNovo, setErroNovo] = useState('');
 
   const carregar = useCallback(async () => {
-    setCarregando(true);
-    try {
-      setDados(await carregarPainelDev());
-      setErro('');
-    } catch (falha) {
-      setErro(falha instanceof Error ? falha.message : 'Não foi possível carregar os acessos.');
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
-
-  useEffect(() => { void carregar(); }, [carregar]);
+    setErro('');
+    await recarregar();
+  }, [recarregar]);
 
   useGSAP(() => {
     const raiz = escopo.current;

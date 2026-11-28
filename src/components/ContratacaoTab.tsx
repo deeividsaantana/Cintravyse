@@ -28,7 +28,7 @@ import { TelaCheia } from '../shared/ui/TelaCheia';
 import { AbasDaTela, idDaAba, type ItemDasAbas } from '../shared/ui/AbasDaTela';
 import { VoltarAosRelatorios, type ModoRelatorio } from '../shared/ui/RelatorioNaAba';
 import { TabelaPadrao, type ColunaTabela } from '../shared/ui/TabelaPadrao';
-import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO, CAMPO, CAMPO_SELECT, CARTAO, FOCO } from './cadastros/estilos';
+import { BOTAO_PRIMARIO, CAMPO, CAMPO_SELECT, CARTAO, FOCO } from './cadastros/estilos';
 import { ETAPAS, SITUACOES, SOLICITACOES, emAberto, etapaPendente, nomeDaEtapa, podeDecidir, resumoDoPedido } from '../../api/_shared/contratacao-regras.js';
 import {
   apagarContratacao,
@@ -361,9 +361,20 @@ export default function ContratacaoTab({ relatorio }: { relatorio?: ModoRelatori
     if (carregando && !dados) return <p className="p-6 text-sm text-[#5b6870]" role="status">Carregando as solicitações…</p>;
     if (erro && !dados) {
       return (
-        <div role="alert" className="mx-auto max-w-lg space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900">
-          <p className="font-bold">{erro}</p>
-          <button type="button" onClick={() => void carregar()} className={BOTAO_SECUNDARIO}>Tentar de novo</button>
+        <div role="alert" className="mx-auto mt-6 max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(11,27,22,0.06)]">
+          <div className="cv-hero-floresta flex items-center gap-3 border-0 px-5 py-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/12 text-emerald-300 ring-1 ring-inset ring-white/15">
+              <ClipboardList className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-[14px] font-semibold text-white">Acesso autenticado necessário</p>
+              <p className="text-[12px] text-emerald-200">As solicitações de RH assináveis usam o servidor autenticado.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+            <p className="text-[13px] font-medium text-slate-900">{erro}</p>
+            <button type="button" onClick={() => void carregar()} className={BOTAO_PRIMARIO}>Tentar de novo</button>
+          </div>
         </div>
       );
     }

@@ -56,7 +56,7 @@ test('valida chave de idempotencia opcional para operacoes mutaveis', () => {
   );
 });
 
-test('valida identificadores usados em paths do Firestore', () => {
+test('valida identificadores usados em paths de documentos', () => {
   assert.equal(assertValidEntityId('renea_2026-obra'), 'renea_2026-obra');
   assert.throws(
     () => assertValidEntityId('../outra-colecao'),
