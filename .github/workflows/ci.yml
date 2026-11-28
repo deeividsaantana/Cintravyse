@@ -34,14 +34,15 @@ jobs:
       - name: Conferir ESLint nos novos padroes
         run: npm run lint:code
 
+      # Build antes dos testes: o teste do servidor abre dist/index.html.
+      - name: Gerar build
+        run: npm run build
+
       - name: Executar testes de contrato (Node)
         run: npm test
 
       - name: Executar testes de UI e API mockada (Vitest + RTL + MSW)
         run: npm run test:ui
-
-      - name: Gerar build
-        run: npm run build
 
       - name: Conferir peso do build
         run: npm run check:bundle
